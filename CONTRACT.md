@@ -75,7 +75,8 @@ def evaluate(case: Case, output_text: str) -> dict: ...
 | | |
 | --- | --- |
 | 容器内 | `http://127.0.0.1:3081` |
-| 外部（办公网段） | `http://123.60.231.190:4014` |
+| 外部（办公网段） | `http://123.60.231.190:4013`（API）/ `:4014`（视图） |
+| 建立顺序 | **必须先起服务、再建映射**。若映射创建时上游没在监听，之后会一直 `Empty reply from server`（TCP 通、无响应），删掉重建即可（`rc port rm <ext> && rc port 3082`）。 |
 | 有效期 | 注册项不过期（团队已确认）。**但实测：从容器内访问 `http://123.60.231.190:<外部端口>` 返回 `Empty reply`（TCP 通、上游失败），改用 0.0.0.0 绑定同样失败**；因此外部访问当前**未验证可用**，`scripts/e2e.py` 对它 SKIP 而非 PASS。容器内 `127.0.0.1:3081` 与 SSH 隧道可用 |
 | 名额 | 单容器最多 5 个映射，端口池共用，**用完必撤** (`rc port rm <外部端口>`) |
 
@@ -198,6 +199,7 @@ python3 -m judge eval cases/ex2.in out/ex2.out [--json]   # 纯评估，不写�
 python3 -m judge run --version v0.5 --commit $(git rev-parse --short HEAD) \
         --solver "python3 solver/solve_all.py" --cases ex1 ex2   # 排队并等待
 python3 -m judge ls [--case ex2] [--limit 20]             # 打印账本摘要表
+python3 -m judge gc --keep 50 [--max-size 2G] [--dry-run]  # 清理旧 run 的 ops 明细（不动账本）
 python3 -m judge serve [--port 3081]
 python3 -m judge acceptance                               # 7 个验收值
 ```
@@ -348,6 +350,8 @@ docs/final-report.md
 | 极端规模内存 | `L=64, nmb=1000` 单 run 约 5.5 s、峰值 RSS ≈0.57 GB，大头是 core 返回的 64 万 ops dict。当前可接受；若后续要压，给 core 加流式 ops 生成器，而不是加大内存。 |
 | ops 切片语义 | `since` 含、`until` 不含、`cursor` = offset（t2 实测口径，UI 与 t5 按此对齐）。 |
 | 零长度开关的适用范围（**已修订**） | `ZERO_LEN_COMM_COUNTS` **只作用于 `Movl`**。`Mact` 的零长度激活（`[t,t]`）**必须计入**——题面 §4.6 明文"前向恰好在反向开始时结束，该时刻仍持有这份激活"。本节早先写过"提升为 `ZERO_LEN_COUNTS` 同时作用于两者"，**那是错的，已撤销**：照字面做会引入题面违规。 |
+| 预算按规模自动下调 | 单例默认预算不再固定 8.5 s：`n_ops>200k → 5.0`、`>20k → 6.5`、否则 8.5；显式 `--budget` 优先。目的：给进程启动/落盘/并发留余量（实测 big-wide 从 8.07 s 降到 6.10 s，解不变）。 |
+| commit 记录 | `judge run` 缺省记录 `<sha>`，工作区脏时为 `<sha>-dirty`；无 git 仓库时退回 `src-<solver+core 源码 sha256 前 12 位>`，不再是 `unknown`。 |
 | 改求解器前先记 hash | `--check` 会**覆盖** `out/*.out`。想在后证明"零回归"，必须在改动前把 `out/` 与 `cases/*.out` 的 sha256 记下来；t11 复核因缺备份，只能用"门控 A/B + Time/judge 不变"间接证明。今后任何改 solver 的修复任务，第一步先落一份 hash 清单。 |
 | 已过时的注释（待清） | `solver/sched.py::_simulate` 里 `best_idx<0` 的注释写"不会发生"，实际它是死锁检测点（ex2 触发 2346 次）。不影响行为。 |
 | `out/` 目录 | 求解器 `--check` 的产物目录，**生成物不入库**，随时可重算；正式交付解以账本 `runs/ledger.jsonl` 里登记的 run 为准（`runs/out/<run_id>/<case>.out`）。 |

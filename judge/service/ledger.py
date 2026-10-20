@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import fcntl
 import json
+import shutil
 import math
 import os
 import re
@@ -336,6 +337,55 @@ class Ledger:
             while len(self._ops_cache) > OPS_CACHE_LIMIT:
                 self._ops_cache.popitem(last=False)
         return table
+
+
+    def prune_ops(
+        self, *, keep: int = 50, max_bytes: int = 0, dry_run: bool = False
+    ) -> dict:
+        """清理旧 run 的 ops 明细（**不动账本**）。
+
+        保留最近 ``keep`` 个 run 的 ``ops/``；若给了 ``max_bytes``，再从最旧的开始删，
+        直到总量低于该上限。返回 ``{"removed": [...], "freed": 字节, "kept": n}``。
+
+        账本行与 `ops_path` 字段保持不变——UI 打开被清理的 run 时明细缺失，
+        由服务层返回空页而不是报错（历史结论仍在）。
+        """
+        ops_root = self.config.ops_dir
+        if not ops_root.is_dir():
+            return {"removed": [], "freed": 0, "kept": 0}
+        entries = [p for p in ops_root.iterdir() if p.is_dir()]
+        entries.sort(key=lambda p: (p.stat().st_mtime_ns, p.name))
+        survivors = set(p.name for p in entries[-keep:]) if keep > 0 else set()
+
+        def size_of(path: Path) -> int:
+            return sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
+
+        removed: list[str] = []
+        freed = 0
+        # 先按 keep 删
+        for path in entries:
+            if path.name in survivors:
+                continue
+            freed += size_of(path)
+            removed.append(path.name)
+            if not dry_run:
+                shutil.rmtree(path, ignore_errors=True)
+        # 再按体积上限删（从剩余的最旧开始）
+        if max_bytes > 0:
+            remaining = [p for p in entries if p.name in survivors and p.exists()]
+            remaining.sort(key=lambda p: (p.stat().st_mtime_ns, p.name))
+            total = sum(size_of(p) for p in remaining)
+            for path in remaining:
+                if total <= max_bytes:
+                    break
+                size = size_of(path)
+                freed += size
+                total -= size
+                removed.append(path.name)
+                if not dry_run:
+                    shutil.rmtree(path, ignore_errors=True)
+        kept = len([p for p in entries if p.exists() and p.name not in removed])
+        return {"removed": removed, "freed": freed, "kept": kept}
 
 
 def geometric_score(cases: dict[str, dict]) -> Optional[float]:

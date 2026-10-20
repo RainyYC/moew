@@ -16,6 +16,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import subprocess
@@ -76,19 +77,39 @@ def _base_url(args: argparse.Namespace) -> str:
     return (args.url or os.environ.get("JUDGE_URL") or DEFAULT_URL).rstrip("/")
 
 
-def _detect_commit(root: Path) -> str:
+def _git(root: Path, *args: str) -> str:
+    """跑一条 git 命令，失败返回空串（不抛异常）。"""
     try:
         completed = subprocess.run(
-            ["git", "rev-parse", "--short", "HEAD"],
-            cwd=str(root),
-            capture_output=True,
-            text=True,
-            timeout=3,
+            ["git", *args], cwd=str(root), capture_output=True, text=True, timeout=3
         )
     except (OSError, subprocess.SubprocessError):
-        return "unknown"
-    value = (completed.stdout or "").strip()
-    return value if completed.returncode == 0 and value else "unknown"
+        return ""
+    return (completed.stdout or "").strip() if completed.returncode == 0 else ""
+
+
+def _source_fingerprint(root: Path) -> str:
+    """无 git 时的退化指纹：solver/ 与 judge/core/ 的源码 sha256（前 12 位）。
+
+    目的是让账本能回答「这行结果由哪版代码产生」——没有 git 时至少还有可比对的指纹。
+    """
+    digest = hashlib.sha256()
+    for pattern in ("solver/**/*.py", "judge/core/**/*.py"):
+        for path in sorted(root.glob(pattern)):
+            if "__pycache__" in path.parts:
+                continue
+            digest.update(str(path.relative_to(root)).encode())
+            digest.update(path.read_bytes())
+    return "src-" + digest.hexdigest()[:12] if digest else digest
+
+
+def _detect_commit(root: Path) -> str:
+    """当前代码版本：``<sha>``、``<sha>-dirty``，无 git 时退回源码指纹。"""
+    sha = _git(root, "rev-parse", "--short", "HEAD")
+    if not sha:
+        return _source_fingerprint(root) or "unknown"
+    dirty = _git(root, "status", "--porcelain", "--untracked-files=no")
+    return f"{sha}-dirty" if dirty else sha
 
 
 def _bases(config: Config) -> dict[str, int]:
@@ -357,6 +378,40 @@ def cmd_run(args: argparse.Namespace) -> int:
 # --------------------------------------------------------------------------- #
 
 
+def _parse_size(text: str) -> int:
+    """``2G`` / ``500M`` / ``1048576`` → 字节；空串表示不限制。"""
+    value = (text or "").strip().upper()
+    if not value:
+        return 0
+    scale = {"K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4}
+    if value[-1] in scale:
+        return int(float(value[:-1]) * scale[value[-1]])
+    return int(float(value))
+
+
+def cmd_gc(args: argparse.Namespace) -> int:
+    """清理旧 run 的 ops 明细；账本行保留（历史结论仍可读，只是没有明细）。"""
+    config = Config.from_env()
+    ledger = Ledger(config)
+    keep = max(0, int(args.keep))
+    limit = _parse_size(getattr(args, "max_size", "") or "")
+    if keep == 0 and limit == 0:
+        print("拒绝执行：--keep 与 --max-size 不能同时为空/0（会删光所有明细）", file=sys.stderr)
+        return 2
+    result = ledger.prune_ops(keep=keep, max_bytes=limit, dry_run=bool(args.dry_run))
+    human = f"{result['freed'] / 1024 / 1024:.1f} MiB"
+    prefix = "[dry-run] " if args.dry_run else ""
+    if not result["removed"]:
+        print(f"{prefix}无需清理：ops 目录共 {result['kept']} 个 run，未超过保留策略")
+        return 0
+    print(f"{prefix}清理 {len(result['removed'])} 个 run 的 ops，释放 {human}，保留 {result['kept']} 个")
+    for run_id in result["removed"][:20]:
+        print(f"  - {run_id}")
+    if len(result["removed"]) > 20:
+        print(f"  ...（其余 {len(result['removed']) - 20} 个略）")
+    return 0
+
+
 def cmd_ls(args: argparse.Namespace) -> int:
     config = Config.from_env()
     ledger = Ledger(config)
@@ -469,6 +524,12 @@ def build_parser() -> argparse.ArgumentParser:
     serve_parser.add_argument("--port", type=int, default=3081)
     serve_parser.add_argument("--host", default="127.0.0.1")
     serve_parser.set_defaults(func=cmd_serve)
+
+    gc_parser = subparsers.add_parser("gc", help="清理旧 run 的 ops 明细（不动账本）")
+    gc_parser.add_argument("--keep", type=int, default=50, help="保留最近多少个 run 的 ops")
+    gc_parser.add_argument("--max-size", default="", help="ops 总量上限，如 2G / 500M")
+    gc_parser.add_argument("--dry-run", action="store_true", help="只统计不删除")
+    gc_parser.set_defaults(func=cmd_gc)
 
     acceptance_parser = subparsers.add_parser("acceptance", help="7 个验收值")
     acceptance_parser.add_argument("--json", action="store_true")

@@ -233,9 +233,23 @@ _SINGLE_USAGE = (
     "  <case.in>   输入路径（题面 §2 格式）\n"
     "  case.out    输出路径（省略时映射只写到 stdout）\n"
     "  --budget N  单例求解墙钟预算（秒，正数；默认 8.5，题面硬上限 10）\n"
+    "              **按输入规模自动下调**：op 数 > 20000 时默认 6.5，> 200000 时 5.0，\n"
+    "              显式给 --budget 则以其为准（上限仍 9.5）\n"
     "  --exact     追加精确搜索（nmb=2 且每 stage 单层；默认关闭）\n"
     "批量模式见 --help"
 )
+
+
+#: 求解墙钟预算：题面硬上限 10 s，按 op 规模递减以留出渲染/落盘/进程启动的余量。
+BUDGET_BY_OPS: tuple[tuple[int, float], ...] = ((200_000, 5.0), (20_000, 6.5), (0, 8.5))
+
+
+def auto_budget(n_ops: int) -> float:
+    """按 op 数给默认预算：大用例缩短，避免撞 10 s 硬上限。"""
+    for threshold, budget in BUDGET_BY_OPS:
+        if n_ops > threshold:
+            return budget
+    return BUDGET_BY_OPS[-1][1]
 
 
 def _parse_single_budget(raw: list[str]) -> tuple[float, int]:
@@ -246,7 +260,7 @@ def _parse_single_budget(raw: list[str]) -> tuple[float, int]:
     """
     budget = 8.5
     if "--budget" not in raw:
-        return budget, 0
+        return budget, 0  # 0 表示"未显式指定"，调用方会换成 auto_budget(n_ops)
     position = raw.index("--budget")
     if position + 1 >= len(raw):
         print(f"--budget 缺少取值。\n{_SINGLE_USAGE}", file=sys.stderr)
@@ -277,6 +291,12 @@ def main(argv: list[str] | None = None) -> int:
         if len(raw) > 2:
             print(_SINGLE_USAGE, file=sys.stderr)
             return 2
+        if status == 0 and "--budget" not in sys.argv:  # 未显式指定 → 按规模自动
+            try:
+                case = casein.parse_case(raw[0])
+                budget = auto_budget(case.n_ops)
+            except Exception:  # 输入读不了就交给 run_single 报错
+                budget = 8.5
         return run_single(raw[0], raw[1] if len(raw) > 1 else None, budget, exact)
 
     parser = argparse.ArgumentParser(description="MoE 映射求解器（报告 §2 复原）+ judge 复核")
