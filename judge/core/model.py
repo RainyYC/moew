@@ -155,10 +155,15 @@ def peer_counts(case: Case, V: int, P: int, D: int) -> tuple[int, int]:
 
 
 def comm_payload(case: Case, layer: int, P: int) -> int:
-    """每 rank 每层发往一个对端的字节数 ``X_l = ⌈T_l·H·(P−1)/P⌉``（题面 §4.4）。"""
+    """每个**对端**的字节数 ``X_l = ceil(T_l·H / P)``（题面 §4.4 2026-10 修订版）。
+
+    注意不是 ``T_l·H·(P-1)/P``——那是发给**所有**对端的总量；而 ``x_l`` 的公式里又乘了
+    ``pin``/``pout``，若两者都按总量算会重复计费（P≥3 时差 (P-1) 倍）。P=2 时两式相同，
+    所以旧版题面的六个样例都掩盖了这个差别。
+    """
     if P <= 1:
         return 0
-    return ceil_div(case.T[layer] * case.H * (P - 1), P)
+    return ceil_div(case.T[layer] * case.H, P)
 
 
 def comm_time(case: Case, payload: int, pin: int, pout: int) -> int:

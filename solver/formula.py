@@ -144,7 +144,7 @@ def comm_payload(case: Case, layer: int, P: int) -> int:
     """每 rank 每层发往一个对端的字节数 ``X_l = ⌈T_l·H·(P−1)/P⌉``。"""
     if P <= 1:
         return 0
-    return ceil_div(case.T[layer] * case.H * (P - 1), P)
+    return ceil_div(case.T[layer] * case.H, P)  # 每对端字节数（§4.4 修订版）
 
 
 def comm_time(case: Case, payload: int, pin: int, pout: int) -> int:

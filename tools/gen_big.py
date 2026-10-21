@@ -83,8 +83,8 @@ def build_case(
     layers: list[str],
     Z: int = MIB,
     Zs: int = 64 * 1024,
-    U: int = MIB,
-    Uact: int = MIB,
+    U: int = 256 * 1024,      # ≤ 2^18（§6）
+    Uact: int = 256 * 1024,   # ≤ 2^18（§6）
     k: int = 4,
     d: int = 65536,
     b: int = 2,
@@ -113,7 +113,8 @@ def build_case(
 def gen_all(out_dir: Path) -> list[Path]:
     out_dir.mkdir(parents=True, exist_ok=True)
     rng = random.Random(20261020)
-    T = 1_000_000_000  # 题面上限 Ts ≤ 1e9
+    T = 1_000_000_000  # §6：T_l ≤ 1e9，且必须是 k 的倍数（k=4 ⇒ 1e9 可被整除）
+    T_low = 900_000_000  # §6：max T_l / min T_l ≤ 1.2
     N, S, L, E = 32, 16, 64, 512
     nmb = 102
 
@@ -140,7 +141,7 @@ def gen_all(out_dir: Path) -> list[Path]:
             E=E,
             nmb=nmb,
             layers=[
-                _layer_skew(T if layer % 3 else T // 2, E, rng, alpha=1.1 + 0.1 * (layer % 3))
+                _layer_skew(T if layer % 3 else T_low, E, rng, alpha=1.1 + 0.1 * (layer % 3))
                 for layer in range(L)
             ],
         ),

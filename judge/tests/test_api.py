@@ -134,10 +134,13 @@ class Formulas(unittest.TestCase):
         self.assertEqual(comm_payload(ex1, 0, 2), 64)  # ⌈8·16·1/2⌉
         self.assertEqual(comm_time(ex1, 64, 1, 0), 70)  # ⌈64/10⌉·10
         ex3 = parse_case(directory / "ex3.in")
-        self.assertEqual(comm_payload(ex3, 0, 4), 72)  # ⌈12·8·3/4⌉
-        self.assertEqual(comm_time(ex3, 72, 1, 2), 14400)  # max(⌈72/10⌉,⌈144/1⌉)·100
+        # §4.4（2026-10 修订）：X 是**每个对端**的字节数 ⌈T·H/P⌉，不是发给所有对端的总量。
+        # 旧版题面把它写成 ⌈T·H·(P-1)/P⌉，再乘 pin/pout 会重复计费；P=2 时两式相同，
+        # 所以六个样例掩盖了这个差别。P=4 时：X=24，x=max(⌈24/10⌉,⌈2·24/1⌉)·100=4800。
+        self.assertEqual(comm_payload(ex3, 0, 4), 24)  # ⌈12·8/4⌉
+        self.assertEqual(comm_time(ex3, 24, 1, 2), 4800)  # max(⌈24/10⌉,⌈48/1⌉)·100
         ex5 = parse_case(directory / "ex5.in")
-        self.assertEqual(comm_payload(ex5, 0, 1), 0)  # P=1 => X=0
+        self.assertEqual(comm_payload(ex5, 0, 1), 0)  # P=1：没有对端，X 约定为 0
         self.assertEqual(comm_time(ex5, 0, 0, 0), 0)
 
     def test_backward_durations_use_single_ceiling(self) -> None:

@@ -1,6 +1,6 @@
 # 团队契约 v2 · 判题服务（captain 冻结，成员不得单方面修改）
 
-权威依据：`problem-fixed.md`（题面）。
+权威依据：**`problem-new.md`（2026-10 最新题面，Markdown 版）**；`problem-fixed.md` 是更早的纯文本抽取版，其上下标曾被压平（`10^3`→`103`、`2^16`→`216`），且 §4.4 的 `X_l` 公式有误，已作废。
 参考但**不可信**：`solution-report.md`（较弱模型产物；其"官方样例值"列与题面冲突，见 §8）。
 视觉参考（**不是**实现依据）：`design/judge-ui-mock.html`。
 
@@ -243,8 +243,14 @@ python3 -m judge acceptance                               # 7 个验收值
 | `s_l` | `T_l * Fs` |
 | `gemm_l` | `m_l * Fin` |
 | `H` | `(d*b)//k` |
-| `X_l` | `ceil(T_l * H * (P-1) / P)` |
+| `X_l` | `ceil(T_l * H / P)` —— **每个对端**的字节数（见下注） |
 | `x_l` | `max(ceil(pin*X_l/Bin), ceil(pout*X_l/Bout)) * Fio` |
+
+> **`X_l` 的口径修订（2026-10 题面）**：新版写 `X_l = ceil(T_l·H/P)`，是**发给单个对端**的字节数；
+> 旧版 `problem-fixed.md` 写的是 `ceil(T_l·H·(P-1)/P)`（发给所有对端的总量），再乘 `pin/pout` 会重复计费。
+> P=2 时两式相同（只有一个对端），所以六个官方样例都掩盖了差别；**P≥3 时旧式会把通信时间放大约 (P-1) 倍**。
+> 证据：新版 §7.3 的 P=4 例子 `X=24, x=4800`（旧版同一处写 `X=72, x=14400`，但它自己又说 Time=38400=8×4800，
+> 说明旧文本的公式本身就是错的）。`judge/core` 与 `solver/formula.py` 已按新版修正，并加了单测锁定 `P=4 ⇒ x=4800`。
 | `s_bwd` | `ceil(α * s_l)` |
 | `comb_bwd = disp_bwd` | `ceil(α * x_l)` |
 | `gemm_dx` | `ceil(α * m_l * Fin)` |
@@ -352,6 +358,7 @@ docs/final-report.md
 | 零长度开关的适用范围（**已修订**） | `ZERO_LEN_COMM_COUNTS` **只作用于 `Movl`**。`Mact` 的零长度激活（`[t,t]`）**必须计入**——题面 §4.6 明文"前向恰好在反向开始时结束，该时刻仍持有这份激活"。本节早先写过"提升为 `ZERO_LEN_COUNTS` 同时作用于两者"，**那是错的，已撤销**：照字面做会引入题面违规。 |
 | 预算按规模自动下调 | 单例默认预算不再固定 8.5 s：`n_ops>200k → 5.0`、`>20k → 6.5`、否则 8.5；显式 `--budget` 优先。目的：给进程启动/落盘/并发留余量（实测 big-wide 从 8.07 s 降到 6.10 s，解不变）。 |
 | commit 记录 | `judge run` 缺省记录 `<sha>`，工作区脏时为 `<sha>-dirty`；无 git 仓库时退回 `src-<solver+core 源码 sha256 前 12 位>`，不再是 `unknown`。 |
+| 数据范围按 2026-10 版 | `nmb ≤ 10^3`（旧文本压平成 103）、`U,Uact ≤ 2^18`、`d ≤ 2^16`、`M ≤ 10^18`；另新增两条输入保证：`T_ℓ` 是 `k` 的倍数、`max T/min T ≤ 1.2`。`bigcases/` 已按此重生成。 |
 | 改求解器前先记 hash | `--check` 会**覆盖** `out/*.out`。想在后证明"零回归"，必须在改动前把 `out/` 与 `cases/*.out` 的 sha256 记下来；t11 复核因缺备份，只能用"门控 A/B + Time/judge 不变"间接证明。今后任何改 solver 的修复任务，第一步先落一份 hash 清单。 |
 | 已过时的注释（待清） | `solver/sched.py::_simulate` 里 `best_idx<0` 的注释写"不会发生"，实际它是死锁检测点（ex2 触发 2346 次）。不影响行为。 |
 | `out/` 目录 | 求解器 `--check` 的产物目录，**生成物不入库**，随时可重算；正式交付解以账本 `runs/ledger.jsonl` 里登记的 run 为准（`runs/out/<run_id>/<case>.out`）。 |
