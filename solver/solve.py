@@ -318,6 +318,34 @@ def _try_config(
                     continue
                 ok_mem, _groups = sched.memory_usage(case, plan, result.start, result.end)
                 if not ok_mem:
+                    # 给通信引擎插空隙 = 用时间换内存（题面 §4.6 明说这是合法手段）。
+                    # 内存极紧时 gap=0 可能永远不合法，必须在这里就试，而不是留到回退——
+                    # 回退往往只剩零点几秒（实测会出现"其实有解却返回无解"，直接 0 分）。
+                    rescued = False
+                    for gap in (1, 2, 4, 8):
+                        if time.monotonic() + cost.get("est", 0.0) * 1.3 > deadline:
+                            break
+                        began = time.monotonic()
+                        cand = sched.schedule(case, plan, window, variant, mode, comm_gap=gap)
+                        spent2 = time.monotonic() - began
+                        if spent2 > cost.get("est", 0.0):
+                            cost["est"] = spent2
+                        if cand is None:
+                            continue
+                        ok2, _g2 = sched.memory_usage(case, plan, cand.start, cand.end)
+                        if not ok2:
+                            continue
+                        before2 = best.time if best is not None else None
+                        best = _accept(case, best, plan, config, info.rows, cand, mode)
+                        rescued = True
+                        if best is not None and best.time != before2 and log:
+                            log(
+                                f"    [空隙] W={window} gap={gap} {mode} 变体={variant} "
+                                f"→ Time={best.time} (lb={plan.lb})"
+                            )
+                        break
+                    if rescued:
+                        continue
                     # 同一窗口下换变体对峰值影响很小；连续非法就换更小的窗口，
                     # 避免把整个预算耗在必然超内存的 W 上（nmb 很大时单次调度就要 1 s+）。
                     illegal_here += 1
@@ -422,20 +450,23 @@ def solve_case(
         # 回退必须同样受预算约束：否则在 nmb=1000、内存顶死的用例上会无限扫下去，
         # 调用方（服务端队列）只能等 10 s 超时，用例直接判 0 分。
         fallback_deadline = time.monotonic() + max(0.5, (deadline - time.monotonic()))
-        for gap in (0, 1, 2):
+        # `comm_gap` 放在**最内层**：内存极紧时 gap=0 往往永远不合法，如果按 gap 外层
+        # 循环，预算会在 gap=0 上耗光，根本轮不到 gap=1（实测 fuzz 里出现过"其实有解、
+        # 但求解器返回无解"→ 该测试点直接 0 分）。
+        for config in configs:
             if time.monotonic() > fallback_deadline:
                 if log:
                     log("[回退] 到达预算上限，返回当前最好解")
                 break
-            for config in configs:
+            plan = _plan(case, pmaps[config.P], config)
+            for window in sorted(sched.window_candidates(case, plan, big=big)):
                 if time.monotonic() > fallback_deadline:
                     break
-                plan = _plan(case, pmaps[config.P], config)
-                for window in sorted(sched.window_candidates(case, plan, big=big)):
-                    if time.monotonic() > fallback_deadline:
-                        break
-                    for mode in ("prio", "early"):
-                        for variant in sched.VARIANTS:
+                for mode in ("prio", "early"):
+                    for variant in sched.VARIANTS:
+                        for gap in (0, 1, 2, 4, 8):
+                            if time.monotonic() > fallback_deadline:
+                                break
                             result = sched.schedule(
                                 case, plan, window, variant, mode, comm_gap=gap
                             )

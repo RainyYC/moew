@@ -166,6 +166,29 @@ class TightWindowTest(unittest.TestCase):
         ratio = solution.time / max(1, solution.lb)
         self.assertLessEqual(ratio, 2.0, f"求解器 Time/lb={ratio:.2f} 超过 2.0")
 
+    def test_very_tight_memory_needs_comm_gap(self) -> None:
+        """内存紧到 `gap=0` 永远不合法时，必须靠"通信插空隙"救回来。
+
+        这条例子来自随机压力测试（fuzz）：`Mexp+Movl+Mact` 在 `gap=0` 下必然超，
+        只有给通信引擎插 1 个时间单位的空隙才压得住峰值。曾经因为"空灵救援"只写在
+        回退分支、而回退又只剩零点几秒，出现过**其实有解却返回无解**（直接 0 分）。
+        """
+        text = "\n".join(
+            [
+                "8 1 1467296 200000 1",
+                "1 256 1024 1048576 262144 1024 2 32 7 100 1 1000000 1000000",
+                "65536 2",
+                "1000000",
+            ]
+        ) + "\n"
+        path = Path("/tmp/_tight_gap_case.in")
+        path.write_text(text, encoding="utf-8")
+        case = casein.parse_case(path)
+        solution = solve.solve_case(case, budget=4.0)
+        self.assertIsNotNone(solution, "内存虽紧但有解，不能返回无解")
+        for group in solution.groups:
+            self.assertLessEqual(group.used, case.M)
+
     def test_solution_is_legal(self) -> None:
         solution = solve.solve_case(self.case, budget=3.0)
         self.assertIsNotNone(solution)

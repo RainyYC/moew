@@ -14,3 +14,4 @@ refs/*.pdf
 .pylibs/
 bigcases/battery/out/
 bigcases/sweep/
+bigcases/fuzz/
