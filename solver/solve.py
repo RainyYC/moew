@@ -235,6 +235,13 @@ def _window_cap(case: Case, plan: formula.Plan) -> Optional[int]:
     return max(1, int(max_live // widest))
 
 
+def _modes_for(case: Case, plan: formula.Plan, big: bool) -> tuple[str, ...]:
+    """出堆模式的尝试顺序（见 `_try_config` 里的说明）。"""
+    cap = _window_cap(case, plan)
+    capped = cap is not None and cap < case.nmb
+    return ("early", "prio") if (not big or capped) else ("prio", "early")
+
+
 def _try_config(
     case: Case,
     config: Config,
@@ -261,9 +268,38 @@ def _try_config(
     # 64 个卡组的并行度压到 2 个、慢 29 倍（b06：1.57e17 vs 5.4e15）。`early`（按最早
     # 可开始时间出堆）天然按时间推进，能保持交错 —— 但它在 64 万条 op 上单次要 5 s 以上，
     # 所以只在"窗口确实被压小"时才优先用它；否则 `prio` 已经够好（b05：1.04×lb）。
-    cap_now = _window_cap(case, plan)
-    capped = cap_now is not None and cap_now < case.nmb
-    modes = ("early", "prio") if (not big or capped) else ("prio", "early")
+    modes = _modes_for(case, plan, big)
+    if 5_000 <= case.n_ops <= 200_000 and len(windows) > 3:
+        # 中等规模的大用例：先花 3 次调度探一探窗口（W 对 Time 的影响比变体更大，
+        # 实测 b11 在 W=nmb/8 时是 1.00×lb，而 W=nmb 只有 1.26×lb）。探完再回到最好的
+        # 窗口上扫变体 —— 否则预算会全花在 W=nmb 的 3 个变体上。
+        probe = []
+        for frac in (1, 8, 32):
+            target = max(1, case.nmb // frac)
+            pick = min(windows, key=lambda w: abs(w - target))
+            if pick not in probe:
+                probe.append(pick)
+        scored = []
+        for window in sorted(probe):  # 小窗口更便宜，先探
+            if time.monotonic() + cost.get("est", 0.0) * 1.3 > deadline:
+                break
+            started = time.monotonic()
+            result = sched.schedule(case, plan, window, variants[0], modes[0])
+            spent = time.monotonic() - started
+            if spent > cost.get("est", 0.0):
+                cost["est"] = spent
+            if result is None:
+                continue
+            ok_mem, _groups = sched.memory_usage(case, plan, result.start, result.end)
+            if not ok_mem:
+                continue
+            scored.append((result.time, window))
+            before = best.time if best is not None else None
+            best = _accept(case, best, plan, config, info.rows, result, modes[0])
+            if best is not None and best.time != before and log:
+                log(f"    [探窗] W={window} {modes[0]} → Time={best.time} (lb={plan.lb})")
+        if scored:
+            windows = [min(scored)[1]]
     for window in windows:
         if time.monotonic() > deadline:
             return best

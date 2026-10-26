@@ -75,6 +75,8 @@ _SMALL_VARIANTS = (
     (True, False, False, False),
     (False, True, True, False),
     (True, True, True, False),
+    # 反向优先 + mb/层升序 + mb 为主序：b11 这类"层少、mb 多"的用例上它最好（1.00×lb）
+    (False, False, False, False),
 )
 
 
@@ -316,7 +318,11 @@ def window_candidates(case: Case, plan: Plan, big: bool = False) -> list[int]:
     nmb = case.nmb
     values: set[int] = set()
     if not big:
-        return list(range(nmb, 0, -1))
+        # `nmb` 小的时候逐个试（官方样例 nmb=2，候选就两三个）；`nmb` 大时逐个枚举会
+        # 变成上千个候选，预算全耗在 W≈nmb 上，够不到 W≈nmb/8 这类真正好的窗口
+        # （实测 b11：W=125/early 是 1.00×lb，而 W=1000 只有 1.26×lb）。
+        if nmb <= 64:
+            return list(range(nmb, 0, -1))
     w = nmb
     while w >= 1:
         values.add(w)
