@@ -263,11 +263,15 @@ class Output:
 
     V: int
     P: int
-    D: int
     K: int
     psi: tuple[int, ...]
     map_rows: tuple[tuple[int, ...], ...]
     sched: tuple[SchedRow, ...]
+
+    @property
+    def D(self) -> int:
+        """数据并行度已从题面移除；保留该属性恒为 1，供下游按 ``V·P·D=R`` 复核。"""
+        return 1
 
 
 def _parse_op(token: str, line: int) -> Op:
@@ -288,7 +292,7 @@ def _parse_op(token: str, line: int) -> Op:
 def parse_output(text: str) -> Output:
     """解析一份映射输出（题面 §3）。
 
-    结构：``V P D`` / ``PSI`` / ``K ψ…`` / ``MAP`` / ``L`` 行 σ / ``SCHEDULE`` /
+    结构：``V P`` / ``PSI`` / ``K ψ…`` / ``MAP`` / ``L`` 行 σ / ``SCHEDULE`` /
     若干行 ``t mb:ℓ:op …``。MAP 行数与 PSI 切点数等**语义**约束留给
     :mod:`judge.core.sim` 报 ``field`` 类错误（HTTP 200 + ``ok:false``）。
     """
@@ -313,9 +317,14 @@ def parse_output(text: str) -> Output:
 
     lineno, tokens = rows[pos]
     pos += 1
-    if len(tokens) != 3:
-        raise ParseError(f"输出第 1 行必须是 V P D 三个整数，得到 {len(tokens)} 个 token", lineno)
-    V, P, D = _ints(tokens, lineno, "V P D")
+    if len(tokens) != 2:
+        raise ParseError(
+            f"输出第 1 行必须是 V P 两个整数（2026-10 版题面取消了数据并行度 D），"
+            f"得到 {len(tokens)} 个 token",
+            lineno,
+        )
+    V, P = _ints(tokens, lineno, "V P")
+    D = 1  # 新版网格只有 (V,P)：V·P=R，等价于固定 D=1
 
     marker("PSI")
     if pos >= len(rows):
@@ -354,7 +363,6 @@ def parse_output(text: str) -> Output:
     return Output(
         V=V,
         P=P,
-        D=D,
         K=K,
         psi=psi,
         map_rows=tuple(map_rows),

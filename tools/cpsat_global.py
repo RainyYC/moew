@@ -205,7 +205,8 @@ def build_model(case, V, P, D, psi, ms, time_limit):
 
 
 def render(V, P, D, K, psi, map_rows, sched):
-    lines = [f"{V} {P} {D}", "PSI", " ".join(str(v) for v in [K] + list(psi)), "MAP"]
+    # 2026-10 版题面取消了 D：网格只有 (V,P)
+    lines = [f"{V} {P}", "PSI", " ".join(str(v) for v in [K] + list(psi)), "MAP"]
     for row in map_rows:
         lines.append(" ".join(str(v) for v in row))
     lines.append("SCHEDULE")
@@ -249,10 +250,12 @@ def main() -> int:
     for P in p_candidates(case):
         if R % P:
             continue
-        for V in divisors(R // P):
-            if V > L:
-                continue
-            D = R // P // V
+        # 2026-10 版题面取消了 D：网格只有 (V,P)，V·P=R ⇒ V 由 P 唯一确定。
+        V = R // P
+        D = 1
+        if V > min(L, 64):
+            continue
+        if V >= 1:
             per_layer_bytes = (E // P) * case.Z + case.Zs
             psi_list = [()] if V == 1 else list(itertools.combinations(range(1, L), V - 1))
             for psi in psi_list:

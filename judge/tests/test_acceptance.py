@@ -17,7 +17,7 @@ from judge.core.acceptance import CASES, cases_dir, load_expected
 EXPECTED: dict[str, int] = {
     "ex1": 592,
     "ex2": 4880,
-    "ex3": 4000,
+    "ex3": 7000,
     "ex4": 3200,
     "ex5": 416,
     "ex6": 1744,

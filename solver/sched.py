@@ -486,7 +486,7 @@ def render_output(
     start = result.start
     order = sorted(range(len(start)), key=start.__getitem__)
     lines: list[str] = []
-    lines.append(f"{plan.V} {plan.P} {plan.D}")
+    lines.append(f"{plan.V} {plan.P}")  # 2026-10 版题面：网格只有 (V,P)，D 已取消
     lines.append("PSI")
     if plan.K <= 1:
         lines.append("1")

@@ -126,14 +126,14 @@ class NegativeCases(unittest.TestCase):
 
     def test_grid_vp_d_neq_r(self) -> None:
         case, text = _load("ex1")
-        broken = _replace(text, "1 2 1\nPSI", "3 2 1\nPSI")
+        broken = _replace(text, "1 2\nPSI", "3 2\nPSI")
         matched = self.assert_errors(evaluate(case, broken), "field")
         self.assertEqual(matched[0]["section"], "grid")
         self.assertIn("V·P·D", matched[0]["message"])
 
     def test_k_illegal(self) -> None:
         case, text = _load("ex6")
-        broken = _replace(text, "2 2 1\nPSI\n2 1", "2 2 1\nPSI\n3 1")
+        broken = _replace(text, "2 2\nPSI\n2 1", "2 2\nPSI\n3 1")
         matched = self.assert_errors(evaluate(case, broken), "field")
         self.assertEqual(matched[0]["section"], "psi")
         self.assertIn("K=3", matched[0]["message"])
@@ -192,7 +192,7 @@ for _mb in range(2):
         _clock += 2
 
 SYNTHETIC_2V_OUT = (
-    "2 1 1\nPSI\n4 1 2 3\nMAP\n0 0\n0 0\n0 0\n0 0\nSCHEDULE\n"
+    "2 1\nPSI\n4 1 2 3\nMAP\n0 0\n0 0\n0 0\n0 0\nSCHEDULE\n"
     + "\n".join(_FORWARD_ROWS)
     + f"\n{_clock + 2} {_BACKWARD_ROW}\n"
 )

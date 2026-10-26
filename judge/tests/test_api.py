@@ -192,10 +192,10 @@ class MemoryModel(unittest.TestCase):
 class Parsing(unittest.TestCase):
     def test_output_parse_errors(self) -> None:
         cases = {
-            "缺 MAP": "1 2 1\nPSI\n1\n",
-            "缺 SCHEDULE": "1 2 1\nPSI\n1\nMAP\n0 1\n",
-            "条目非三段": "1 2 1\nPSI\n1\nMAP\n0 1\nSCHEDULE\n0 0:0\n",
-            "条目非整数": "1 2 1\nPSI\n1\nMAP\n0 1\nSCHEDULE\n0 x:0:s\n",
+            "缺 MAP": "1 2\nPSI\n1\n",
+            "缺 SCHEDULE": "1 2\nPSI\n1\nMAP\n0 1\n",
+            "条目非三段": "1 2\nPSI\n1\nMAP\n0 1\nSCHEDULE\n0 0:0\n",
+            "条目非整数": "1 2\nPSI\n1\nMAP\n0 1\nSCHEDULE\n0 x:0:s\n",
             "网格非整数": "one 2 1\nPSI\n1\n",
             "空输出": "",
         }

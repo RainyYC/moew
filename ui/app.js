@@ -31,7 +31,7 @@
     failed: "failed", timeout: "timeout"
   };
   var CHECK_ITEMS = [
-    { cat: "field", name: "字段 · 网格 · 切点", hint: "V P D / PSI / MAP 计数" },
+    { cat: "field", name: "字段 · 网格 · 切点", hint: "V P / PSI / MAP 计数" },
     { cat: "missing", name: "调度守恒 · 缺失", hint: "每层 × 卡组 × 操作恰好一条" },
     { cat: "duplicate", name: "调度守恒 · 重复", hint: "同一 mb:l:op 只能出现一次" },
     { cat: "dependency", name: "依赖与因果", hint: "层内链 / 反向链 / 跨层约束" },
@@ -931,7 +931,7 @@
   function gridText(detail) {
     if (!detail || !detail.grid) return "—";
     var g = detail.grid;
-    return fmtInt(g.V) + "×" + fmtInt(g.P) + "×" + fmtInt(g.D);
+    return fmtInt(g.V) + "×" + fmtInt(g.P);  // 2026-10 版题面取消了 D
   }
 
   function renderVerdict() {
@@ -971,7 +971,7 @@
     var lbValue = num(detail.lb);
     setHTML("vstats",
       '<div class="stat"><div class="k">下界 lb</div><div class="v">' + fmtInt(lbValue) + "</div></div>" +
-      '<div class="stat"><div class="k">网格 V×P×D</div><div class="v">' + esc(gridText(detail)) + "</div></div>" +
+      '<div class="stat"><div class="k">网格 V×P</div><div class="v">' + esc(gridText(detail)) + "</div></div>" +
       '<div class="stat"><div class="k">卡组 K</div><div class="v">' + fmtInt(detail.K) + "</div></div>" +
       '<div class="stat"><div class="k">ops</div><div class="v">' + fmtInt(detail.ops_total) + "</div></div>");
     var lb = lbValue;
@@ -1871,7 +1871,7 @@
     html += '<div class="row"><span class="k">ops</span><span>' + fmtInt(a.ops_total) +
       '</span><span class="old">→</span><span>' + fmtInt(b.ops_total) + "</span></div>";
     html += "</div>";
-    if (a.grid && b.grid && (a.grid.V !== b.grid.V || a.grid.P !== b.grid.P || a.grid.D !== b.grid.D)) {
+    if (a.grid && b.grid && (a.grid.V !== b.grid.V || a.grid.P !== b.grid.P)) {
       html += '<div class="srcnote">网格不同：A/B 泳道按卡组号对齐，比较时注意语义差异。</div>';
     }
     html += '<div class="srcnote">Δ 由前端格式化（B−A）；Time / 相对分 / 排名均来自服务端。' +
@@ -2033,7 +2033,6 @@
     var grid = detail.grid || {};
     $("f-V").value = grid.V === undefined ? "" : grid.V;
     $("f-P").value = grid.P === undefined ? "" : grid.P;
-    $("f-D").value = grid.D === undefined ? "" : grid.D;
     $("f-K").value = detail.K === undefined || detail.K === null ? "" : detail.K;
     $("f-psi").value = Array.isArray(detail.psi) ? detail.psi.join(" ") : "";
   }
@@ -2060,19 +2059,18 @@
     if (!box) return;
     var lines = box.value.split("\n");
     if (lines.length < 3) {
-      setText("ed-hint", "原文至少要三行：V P D / PSI / 切点。");
+      setText("ed-hint", "原文至少要三行：V P / PSI / 切点。");
       return;
     }
     var v = $("f-V").value.trim();
     var p = $("f-P").value.trim();
-    var d = $("f-D").value.trim();
-    lines[0] = [v, p, d].join(" ");
+    lines[0] = [v, p].join(" ");  // 2026-10 版：只有 V P
     lines[1] = "PSI";
     var k = $("f-K").value.trim();
     var psi = $("f-psi").value.trim();
     lines[2] = (k + (psi ? " " + psi : "")).trim();
     box.value = lines.join("\n");
-    setText("ed-hint", "网格与切点已写回原文（第 1–3 行：V P D / PSI / K ψ…）。");
+    setText("ed-hint", "网格与切点已写回原文（第 1–3 行：V P / PSI / K ψ…）。");
   }
 
   function previewDraft() {

@@ -70,7 +70,9 @@ def parse_case(path: Path) -> dict:
 
 def parse_output(text: str) -> dict:
     lines = [line.split() for line in text.splitlines() if line.strip()]
-    v, p, dd = map(int, lines[0])
+    # 2026-10 版题面取消了 D：网格只有 (V,P)，V·P=R
+    v, p = map(int, lines[0])
+    dd = 1
     psi_line = [int(x) for x in lines[2]]
     k, psi = psi_line[0], psi_line[1:]
     assert lines[1] == ["PSI"] and lines[3] == ["MAP"], "输出必须含 PSI / MAP 段"

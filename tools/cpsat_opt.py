@@ -159,7 +159,8 @@ def solve(case, out, time_limit: float, workers: int):
 
 
 def render(out, schedule, durations) -> str:
-    lines = [f"{out.V} {out.P} {out.D}", "PSI", " ".join(str(v) for v in [out.K] + list(out.psi))]
+    # 2026-10 版题面取消了 D：网格只有 (V,P)
+    lines = [f"{out.V} {out.P}", "PSI", " ".join(str(v) for v in [out.K] + list(out.psi))]
     lines.append("MAP")
     for row in out.map_rows:
         lines.append(" ".join(str(v) for v in row))

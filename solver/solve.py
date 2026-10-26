@@ -146,36 +146,41 @@ def _pmap(case: Case, P: int) -> _PMap:
 
 
 def enumerate_configs(case: Case) -> tuple[list[Config], dict[int, _PMap]]:
-    """枚举全部 (P,V,D,ψ) 候选，并返回按 P 缓存的逐层量。
+    """枚举全部 (P,V,ψ) 候选，并返回按 P 缓存的逐层量。
 
-    EP 组的 ``(pin, pout)`` 只由 P 与 S 决定（题面 §4.4 的嵌入规则），与 (V,D) 无关；
-    因此「与 P 相关的逐层量」只需算一次。
+    2026-10 版题面取消了数据并行度 D：网格只有 ``(V,P)``，且 ``V·P=R``，所以 ``V`` 由
+    ``P`` 唯一确定（``D≡1``）。EP 组的 ``(pin, pout)`` 只由 P 与 S 决定（题面 §4.4 的
+    嵌入规则），因此「与 P 相关的逐层量」只需算一次。
     """
     pmaps: dict[int, _PMap] = {}
     configs: list[Config] = []
     seen: set[tuple[int, int, tuple[int, ...]]] = set()
     for P in p_candidates(case):
+        if case.R % P:
+            continue
         info = _pmap(case, P)
         pmaps[P] = info
         per_layer_bytes = (case.E // P) * case.Z + case.Zs
         remainder = case.R // P
         comp_w = [sum(row[i] for i in COMP_OPS) for row in info.durations]
         comm_w = [sum(row[i] for i in COMM_OPS) for row in info.durations]
-        for V in divisors(remainder):
-            if V > case.L:
+        # 2026-10 版题面取消了数据并行度 D：网格只有 (V,P)，且 V·P=R。
+        # 因此 V 由 P 唯一确定，不存在"同一 P 下换 V"的自由度。
+        V = remainder
+        D = 1
+        if V > case.L or V > 64:
+            continue
+        for cuts in psi_mod.psi_candidates(case.L, V, comp_w, comm_w):
+            key = (P, V, cuts)
+            if key in seen:
                 continue
-            D = remainder // V
-            for cuts in psi_mod.psi_candidates(case.L, V, comp_w, comm_w):
-                key = (P, V, cuts)
-                if key in seen:
-                    continue
-                seen.add(key)
-                psi_full = (0,) + cuts + (case.L,)
-                layers = formula.group_layers(V, psi_full)
-                if any(len(group) * per_layer_bytes > case.M for group in layers):
-                    continue  # Mexp 静态就放不下（题面 §4.6）
-                lb = formula.lower_bound(case, info.durations, layers)
-                configs.append(Config(P=P, V=V, D=D, psi=cuts, lb=lb))
+            seen.add(key)
+            psi_full = (0,) + cuts + (case.L,)
+            layers = formula.group_layers(V, psi_full)
+            if any(len(group) * per_layer_bytes > case.M for group in layers):
+                continue  # Mexp 静态就放不下（题面 §4.6）
+            lb = formula.lower_bound(case, info.durations, layers)
+            configs.append(Config(P=P, V=V, D=D, psi=cuts, lb=lb))
     configs.sort(key=lambda item: (item.lb, -item.V, item.P))
     return configs, pmaps
 

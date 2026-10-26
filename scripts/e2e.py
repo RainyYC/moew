@@ -39,8 +39,9 @@ LOOPBACK_HOST = "127.0.0.1"
 LOOPBACK_PORT = int(os.environ.get("E2E_PORT", "3081"))
 EXTERNAL_URL = os.environ.get("JUDGE_URL", "http://123.60.231.190:4014")
 CASES = ["ex1", "ex2", "ex3", "ex4", "ex5", "ex6"]
-SOLVER_TIME = {"ex1": 576, "ex2": 4880, "ex3": 4000, "ex4": 3200, "ex5": 416, "ex6": 1744}
-BASE = {"ex1": 592, "ex2": 4880, "ex3": 4000, "ex4": 3200, "ex5": 416, "ex6": 1744}
+SOLVER_TIME = {"ex1": 576, "ex2": 4880, "ex3": 6072, "ex4": 3200, "ex5": 416, "ex6": 1744}
+# 题面基线（2026-10 版：D 取消后 ex3 的题面值从 4000 变 7000）
+BASE = {"ex1": 592, "ex2": 4880, "ex3": 7000, "ex4": 3200, "ex5": 416, "ex6": 1744}
 
 RESULTS: list[tuple[str, str, str]] = []  # (status, name, detail)
 

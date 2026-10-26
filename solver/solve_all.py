@@ -47,7 +47,7 @@ from solver import casein, judgedbridge, solve  # noqa: E402
 TARGETS: dict[str, int] = {
     "ex1": 592,
     "ex2": 4880,
-    "ex3": 4000,
+    "ex3": 7000,  # 2026-10 版：D 取消后 V=2,P=2，题面值从 4000 变 7000
     "ex4": 3200,
     "ex5": 416,
     "ex6": 1744,
@@ -164,7 +164,7 @@ def solve_one(
                 + (f"→{gain}" if gain else "/无改进")
             )
         print(
-            f"  {name:5s} V={grid['V']} P={grid['P']} D={grid['D']} "
+            f"  {name:5s} V={grid['V']} P={grid['P']} "
             f"psi={record['psi']} K={record['K']} W={record['window']}"
             f"  solver_time={record['solver_time']} (lb={record['solver_lb']})"
             f"{judge_part}{target_part}{exact_part}  solve={record['solve_s']}s"
@@ -203,7 +203,7 @@ def run_single(
             return 3
     sys.stdout.write(solution.text)
     sys.stdout.flush()
-    grid = f"V={solution.V} P={solution.P} D={solution.D}"
+    grid = f"V={solution.V} P={solution.P}"
     print(
         f"[solve] {case.name}: {grid} psi={list(solution.psi)} K={solution.K} "
         f"Time={solution.time} (lb={solution.lb}) solve={elapsed:.2f}s",

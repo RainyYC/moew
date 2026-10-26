@@ -37,8 +37,8 @@ EXPECTED_TIME: dict[str, int] = {
 GOLDEN_SHA256: dict[str, str] = {
     "ex1": "0e5b965a1cdf0c694f620b1ecf7f76bdb62d88df5ccc4747b0f4bccf96994b06",
     "ex2": "35389818cb6ddad8512eafe8e1fe61de3b7757fb60bd6bf3de6e8e4ce8424260",
-    "ex3": "9634acfaf1d377f555d786ac7aabe187bf518faf52e26fb85638f68592f806e1",
-    "ex4": "c5dabedb0c0fac281961aaa315e7ba6eed4a15e6d401f15f435849cb4c6147f5",
+    "ex3": "6bb98fa5996b68f14b6f0992d944a9d987eba646a792d517eae6b1e746a28b1d",
+    "ex4": "279bada599a5b1bbe31e82de55adbccdbf6583b3bd3f5243dedd5268153fec6f",
     "ex5": "90ebe43eb6a06dc1d856daed1c6e123b667689aa6fb035a29be6ecf7b95818dc",
     "ex6": "8cadf64852e3e9b66a59efd57dc7f03e75406ca9821961387b838b93db3aa47d",
     "mini": "42768c8012b4ca8d1721edc34a3e7e9b36fd6406602f7fccc4edf03073155d08",

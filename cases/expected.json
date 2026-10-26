@@ -2,43 +2,43 @@
   "ex1": {
     "time": 592,
     "lb": 560,
-    "source": "problem-fixed.md §7.1",
+    "source": "problem-v3.md §7.1",
     "note": "题面：Time=592，通信引擎下界 8×70=560。"
   },
   "ex2": {
     "time": 4880,
     "lb": 3200,
-    "source": "problem-fixed.md §7.2",
+    "source": "problem-v3.md §7.2",
     "note": "题面：Time=4880，卡组通信下界 8×400=3200。"
   },
   "ex3": {
-    "time": 4000,
+    "time": 7000,
     "lb": 4000,
-    "source": "problem-fixed.md §7.3",
-    "note": "题面：Time=4000，单卡组通信引擎 8×500 饱和，下界=Time。"
+    "source": "problem-v3.md §7.3",
+    "note": "2026-10 版：D 已取消，V=2,P=2；题面给 Time=7000（两个卡组各 8 次 500 的 AllToAll，被跨层依赖串起来）。"
   },
   "ex4": {
     "time": 3200,
     "lb": 3200,
-    "source": "problem-fixed.md §7.4",
+    "source": "problem-v3.md §7.4",
     "note": "题面：Time=3200，单卡组通信引擎 8×400 饱和，下界=Time。"
   },
   "ex5": {
     "time": 416,
     "lb": 320,
-    "source": "problem-fixed.md §7.5",
+    "source": "problem-v3.md §7.5",
     "note": "题面：Time=416（P=1，x=0，反向按 α=1、β=0.5）。"
   },
   "ex6": {
     "time": 1744,
     "lb": 1120,
-    "source": "problem-fixed.md §7.6",
+    "source": "problem-v3.md §7.6",
     "note": "题面：Time=1744，卡组通信 8×140=1120 为引擎下界。"
   },
   "mini": {
     "time": 180,
     "lb": 140,
-    "source": "problem-fixed.md §3.2",
+    "source": "problem-v3.md §3.2",
     "note": "§3.2 的最小完整例子（对应 §7.1）：nmb=1，s16+disp70+gemm24+comb70=180。"
   }
 }
