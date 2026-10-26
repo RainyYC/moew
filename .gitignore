@@ -11,3 +11,4 @@ logs/
 # 编辑器/系统
 .DS_Store
 refs/*.pdf
+.pylibs/
