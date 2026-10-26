@@ -181,7 +181,11 @@ def enumerate_configs(case: Case) -> tuple[list[Config], dict[int, _PMap]]:
                 continue  # Mexp 静态就放不下（题面 §4.6）
             lb = formula.lower_bound(case, info.durations, layers)
             configs.append(Config(P=P, V=V, D=D, psi=cuts, lb=lb))
-    configs.sort(key=lambda item: (item.lb, -item.V, item.P))
+    # 排序键用 `lb × 填充代价` 而不是裸 lb：2026-10 版 `V=R/P` 后，V 大的配置 lb 小但
+    # 流水线深、填充代价大（`(nmb+V-1)/nmb`）。按裸 lb 排序会在"lb 打平"的计算主导实例上
+    # 一律先试 V 最大的那个，实测会丢掉 3%（b13：先试 P=16 得 4.86e16，P=32 是 4.70e16）。
+    configs.sort(key=lambda item: (item.lb * max(1, case.nmb + item.V - 1) // case.nmb,
+                                   -item.V, item.P))
     return configs, pmaps
 
 
