@@ -257,7 +257,13 @@ def _try_config(
         if cap is not None:
             windows = [w for w in windows if w <= cap] or [max(1, cap)]
     variants = sched._SMALL_VARIANTS if big else sched.VARIANTS
-    modes = ("prio",) if big else ("prio", "early")
+    # 只用 `prio` 时，一旦窗口被内存压小，所有前向会挤成一批、反向再挤成一批，实测把
+    # 64 个卡组的并行度压到 2 个、慢 29 倍（b06：1.57e17 vs 5.4e15）。`early`（按最早
+    # 可开始时间出堆）天然按时间推进，能保持交错 —— 但它在 64 万条 op 上单次要 5 s 以上，
+    # 所以只在"窗口确实被压小"时才优先用它；否则 `prio` 已经够好（b05：1.04×lb）。
+    cap_now = _window_cap(case, plan)
+    capped = cap_now is not None and cap_now < case.nmb
+    modes = ("early", "prio") if (not big or capped) else ("prio", "early")
     for window in windows:
         if time.monotonic() > deadline:
             return best

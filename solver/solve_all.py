@@ -241,7 +241,7 @@ _SINGLE_USAGE = (
 
 
 #: 求解墙钟预算：题面硬上限 10 s，按 op 规模递减以留出渲染/落盘/进程启动的余量。
-BUDGET_BY_OPS: tuple[tuple[int, float], ...] = ((200_000, 5.0), (20_000, 6.5), (0, 8.5))
+BUDGET_BY_OPS: tuple[tuple[int, float], ...] = ((200_000, 4.5), (20_000, 6.5), (0, 8.5))
 
 
 def auto_budget(n_ops: int) -> float:
