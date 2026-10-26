@@ -102,6 +102,63 @@ class TightWindowTest(unittest.TestCase):
         self.assertLess(cap, big_case.nmb, "大夹具的窗口也应当被压小")
         self.assertEqual(solve._modes_for(big_case, plan, True)[0], "early")
 
+    def test_window_candidates_are_bounded(self) -> None:
+        """`nmb` 大时不能把 W 逐个枚举（否则上千个候选，预算全花在 W≈nmb 上）。"""
+        import random as _random
+
+        from tools.gen_big import build_case as _build
+
+        rng = _random.Random(5)
+        text = _build(
+            N=4, S=16, L=16, E=64, nmb=1000,
+            layers=[_layer_skew(T, 64, rng) for _ in range(16)],
+            Z=1 * MIB, Zs=64 * 1024, M=64 * MIB,
+        )
+        path = Path("/tmp/_window_candidates_big.in")
+        path.write_text(text, encoding="utf-8")
+        big_case = casein.parse_case(path)
+        configs, pmaps = solve.enumerate_configs(big_case)
+        cfg = configs[0]
+        plan = solve._plan(big_case, pmaps[cfg.P], cfg)
+        for big in (False, True):
+            windows = sched.window_candidates(big_case, plan, big=big)
+            self.assertLessEqual(len(windows), 32, f"big={big} 的窗口候选太多：{len(windows)}")
+            self.assertIn(1, windows, "必须包含 W=1")
+
+    def test_best_window_is_probed_early(self) -> None:
+        """小窗口往往更好（b11：W≈nmb/8 是 1.00×lb，W=nmb 只有 1.26×lb），
+        所以探测顺序必须让小窗口先跑（它们也更便宜）。"""
+        import random as _random
+
+        from tools.gen_big import build_case as _build
+
+        rng = _random.Random(3)
+        text = _build(
+            N=4, S=16, L=4, E=64, nmb=1000,
+            layers=[_layer_skew(T, 64, rng) for _ in range(4)],
+            Z=1 * MIB, Zs=64 * 1024, M=64 * MIB,
+        )
+        path = Path("/tmp/_probe_order.in")
+        path.write_text(text, encoding="utf-8")
+        case = casein.parse_case(path)
+        configs, pmaps = solve.enumerate_configs(case)
+        cfg = configs[0]
+        plan = solve._plan(case, pmaps[cfg.P], cfg)
+        windows = sched.window_candidates(case, plan, big=False)
+        probe = []
+        for frac in (1, 8, 32):
+            target = max(1, case.nmb // frac)
+            pick = min(windows, key=lambda w: abs(w - target))
+            if pick not in probe:
+                probe.append(pick)
+        # 探测用的三个窗口里，最小的那个必须已经接近下界 —— 否则"先探小窗口"就没有依据
+        self.assertGreaterEqual(len(probe), 2)
+        small = sched.schedule(case, plan, min(probe), sched.VARIANTS[0], "early")
+        self.assertIsNotNone(small)
+        self.assertLessEqual(
+            small.time, max(1, plan.lb) * 1.2, f"最小窗口 {min(probe)} 的 Time/lb 超过 1.2"
+        )
+
     def test_solver_returns_near_lb(self) -> None:
         """端到端：求解器在小预算下也要拿到接近下界的解，不能退化 5 倍。"""
         solution = solve.solve_case(self.case, budget=3.0)
