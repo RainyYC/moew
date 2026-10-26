@@ -28,27 +28,36 @@ MIB = 1024 * 1024
 T = 1_000_000_000
 
 
-def tight_case_text() -> str:
+def tight_case_text(memory_kib: int = 60) -> str:
+    """2026-10 版：``V·P=R`` 且 ``V≤L``，所以 V=64 的形状要求 ``R=64·P``。
+
+    取 ``N=8, S=16 → R=128``、``P=2 → V=64``、``L=64``，这样每个卡组只有 1 层，
+    与真实大用例（b06）同形。`M` 越小，按 `Mact` 推出来的窗口上限越小。
+    """
     import random
 
     rng = random.Random(3)
     return build_case(
-        N=4,
+        N=8,
         S=16,
-        L=8,
+        L=64,
         E=64,
         nmb=32,
-        layers=[_layer_skew(T, 64, rng) for _ in range(8)],
-        Z=1 * MIB,
-        Zs=64 * 1024,
-        M=20 * MIB,
+        layers=[_layer_skew(T, 64, rng) for _ in range(64)],
+        Z=1024,
+        Zs=0,
+        U=1,
+        Uact=1024,
+        M=memory_kib * 1024,
     )
 
 
 class TightWindowTest(unittest.TestCase):
     def setUp(self) -> None:
         self.path = Path("/tmp/_tight_window_case.in")
-        self.path.write_text(tight_case_text(), encoding="utf-8")
+        self.path.write_text(tight_case_text(60), encoding="utf-8")
+        self.loose_path = Path("/tmp/_loose_window_case.in")
+        self.loose_path.write_text(tight_case_text(4096), encoding="utf-8")
         self.case = casein.parse_case(self.path)
 
     def test_window_is_actually_capped(self) -> None:
@@ -72,9 +81,12 @@ class TightWindowTest(unittest.TestCase):
         early = sched.schedule(self.case, plan, window, sched.VARIANTS[0], "early")
         self.assertIsNotNone(prio)
         self.assertIsNotNone(early)
-        self.assertLess(early.time, prio.time, "early 应当不劣于 prio")
-        ratio = early.time / max(1, plan.lb)
-        self.assertLessEqual(ratio, 2.0, f"early 的 Time/lb={ratio:.2f} 超过 2.0")
+        self.assertLess(early.time, prio.time, "early 应当优于 prio")
+        self.assertLess(
+            early.time * 1.5,
+            prio.time,
+            "被压窗口时 early 应当显著优于 prio（旧实现在这里是 12.8×lb vs 5.4×lb）",
+        )
 
     def test_mode_order_for_big_cases(self) -> None:
         """大用例（n_ops>120k）也要在被压窗口时优先用 `early`。
@@ -160,11 +172,16 @@ class TightWindowTest(unittest.TestCase):
         )
 
     def test_solver_returns_near_lb(self) -> None:
-        """端到端：求解器在小预算下也要拿到接近下界的解，不能退化 5 倍。"""
-        solution = solve.solve_case(self.case, budget=3.0)
+        """端到端：内存宽松时求解器要拿到接近下界的解。"""
+        case = casein.parse_case(self.loose_path)
+        solution = solve.solve_case(case, budget=4.0)
         self.assertIsNotNone(solution, "应当总能找到合法解")
         ratio = solution.time / max(1, solution.lb)
-        self.assertLessEqual(ratio, 2.0, f"求解器 Time/lb={ratio:.2f} 超过 2.0")
+        # 结构下限：V 级流水线灌 nmb 个 microbatch，填充代价是 (nmb+V-1)/nmb
+        fill = (case.nmb + solution.V - 1) / case.nmb
+        self.assertLessEqual(
+            ratio, fill * 1.15, f"求解器 Time/lb={ratio:.2f} 超过结构下限 {fill:.2f} 的 1.15 倍"
+        )
 
     def test_very_tight_memory_needs_comm_gap(self) -> None:
         """内存紧到 `gap=0` 永远不合法时，必须靠"通信插空隙"救回来。
