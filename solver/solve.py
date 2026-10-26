@@ -216,6 +216,25 @@ def _accept(
     )
 
 
+def _window_cap(case: Case, plan: formula.Plan) -> Optional[int]:
+    """按内存推出的窗口上限（只算 ``Mact`` 一项，保守取 ``len(group)`` 倍）。
+
+    大用例单次调度就要 1 s 量级，先把"必然超内存"的窗口剪掉，否则预算全花在
+    ``W=nmb`` 这种形状上，等轮到可行的窗口时已经没时间了。
+    """
+    if case.Uact <= 0:
+        return None
+    widest = max((len(g) for g in plan.layers_of_group), default=1) or 1
+    per_layer = (case.E // plan.P) * case.Z + case.Zs
+    mexp_max = max((len(g) * per_layer for g in plan.layers_of_group), default=0)
+    # 通信缓冲按 2 块算（闭区间下首尾相接即 2 块）
+    spare = case.M - mexp_max - 2 * case.U
+    if spare <= 0:
+        return 1
+    max_live = spare // case.Uact
+    return max(1, int(max_live // widest))
+
+
 def _try_config(
     case: Case,
     config: Config,
@@ -233,11 +252,16 @@ def _try_config(
     """
     plan = _plan(case, info, config)
     windows = sched.window_candidates(case, plan, big=big)
+    if big:
+        cap = _window_cap(case, plan)
+        if cap is not None:
+            windows = [w for w in windows if w <= cap] or [max(1, cap)]
     variants = sched._SMALL_VARIANTS if big else sched.VARIANTS
     modes = ("prio",) if big else ("prio", "early")
     for window in windows:
         if time.monotonic() > deadline:
             return best
+        illegal_here = 0
         for mode in modes:
             for variant in variants:
                 now = time.monotonic()
@@ -249,6 +273,14 @@ def _try_config(
                 if spent > cost.get("est", 0.0):
                     cost["est"] = spent
                 if result is None:  # pragma: no cover - DAG 不会死锁
+                    continue
+                ok_mem, _groups = sched.memory_usage(case, plan, result.start, result.end)
+                if not ok_mem:
+                    # 同一窗口下换变体对峰值影响很小；连续非法就换更小的窗口，
+                    # 避免把整个预算耗在必然超内存的 W 上（nmb 很大时单次调度就要 1 s+）。
+                    illegal_here += 1
+                    if illegal_here >= 2:
+                        break
                     continue
                 before = best.time if best is not None else None
                 best = _accept(case, best, plan, config, info.rows, result, mode)
@@ -345,10 +377,21 @@ def solve_case(
         # Movl 的闭区间峰值顶上去，留 1~2 单位空隙是用时间换内存的最后一招（题面 §4.6）。
         if log:
             log("[回退] 主搜索没有合法解，改为小窗口 + 全变体 + 通信空隙重扫")
+        # 回退必须同样受预算约束：否则在 nmb=1000、内存顶死的用例上会无限扫下去，
+        # 调用方（服务端队列）只能等 10 s 超时，用例直接判 0 分。
+        fallback_deadline = time.monotonic() + max(0.5, (deadline - time.monotonic()))
         for gap in (0, 1, 2):
+            if time.monotonic() > fallback_deadline:
+                if log:
+                    log("[回退] 到达预算上限，返回当前最好解")
+                break
             for config in configs:
+                if time.monotonic() > fallback_deadline:
+                    break
                 plan = _plan(case, pmaps[config.P], config)
                 for window in sorted(sched.window_candidates(case, plan, big=big)):
+                    if time.monotonic() > fallback_deadline:
+                        break
                     for mode in ("prio", "early"):
                         for variant in sched.VARIANTS:
                             result = sched.schedule(

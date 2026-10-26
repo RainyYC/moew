@@ -173,7 +173,11 @@ def schedule(
     comp_free = [0] * V
     comm_free = [0] * V
     # bw_left[g][mb]：还有多少个反向操作没排；rel[g][mb]：已排反向操作的最大完成时刻
-    bw_left = [[6 * len(layers) for _ in range(nmb)] for layers in layers_of_group]
+    # 窗口释放条件按**激活存活**计（题面 §4.6：激活从 comb 结束到 s_bwd 开始为存活），
+    # 因此每个 (mb, 层) 只要 `s_bwd` 排上了就算释放；不能等 6 个反向操作全排完
+    # （`gemm_dw`/`s_dw` 是旁支、优先级低，等它们会把窗口卡到很晚，实测会让
+    # nmb 大 + 内存紧的用例退化 30 倍以上）。
+    bw_left = [[len(layers) for _ in range(nmb)] for layers in layers_of_group]
     rel = [[-1] * nmb for _ in range(V)]
 
     fwd_first, mb_desc, l_desc, l_major = variant
@@ -289,7 +293,7 @@ def schedule(
             if left == 0:
                 try_push(successor)
 
-        if oi >= 4:
+        if oi == OP_S_BWD:
             left = bw_left[group][mb] - 1
             bw_left[group][mb] = left
             if finish > rel[group][mb]:
