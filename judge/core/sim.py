@@ -58,6 +58,8 @@ __all__ = ["MAX_ERRORS", "evaluate_output"]
 MAX_ERRORS = 64
 
 _OI_S = OP_INDEX["s"]
+_OI_DISP = OP_INDEX["disp"]
+_OI_COMB_BWD = OP_INDEX["comb_bwd"]
 _OI_COMB = OP_INDEX["comb"]
 _OI_S_BWD = OP_INDEX["s_bwd"]
 _OI_DISP_BWD = OP_INDEX["disp_bwd"]
@@ -93,21 +95,22 @@ def _add(errors: list[dict], item: dict) -> None:
 
 
 def _check_grid(case: Case, out: Output, errors: list[dict]) -> bool:
-    V, P, D = out.V, out.P, out.D
+    V, P = out.V, out.P
     ok = True
-    for name, value in (("V", V), ("P", P), ("D", D)):
+    for name, value in (("V", V), ("P", P)):
         if value < 1:
             ok = False
             _add(errors, _error("field", f"网格非法：{name}={value} 必须 ≥ 1", section="grid"))
     if not ok:
         return False
-    if V * P * D != case.R:
+    # 2026-10-29 修订：网格约束从 V·P = R 放松为 V·P ≤ R（允许有空闲卡）
+    if V * P > case.R:
         ok = False
         _add(
             errors,
             _error(
                 "field",
-                f"网格非法：V·P·D={V}·{P}·{D}={V * P * D} ≠ R=N·S={case.R}（题面 §4.7.1）",
+                f"网格非法：V·P={V}·{P}={V * P} > R=N·S={case.R}（题面 §4.7.1）",
                 section="grid",
             ),
         )
@@ -390,10 +393,10 @@ def _dependency_table(L: int) -> list[list[tuple[tuple[int, int], ...]]]:
         per_layer: list[tuple[tuple[int, int], ...]] = []
         for oi in range(10):
             deps: list[tuple[int, int]] = [(layer, other) for other in DEPS[oi]]
-            if oi == _OI_S and layer > 0:
-                deps.append((layer - 1, _OI_COMB))  # 层 ℓ 的前向等层 ℓ−1 的 comb
-            if oi == _OI_S_BWD and layer < L - 1:
-                deps.append((layer + 1, _OI_DISP_BWD))  # 层 ℓ 的反向等层 ℓ+1 的 disp_bwd
+            if oi in (_OI_S, _OI_DISP) and layer > 0:
+                deps.append((layer - 1, _OI_COMB))  # 层 ℓ 的前向入口等层 ℓ−1 的 comb
+            if oi in (_OI_S_BWD, _OI_COMB_BWD) and layer < L - 1:
+                deps.append((layer + 1, _OI_DISP_BWD))  # 层 ℓ 的反向入口等层 ℓ+1 的 disp_bwd
             per_layer.append(tuple(deps))
         table.append(per_layer)
     return table
@@ -403,7 +406,7 @@ def _build_plan(case: Case, out: Output) -> _Plan:
     psi_full = (0,) + tuple(out.psi) + (case.L,)
     layers = group_layers(out.V, psi_full)
     mapping = group_of_layer(out.V, psi_full, case.L)
-    pin, pout = peer_counts(case, out.V, out.P, out.D)
+    pin, pout = peer_counts(case, out.V, out.P)
     durations: list[tuple[int, ...]] = []
     ms: list[int] = []
     xs: list[int] = []
@@ -651,7 +654,7 @@ def evaluate_output(case: Case, out: Output, with_ops: bool = True) -> tuple[dic
         "lb": None,
         "groups": [],
         "engines": [],
-        "grid": {"V": out.V, "P": out.P, "D": out.D},
+        "grid": {"V": out.V, "P": out.P},
         "K": out.K,
         "psi": list(out.psi),
         "errors": errors,

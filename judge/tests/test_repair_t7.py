@@ -35,13 +35,13 @@ EXPECTED_TIME: dict[str, int] = {
 #: 默认开关下 ``evaluate()`` 结果的 sha256（``json.dumps(..., sort_keys=True,
 #: separators=(",", ":"))``）。用来锁住"两趟重构 + 开关都不改变默认路径的输出"。
 GOLDEN_SHA256: dict[str, str] = {
-    "ex1": "0e5b965a1cdf0c694f620b1ecf7f76bdb62d88df5ccc4747b0f4bccf96994b06",
-    "ex2": "35389818cb6ddad8512eafe8e1fe61de3b7757fb60bd6bf3de6e8e4ce8424260",
-    "ex3": "6bb98fa5996b68f14b6f0992d944a9d987eba646a792d517eae6b1e746a28b1d",
-    "ex4": "279bada599a5b1bbe31e82de55adbccdbf6583b3bd3f5243dedd5268153fec6f",
-    "ex5": "90ebe43eb6a06dc1d856daed1c6e123b667689aa6fb035a29be6ecf7b95818dc",
-    "ex6": "8cadf64852e3e9b66a59efd57dc7f03e75406ca9821961387b838b93db3aa47d",
-    "mini": "42768c8012b4ca8d1721edc34a3e7e9b36fd6406602f7fccc4edf03073155d08",
+    "ex1": "18d737075049c164197e8a4f65bad0986f7c52b631ce251f23e7818fbcec6210",
+    "ex2": "8669cd92c91ba4daeddc9bd38ea3623394bce8f97c7cf9a7ac0c8e0db65ec03b",
+    "ex3": "efeb94015fe9af5c5ba6b45f24d9cc4e2cc6c6322451972a9a93134e4b904e49",
+    "ex4": "2a116608b2bb6ef7ef9bbd8288a73f7db474ec9905d1240c141406b811ef0f10",
+    "ex5": "4f2ed5c981430be7af53c94890388c529120f427726e01d258cf07e6dcc7cdc8",
+    "ex6": "c7d5e8980099901227ac11df420b677c50bad6403557a6f61247ec5a95d3362d",
+    "mini": "7f5bc28b8fb1432267c8600b6d2347f2cc863a021e53b1b7160b0866228978b8",
 }
 
 

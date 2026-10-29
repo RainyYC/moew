@@ -39,7 +39,8 @@ LOOPBACK_HOST = "127.0.0.1"
 LOOPBACK_PORT = int(os.environ.get("E2E_PORT", "3081"))
 EXTERNAL_URL = os.environ.get("JUDGE_URL", "http://123.60.231.190:4014")
 CASES = ["ex1", "ex2", "ex3", "ex4", "ex5", "ex6"]
-SOLVER_TIME = {"ex1": 576, "ex2": 4880, "ex3": 6072, "ex4": 3200, "ex5": 416, "ex6": 1744}
+# 2026-10-29 规则（V·P ≤ R + 共享专家可重叠）下的求解器结果
+SOLVER_TIME = {"ex1": 560, "ex2": 4880, "ex3": 6072, "ex4": 3200, "ex5": 368, "ex6": 1696}
 # 题面基线（2026-10 版：D 取消后 ex3 的题面值从 4000 变 7000）
 BASE = {"ex1": 592, "ex2": 4880, "ex3": 7000, "ex4": 3200, "ex5": 416, "ex6": 1744}
 
@@ -217,9 +218,9 @@ def main(argv: list[str] | None = None) -> int:
         check(status == 200 and page.get("total") == 20 and page.get("returned") == 5
               and page.get("next_cursor") == 5, "ops 切片（total=20, limit=5, next=5）",
               f"{status} {page and page.get('total')}/{page and page.get('returned')}")
-        status, tail = http_json(f"{base}/api/runs/{run_id}/cases/ex1/ops?since=500&limit=20000")
+        status, tail = http_json(f"{base}/api/runs/{run_id}/cases/ex1/ops?since=70&limit=20000")
         check(status == 200 and tail.get("total", 0) >= 1
-              and all(o["t"] >= 500 for o in tail.get("ops", [])),
+              and all(o["t"] >= 70 for o in tail.get("ops", [])),
               "ops since 过滤可用（since 含）",
               f"total={tail and tail.get('total')} ts={sorted({o['t'] for o in (tail or {}).get('ops', [])})}")
 

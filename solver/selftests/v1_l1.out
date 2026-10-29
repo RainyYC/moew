@@ -4,15 +4,19 @@ PSI
 MAP
 0 1 2 3
 SCHEDULE
-0 0:0:s
-18 0:0:disp 1:0:s
-36 0:0:gemm 1:0:disp
-46 0:0:comb 1:0:gemm
-56 0:0:s_bwd 1:0:comb
-74 0:0:comb_bwd 1:0:s_bwd
-92 0:0:s_dw 1:0:comb_bwd
-110 0:0:gemm_dx
-120 0:0:disp_bwd 1:0:s_dw
-138 1:0:gemm_dw
-148 1:0:gemm_dx
-158 0:0:gemm_dw 1:0:disp_bwd
+0 0:0:s 0:0:disp
+7 1:0:disp
+18 0:0:gemm
+28 0:0:comb 1:0:gemm
+35 0:0:comb_bwd
+38 1:0:s
+42 1:0:comb
+49 1:0:comb_bwd
+56 0:0:s_bwd
+74 1:0:gemm_dw
+84 1:0:gemm_dx
+94 1:0:s_bwd 1:0:disp_bwd
+112 0:0:gemm_dx
+122 0:0:disp_bwd 1:0:s_dw
+140 0:0:s_dw
+158 0:0:gemm_dw

@@ -5,28 +5,27 @@ MAP
 0 0 0 0
 0 0 0 0
 SCHEDULE
-0 0:0:s
-10 0:0:disp 1:0:s
-20 0:0:gemm 1:0:disp
-40 0:0:comb 0:1:s
-54 0:1:disp 1:0:gemm
-74 0:1:gemm 1:0:comb
-102 0:1:comb 1:1:s
-116 0:1:s_bwd 1:1:disp
-130 0:1:comb_bwd 1:1:gemm
-158 0:1:gemm_dx 1:1:comb
-186 0:1:disp_bwd 1:1:s_bwd
-200 0:1:s_dw 1:1:comb_bwd
-214 0:0:s_bwd
-224 0:0:comb_bwd 1:1:s_dw
-238 1:1:gemm_dw
-266 1:1:gemm_dx
-294 0:1:gemm_dw 1:1:disp_bwd
-322 0:0:gemm_dx
-342 0:0:disp_bwd 1:0:s_bwd
-352 0:0:s_dw 1:0:comb_bwd
-362 0:0:gemm_dw
-382 1:0:s_dw
-392 1:0:gemm_dw
-412 1:0:gemm_dx
-432 1:0:disp_bwd
+0 0:0:s 0:0:disp 1:0:disp
+10 0:0:gemm
+30 0:0:comb 0:1:disp 1:0:gemm
+50 1:0:s 1:0:comb 1:1:disp
+60 0:1:s
+74 1:1:gemm
+102 1:1:s 1:1:comb 1:1:comb_bwd
+116 0:1:gemm
+144 0:1:comb 0:1:comb_bwd 1:1:gemm_dw
+172 1:1:gemm_dx
+200 1:0:comb_bwd 1:1:s_bwd 1:1:disp_bwd
+214 0:1:s_bwd
+228 1:1:s_dw
+242 1:0:gemm_dw
+262 1:0:gemm_dx
+282 1:0:s_bwd 1:0:disp_bwd
+292 0:1:gemm_dx
+320 0:0:comb_bwd 0:1:disp_bwd 1:0:s_dw
+330 0:1:s_dw
+344 0:1:gemm_dw
+372 0:0:gemm_dw
+392 0:0:gemm_dx
+412 0:0:s_bwd 0:0:disp_bwd
+422 0:0:s_dw

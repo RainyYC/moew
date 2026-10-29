@@ -135,8 +135,7 @@ def p_candidates(case: Case) -> list[int]:
 
 def _pmap(case: Case, P: int) -> _PMap:
     rows, m = place.best_placement(case, P)
-    remainder = case.R // P
-    pin, pout = formula.peer_counts(case, 1, P, remainder)
+    pin, pout = formula.peer_counts(case, 1, P)
     payload = [formula.comm_payload(case, layer, P) for layer in range(case.L)]
     x = [formula.comm_time(case, payload[layer], pin, pout) for layer in range(case.L)]
     durations = [
@@ -148,9 +147,10 @@ def _pmap(case: Case, P: int) -> _PMap:
 def enumerate_configs(case: Case) -> tuple[list[Config], dict[int, _PMap]]:
     """枚举全部 (P,V,ψ) 候选，并返回按 P 缓存的逐层量。
 
-    2026-10 版题面取消了数据并行度 D：网格只有 ``(V,P)``，且 ``V·P=R``，所以 ``V`` 由
-    ``P`` 唯一确定（``D≡1``）。EP 组的 ``(pin, pout)`` 只由 P 与 S 决定（题面 §4.4 的
-    嵌入规则），因此「与 P 相关的逐层量」只需算一次。
+    2026-10-29 修订：网格约束是 ``V·P ≤ R``（可以是严格小于，允许有空闲卡），
+    所以 ``V`` 与 ``P`` 是两个独立的自由度：``V ∈ [1, min(L, 64, R//P)]``。
+    ``D`` 已从题面移除，恒为 1。EP 组的 ``(pin, pout)`` 只由 P 与 S 决定（§4.4），
+    因此「与 P 相关的逐层量」只需算一次。
     """
     pmaps: dict[int, _PMap] = {}
     configs: list[Config] = []
@@ -161,26 +161,22 @@ def enumerate_configs(case: Case) -> tuple[list[Config], dict[int, _PMap]]:
         info = _pmap(case, P)
         pmaps[P] = info
         per_layer_bytes = (case.E // P) * case.Z + case.Zs
-        remainder = case.R // P
         comp_w = [sum(row[i] for i in COMP_OPS) for row in info.durations]
         comm_w = [sum(row[i] for i in COMM_OPS) for row in info.durations]
-        # 2026-10 版题面取消了数据并行度 D：网格只有 (V,P)，且 V·P=R。
-        # 因此 V 由 P 唯一确定，不存在"同一 P 下换 V"的自由度。
-        V = remainder
-        D = 1
-        if V > case.L or V > 64:
-            continue
-        for cuts in psi_mod.psi_candidates(case.L, V, comp_w, comm_w):
-            key = (P, V, cuts)
-            if key in seen:
-                continue
-            seen.add(key)
-            psi_full = (0,) + cuts + (case.L,)
-            layers = formula.group_layers(V, psi_full)
-            if any(len(group) * per_layer_bytes > case.M for group in layers):
-                continue  # Mexp 静态就放不下（题面 §4.6）
-            lb = formula.lower_bound(case, info.durations, layers)
-            configs.append(Config(P=P, V=V, D=D, psi=cuts, lb=lb))
+        # 卡是"免费"的：加大 V 只会让每个卡组少背几层（lb 下降），代价是填充项
+        # (nmb+V-1)/nmb 略增。两者的乘积 (nmb+V-1)/V 对 V 单调递减，所以**取最大的 V**。
+        for V in (min(case.L, 64, case.R // P),):
+            for cuts in psi_mod.psi_candidates(case.L, V, comp_w, comm_w):
+                key = (P, V, cuts)
+                if key in seen:
+                    continue
+                seen.add(key)
+                psi_full = (0,) + cuts + (case.L,)
+                layers = formula.group_layers(V, psi_full)
+                if any(len(group) * per_layer_bytes > case.M for group in layers):
+                    continue  # Mexp 静态就放不下（题面 §4.6）
+                lb = formula.lower_bound(case, info.durations, layers)
+                configs.append(Config(P=P, V=V, D=1, psi=cuts, lb=lb))
     # 排序键用 `lb × 填充代价` 而不是裸 lb：2026-10 版 `V=R/P` 后，V 大的配置 lb 小但
     # 流水线深、填充代价大（`(nmb+V-1)/nmb`）。按裸 lb 排序会在"lb 打平"的计算主导实例上
     # 一律先试 V 最大的那个，实测会丢掉 3%（b13：先试 P=16 得 4.86e16，P=32 是 4.70e16）。

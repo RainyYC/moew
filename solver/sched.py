@@ -33,6 +33,8 @@ from .formula import (
     DEPS,
     ENGINE,
     OP_COMB,
+    OP_COMB_BWD,
+    OP_DISP,
     OP_DISP_BWD,
     OP_NAMES,
     OP_S,
@@ -108,10 +110,10 @@ def _dep_tables(L: int) -> tuple[list[tuple[int, ...]], list[tuple[int, ...]]]:
         for oi in range(10):
             # 偏移 = Δlayer·10 + (前置 op 下标 − 本 op 下标)：同 mb 内的线性下标差
             offsets = [d - oi for d in DEPS[oi]]
-            if oi == OP_S and layer > 0:
-                offsets.append(-10 + OP_COMB - oi)  # 等上一层的 comb
-            if oi == OP_S_BWD and layer < L - 1:
-                offsets.append(10 + OP_DISP_BWD - oi)  # 等下一层的 disp_bwd
+            if oi in (OP_S, OP_DISP) and layer > 0:
+                offsets.append(-10 + OP_COMB - oi)  # 前向入口等上一层的 comb
+            if oi in (OP_S_BWD, OP_COMB_BWD) and layer < L - 1:
+                offsets.append(10 + OP_DISP_BWD - oi)  # 反向入口等下一层的 disp_bwd
             pred[layer * 10 + oi] = tuple(offsets)
     succ: list[list[int]] = [[] for _ in range(size)]
     for layer in range(L):
@@ -209,10 +211,10 @@ def schedule(
         free = comp_free[group] if ENGINE[oi] == COMP else comm_free[group]
         if free > ready:
             ready = free
-        if oi == OP_S and layer == l0[group] and mb >= W:
-            release = rel[group][mb - W]
-            if release > ready:
-                ready = release
+        if layer == 0 and base_rem[oi] == 0 and mb >= W:
+            waiting = rel[group][mb - W]
+            if waiting > ready:
+                ready = waiting
         return ready
 
     heap: list[tuple] = []
@@ -224,9 +226,10 @@ def schedule(
         base = idx - mb * stride
         layer = base // 10
         oi = base - layer * 10
-        if oi == OP_S:
+        # 入口操作（层 0 上无前驱的那些，2026-10-29 之后是 s 与 disp）统一受窗口约束
+        if layer == 0 and base_rem[oi] == 0 and mb >= W:
             group = group_of[layer]
-            if layer == l0[group] and mb >= W and bw_left[group][mb - W] > 0:
+            if bw_left[group][mb - W] > 0:
                 return  # 窗口未释放
         pushed[idx] = 1
         if priority is not None:
@@ -238,13 +241,22 @@ def schedule(
         else:
             heappush(heap, (earliest(idx), rank, idx))
 
+    # 2026-10-29 修订后，层 0 上"零前驱"的操作不止 `s`（`disp` 也不再等 `s`），
+    # 这些入口操作都要受窗口约束、也都要在释放时一起放开，否则要么空转死锁、
+    # 要么绕过窗口让所有 microbatch 同时冲进来（内存直接爆）。
+    entry_bases = [base for base in range(10) if base_rem[base] == 0]
     for mb in range(nmb):
-        try_push(mb * stride)  # (mb, 0, s)
+        for base in entry_bases:
+            try_push(mb * stride + base)
 
     count = 0
     time_max = 0
     while count < total:
         if not heap:
+            if __import__("os").environ.get("SCHED_DEBUG"):
+                done = [i for i in range(total) if start[i] >= 0]
+                missing = [i for i in range(total) if start[i] < 0]
+                print(f"[debug] count={count}/{total} missing={[(i//stride, (i%stride)//10, (i%stride)%10) for i in missing[:8]]}")
             return None
         entry = heappop(heap)
         idx = entry[1] if mode == "prio" else entry[2]
@@ -262,10 +274,10 @@ def schedule(
         free = comp_free[group] if ENGINE[oi] == COMP else comm_free[group]
         if free > ready:
             ready = free
-        if oi == OP_S and layer == l0[group] and mb >= W:
-            release = rel[group][mb - W]
-            if release > ready:
-                ready = release
+        if layer == 0 and base_rem[oi] == 0 and mb >= W:
+            waiting = rel[group][mb - W]
+            if waiting > ready:
+                ready = waiting
         if mode == "early" and heap and ready > heap[0][0]:
             # 惰性修正：引擎/依赖只让起点后移，重排一次即可（摊还 O(1)）
             heappush(heap, (ready, entry[1], idx))
@@ -303,9 +315,10 @@ def schedule(
             if left == 0:
                 next_mb = mb + W
                 if next_mb < nmb:
-                    candidate = next_mb * stride + l0[group] * 10 + OP_S
-                    if rem[candidate] == 0:
-                        try_push(candidate)
+                    for base in entry_bases:
+                        candidate = next_mb * stride + base
+                        if rem[candidate] == 0:
+                            try_push(candidate)
 
     return Schedule(time=time_max, start=start, end=end, window=W, variant=variant)
 

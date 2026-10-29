@@ -129,7 +129,7 @@ class NegativeCases(unittest.TestCase):
         broken = _replace(text, "1 2\nPSI", "3 2\nPSI")
         matched = self.assert_errors(evaluate(case, broken), "field")
         self.assertEqual(matched[0]["section"], "grid")
-        self.assertIn("V·P·D", matched[0]["message"])
+        self.assertIn("V·P", matched[0]["message"])
 
     def test_k_illegal(self) -> None:
         case, text = _load("ex6")

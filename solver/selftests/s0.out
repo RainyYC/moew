@@ -8,23 +8,20 @@ SCHEDULE
 0 0:0:s 0:0:disp 1:0:s
 9 0:0:gemm 1:0:disp
 29 0:0:comb 1:0:gemm
-38 0:1:s 0:1:disp
-49 0:1:gemm 1:0:comb
-58 1:1:s 1:1:disp
-69 0:1:comb 1:1:gemm
-78 0:1:s_bwd 0:1:comb_bwd
-87 0:1:s_dw
-89 0:1:gemm_dx 1:1:comb
-98 1:1:s_bwd 1:1:comb_bwd
-107 1:1:s_dw
-109 0:1:disp_bwd 1:1:gemm_dx
-118 0:0:s_bwd 0:0:comb_bwd
-127 0:0:s_dw
-129 0:0:gemm_dw 1:1:disp_bwd
-138 1:0:s_bwd 1:0:comb_bwd
-147 1:0:s_dw
-149 0:1:gemm_dw
-169 1:0:gemm_dw
-189 1:0:gemm_dx
-209 0:0:gemm_dx 1:0:disp_bwd
-229 0:0:disp_bwd 1:1:gemm_dw
+38 0:1:disp
+49 0:1:s 0:1:gemm 1:0:comb
+58 1:1:disp
+69 0:1:comb 1:1:s 1:1:gemm
+78 0:1:comb_bwd
+89 0:1:s_bwd 0:1:gemm_dx 1:1:comb
+98 1:1:comb_bwd
+109 0:1:gemm_dw 0:1:disp_bwd
+118 0:0:comb_bwd
+129 0:0:s_bwd 0:0:gemm_dx
+149 0:0:disp_bwd 1:1:gemm_dw
+169 1:1:gemm_dx
+189 0:0:gemm_dw 1:1:s_bwd 1:1:disp_bwd
+198 1:0:comb_bwd
+209 0:0:s_dw 0:1:s_dw 1:0:s_bwd 1:0:gemm_dx
+229 1:0:gemm_dw 1:0:disp_bwd 1:1:s_dw
+249 1:0:s_dw

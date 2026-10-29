@@ -58,7 +58,7 @@ def best_m(slots, P):
 
 
 def layer_dur(case, P, V):
-    pin, pout = peer_counts(case, V, P, 1)
+    pin, pout = peer_counts(case, V, P)
     out = {}
     for l in range(case.L):
         x = comm_time(case, comm_payload(case, l, P), pin, pout)

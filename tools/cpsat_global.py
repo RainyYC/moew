@@ -121,7 +121,7 @@ def build_model(case, V, P, D, psi, ms, time_limit):
     """给定网格/切点/每层 m，构造并求解 CP-SAT；返回 (schedule, durations, status)。"""
     from ortools.sat.python import cp_model
 
-    pin, pout = peer_counts(case, V=V, P=P, D=D)
+    pin, pout = peer_counts(case, V=V, P=P)
     durations = {}
     for layer in range(case.L):
         x = comm_time(case, comm_payload(case, layer, P), pin, pout)
@@ -150,22 +150,27 @@ def build_model(case, V, P, D, psi, ms, time_limit):
         if name == "s":
             return [(mb, layer - 1, "comb")] if layer >= 1 else []
         if name == "disp":
-            return [(mb, layer, "s")]
+            return [(mb, layer - 1, "comb")] if layer >= 1 else []
         if name == "gemm":
             return [(mb, layer, "disp")]
         if name == "comb":
             return [(mb, layer, "gemm")]
         if name == "s_bwd":
-            d = [(mb, layer, "comb")]
+            d = [(mb, layer, "s"), (mb, layer, "comb")]
             if layer + 1 <= L - 1:
                 d.append((mb, layer + 1, "disp_bwd"))
             return d
         if name == "comb_bwd":
-            return [(mb, layer, "s_bwd")]
+            d = [(mb, layer, "comb")]
+            if layer + 1 <= L - 1:
+                d.append((mb, layer + 1, "disp_bwd"))
+            return d
         if name == "gemm_dx":
             return [(mb, layer, "comb_bwd")]
         if name == "disp_bwd":
             return [(mb, layer, "gemm_dx")]
+        if name == "s_dw":
+            return [(mb, layer, "s_bwd")]  # 2026-10-29：只等共享专家的输入梯度
         return [(mb, layer, "comb_bwd")]
 
     for mb in range(nmb):
@@ -250,12 +255,10 @@ def main() -> int:
     for P in p_candidates(case):
         if R % P:
             continue
-        # 2026-10 版题面取消了 D：网格只有 (V,P)，V·P=R ⇒ V 由 P 唯一确定。
-        V = R // P
+        # 2026-10-29 版：网格约束是 V·P ≤ R，V 与 P 解耦（可以有空闲卡）。
         D = 1
-        if V > min(L, 64):
-            continue
-        if V >= 1:
+        max_v = min(L, 64, R // P)
+        for V in range(1, max_v + 1):
             per_layer_bytes = (E // P) * case.Z + case.Zs
             psi_list = [()] if V == 1 else list(itertools.combinations(range(1, L), V - 1))
             for psi in psi_list:

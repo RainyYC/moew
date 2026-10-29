@@ -424,7 +424,7 @@ def run_checks(checker: Checker, h: Harness, root: Path) -> None:
         ):
             assert key in detail, f"缺字段 {key}"
         assert detail["time"] == 4880 and detail["K"] == 2 and detail["psi"] == [1]
-        assert detail["grid"] == {"V": 2, "P": 2, "D": 1}
+        assert detail["grid"] == {"V": 2, "P": 2}
         assert detail["ops_total"] == 40, detail["ops_total"]
         assert len(detail["groups"]) == 2 and len(detail["engines"]) == 2
         for group in detail["groups"]:

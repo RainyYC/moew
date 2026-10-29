@@ -85,18 +85,25 @@ COMM_OPS: tuple[int, ...] = tuple(i for i, engine in enumerate(ENGINE) if engine
 COMM_NAMES: frozenset[str] = frozenset(OP_NAMES[i] for i in COMM_OPS)
 
 #: 层内依赖：操作为索引 → 必须先完成的同层操作（题面 §4.2 第 1 条）。
-#: 反向不是一条链：``gemm_dw`` / ``s_dw`` 只依赖 ``comb_bwd``。
+#:
+#: 2026-10-29 修订：**共享专家（``s`` / ``s_bwd`` / ``s_dw``）与同层其余操作解耦**。
+#:
+#: * 前向：``disp`` 不再等 ``s`` ⇒ 共享专家前向可与分发/专家计算/汇集重叠；
+#: * 反向：``comb_bwd`` 不再等 ``s_bwd``，改为等本层 ``comb``（"前向完成才反向"这条
+#:   因果仍然成立，只是不再穿过共享专家）⇒ 共享专家反向可与反向链重叠；
+#: * ``s_dw`` 只等 ``s_bwd``（自己的输入梯度），不再等 ``comb_bwd``；
+#: * ``s_bwd ≥ comb`` 保留（本层前向完成后才能算它的输入梯度）。
 DEPS: tuple[tuple[int, ...], ...] = (
-    (),  # s
-    (OP_INDEX["s"],),  # disp
+    (),  # s（共享专家前向：同层无前驱）
+    (),  # disp（不再等 s：共享专家前向可重叠；跨层的"上一层的 comb"在 sim 里加）
     (OP_INDEX["disp"],),  # gemm
     (OP_INDEX["gemm"],),  # comb
-    (OP_INDEX["comb"],),  # s_bwd（另加：本层 comb 结束，见 sim）
-    (OP_INDEX["s_bwd"],),  # comb_bwd
+    (OP_INDEX["s"], OP_INDEX["comb"]),  # s_bwd（自己的前向 + 本层前向完成）
+    (OP_INDEX["comb"],),  # comb_bwd（反向链的头：等本层前向，不再等 s_bwd）
     (OP_INDEX["comb_bwd"],),  # gemm_dx
     (OP_INDEX["comb_bwd"],),  # gemm_dw
     (OP_INDEX["gemm_dx"],),  # disp_bwd
-    (OP_INDEX["comb_bwd"],),  # s_dw
+    (OP_INDEX["s_bwd"],),  # s_dw（只等共享专家的输入梯度）
 )
 
 
@@ -131,24 +138,26 @@ def layer_slots(case: Case, layer: int) -> tuple[int, ...]:
 # --------------------------------------------------------------------------- #
 
 
-def peer_counts(case: Case, V: int, P: int, D: int) -> tuple[int, int]:
+def peer_counts(case: Case, V: int, P: int) -> tuple[int, int]:
     """一个 EP 组内单个 rank 的 (节点内对端数 pin, 跨节点对端数 pout)。
 
-    按题面 §3.1 的嵌入 ``q = v·(P·D) + d·P + p`` 直接从物理卡复核：卡 ``q`` 属于
-    节点 ``q // S``。``P∣S`` 或 ``S∣P`` 保证每个 EP 组要么整组落在节点内、要么整齐
-    跨节点，因此同一份映射下所有 (v,d,p) 的 (pin, pout) 相同。
+    按题面 §3.1 的嵌入 ``q = v·P + p`` 直接从物理卡复核：卡 ``q`` 属于节点
+    ``q // S``。``P∣S`` 或 ``S∣P`` 保证每个 EP 组要么整组落在节点内、要么整齐
+    跨节点，因此同一份映射下所有 (v,p) 的 (pin, pout) 相同。
+
+    2026-10-29 修订把网格约束放松为 ``V·P ≤ R``（不要求用满所有卡），因此这里只按
+    前 ``V·P`` 张卡计算，剩余卡不参与本步（等价于数据并行副本，不影响单步时间）。
     """
     if P == 1:
         return 0, 0
-    if V * P * D != case.R:  # pragma: no cover - 调用前已校验
-        raise ValueError(f"V·P·D={V * P * D} ≠ R={case.R}，无法嵌入物理卡")
+    if V * P > case.R:  # pragma: no cover - 调用前已校验
+        raise ValueError(f"V·P={V * P} > R={case.R}，无法嵌入物理卡")
     seen: set[tuple[int, int]] = set()
     for v in range(V):
-        for d in range(D):
-            first = v * (P * D) + d * P
-            nodes = [(first + p) // case.S for p in range(P)]
-            pin = sum(1 for node in nodes if node == nodes[0]) - 1
-            seen.add((pin, P - 1 - pin))
+        first = v * P
+        nodes = [(first + p) // case.S for p in range(P)]
+        pin = sum(1 for node in nodes if node == nodes[0]) - 1
+        seen.add((pin, P - 1 - pin))
     if len(seen) != 1:  # pragma: no cover - P∣S 或 S∣P 保证不会发生
         raise ValueError(f"EP 组未与节点对齐：得到多组 (pin,pout)={sorted(seen)}")
     return seen.pop()

@@ -7,7 +7,7 @@
 全整数运算，公式逐条对照题面 §4：
 
 * ``s = T·Fs``、``gemm = m·Fin``（§4.1）
-* ``H = ⌊d·b/k⌋``、``X = ⌈T·H·(P−1)/P⌉``、``x = max(⌈pin·X/Bin⌉, ⌈pout·X/Bout⌉)·Fio``（§4.4）
+* ``H = ⌊d·b/k⌋``、``X = ⌈T·H/P⌉``（每对端字节数）、``x = max(⌈pin·X/Bin⌉, ⌈pout·X/Bout⌉)·Fio``（§4.4）
 * ``m = max_r Σ_{e: σ(e)=r} a_{l,e}``（§4.3）
 * 反向按题面 §4.1 的单次向上取整展开：``ceil(α·v) = ⌈α×·v/10^6⌉``、
   ``ceil(αβ·v) = ⌈α×·β×·v/10^12⌉``
@@ -75,18 +75,21 @@ ENGINE: tuple[int, ...] = (COMP, COMM, COMP, COMM, COMP, COMM, COMP, COMP, COMM,
 COMP_OPS: tuple[int, ...] = tuple(i for i, engine in enumerate(ENGINE) if engine == COMP)
 COMM_OPS: tuple[int, ...] = tuple(i for i, engine in enumerate(ENGINE) if engine == COMM)
 
-#: 层内依赖（题面 §4.2 第 1 条）：``gemm_dw`` / ``s_dw`` 只依赖 ``comb_bwd``。
+#: 层内依赖（题面 §4.2 第 1 条，2026-10-29 修订版）：
+#: **共享专家（``s``/``s_bwd``/``s_dw``）与同层其余操作解耦**，可与分发/专家计算/汇集重叠。
+#: 前向 MoE 链变为 ``disp → gemm → comb``；反向 MoE 链的头是 ``comb_bwd``；
+#: 共享专家自身保持 ``s → s_bwd → s_dw``。与 `judge/core/model.DEPS` 逐项一致。
 DEPS: tuple[tuple[int, ...], ...] = (
     (),  # s
-    (OP_S,),  # disp
+    (),  # disp（不再等 s；跨层的上一层 comb 由 sched 加）
     (OP_DISP,),  # gemm
     (OP_GEMM,),  # comb
-    (OP_COMB,),  # s_bwd
-    (OP_S_BWD,),  # comb_bwd
+    (OP_S, OP_COMB),  # s_bwd（自己的前向 + 本层前向完成）
+    (OP_COMB,),  # comb_bwd（反向链的头）
     (OP_COMB_BWD,),  # gemm_dx
     (OP_COMB_BWD,),  # gemm_dw
     (OP_GEMM_DX,),  # disp_bwd
-    (OP_COMB_BWD,),  # s_dw
+    (OP_S_BWD,),  # s_dw
 )
 
 
@@ -118,23 +121,23 @@ def layer_slots(case: Case, layer: int) -> tuple[int, ...]:
 # --------------------------------------------------------------------------- #
 
 
-def peer_counts(case: Case, V: int, P: int, D: int) -> tuple[int, int]:
+def peer_counts(case: Case, V: int, P: int) -> tuple[int, int]:
     """EP 组内单 rank 的 (pin, pout)（题面 §4.4）。
 
-    按题面 §3.1 的嵌入 ``q = v·(P·D) + d·P + p`` 从物理卡复核：P=1 时没有 EP 对端，
-    返回 ``(0, 0)``；否则要求 ``P∣S`` 或 ``S∣P``（保证 EP 组与节点对齐）。
+    按题面 §3.1 的嵌入 ``q = v·P + p`` 从物理卡复核：P=1 时没有 EP 对端，返回
+    ``(0, 0)``；否则要求 ``P∣S`` 或 ``S∣P``（保证 EP 组与节点对齐）。
+    2026-10-29 修订后网格约束是 ``V·P ≤ R``，未用到的卡不参与本步。
     """
     if P == 1:
         return 0, 0
-    if V * P * D != case.R:
-        raise ValueError(f"V·P·D={V * P * D} ≠ R={case.R}，无法嵌入物理卡")
+    if V * P > case.R:
+        raise ValueError(f"V·P={V * P} > R={case.R}，无法嵌入物理卡")
     seen: set[tuple[int, int]] = set()
     for v in range(V):
-        for d in range(D):
-            first = v * (P * D) + d * P
-            nodes = [(first + p) // case.S for p in range(P)]
-            pin = sum(1 for node in nodes if node == nodes[0]) - 1
-            seen.add((pin, P - 1 - pin))
+        first = v * P
+        nodes = [(first + p) // case.S for p in range(P)]
+        pin = sum(1 for node in nodes if node == nodes[0]) - 1
+        seen.add((pin, P - 1 - pin))
     if len(seen) != 1:
         raise ValueError(f"EP 组未与节点对齐：得到多组 (pin,pout)={sorted(seen)}")
     return seen.pop()
@@ -278,7 +281,7 @@ def build_plan_from_parts(
     psi_full = (0,) + tuple(psi) + (case.L,)
     layers = group_layers(V, psi_full)
     mapping = group_of_layer(V, psi_full, case.L)
-    pin, pout = peer_counts(case, V, P, D)
+    pin, pout = peer_counts(case, V, P)
     return Plan(
         V=V,
         P=P,
@@ -308,7 +311,7 @@ def build_plan(
     map_rows: Sequence[Sequence[int]],
 ) -> Plan:
     """完整的 :class:`Plan`（自己算 m / x / 时长）。"""
-    pin, pout = peer_counts(case, V, P, D)
+    pin, pout = peer_counts(case, V, P)
     m = [layer_m(case, layer, P, map_rows[layer]) for layer in range(case.L)]
     payload = [comm_payload(case, layer, P) for layer in range(case.L)]
     x = [comm_time(case, payload[layer], pin, pout) for layer in range(case.L)]

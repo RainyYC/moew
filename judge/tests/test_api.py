@@ -37,7 +37,7 @@ class ResultShape(unittest.TestCase):
         self.assertTrue(result["ok"])
         self.assertEqual(result["time"], 592)
         self.assertEqual(result["lb"], 560)  # CONTRACT §1 示例
-        self.assertEqual(result["grid"], {"V": 1, "P": 2, "D": 1})
+        self.assertEqual(result["grid"], {"V": 1, "P": 2})
         self.assertEqual(result["K"], 1)
         self.assertEqual(result["psi"], [])
         # CONTRACT §1 示例：engines 的四个量完全一致
@@ -120,12 +120,12 @@ class Formulas(unittest.TestCase):
     def test_peer_counts_from_physical_cards(self) -> None:
         directory = cases_dir()
         ex1 = parse_case(directory / "ex1.in")  # N=1,S=2
-        self.assertEqual(peer_counts(ex1, V=1, P=2, D=1), (1, 0))  # P|S：节点内
+        self.assertEqual(peer_counts(ex1, V=1, P=2), (1, 0))  # P|S：节点内
         ex3 = parse_case(directory / "ex3.in")  # N=2,S=2
-        self.assertEqual(peer_counts(ex3, V=1, P=2, D=2), (1, 0))
-        self.assertEqual(peer_counts(ex3, V=1, P=4, D=1), (1, 2))  # S|P：跨节点
+        self.assertEqual(peer_counts(ex3, V=1, P=2), (1, 0))
+        self.assertEqual(peer_counts(ex3, V=1, P=4), (1, 2))  # S|P：跨节点
         ex5 = parse_case(directory / "ex5.in")
-        self.assertEqual(peer_counts(ex5, V=2, P=1, D=1), (0, 0))  # P=1：无对端
+        self.assertEqual(peer_counts(ex5, V=2, P=1), (0, 0))  # P=1：无对端
 
     def test_comm_payload_and_time(self) -> None:
         directory = cases_dir()

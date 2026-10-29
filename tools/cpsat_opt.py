@@ -6,8 +6,9 @@
 
 模型（与题面 §4.2 逐条对应）：
   * 每个操作一个 start 变量，时长由 judge.core.model 给出（单一出处，避免两套公式）；
-  * 层内依赖 s→disp→gemm→comb；s_bwd→comb_bwd→gemm_dx→disp_bwd；
-    gemm_dw / s_dw 只依赖本层 comb_bwd；s_bwd ≥ 本层 comb 结束；
+  * 层内依赖（2026-10-29 修订）：disp→gemm→comb；s_bwd 只等本层 comb；
+    comb_bwd 等本层 comb；gemm_dx→disp_bwd；gemm_dw 等 comb_bwd；s_dw 等 s_bwd；
+    共享专家前向 s 与 disp 之间不再有依赖；
   * 层序依赖 s(mb,ℓ) ≥ comb(mb,ℓ-1)；s_bwd(mb,ℓ) ≥ disp_bwd(mb,ℓ+1)；
   * 每个卡组一套计算引擎 + 一套通信引擎，各用 NoOverlap 保证互斥；
   * **时长 0 的操作不建区间变量**（题面：不占用引擎）；
@@ -55,7 +56,7 @@ def group_of(layer: int, V: int, psi: list[int], L: int) -> int:
 
 def build_durations(case, out):
     """每个 (layer, op) 的时长；返回 {(l, op): dur}。"""
-    pin, pout = peer_counts(case, V=out.V, P=out.P, D=out.D)
+    pin, pout = peer_counts(case, V=out.V, P=out.P)
     table = {}
     for layer in range(case.L):
         m = layer_m(case, layer, out.P, out.map_rows[layer])
@@ -67,29 +68,37 @@ def build_durations(case, out):
 
 
 def deps_of(mb: int, layer: int, name: str, L: int) -> list[tuple[int, int, str]]:
-    """§4.2 第 1、2 条：返回 [(mb, layer, op), ...]。"""
+    """§4.2 第 1、2 条（2026-10-29 修订版）：返回 [(mb, layer, op), ...]。
+
+    修订点：共享专家与同层其余操作解耦 —— ``disp`` 不再等 ``s``；``comb_bwd`` 改为等
+    本层 ``comb``（不再等 ``s_bwd``）；``s_dw`` 改为等 ``s_bwd``。
+    """
     if name == "s":
         return [(mb, layer - 1, "comb")] if layer >= 1 else []
     if name == "disp":
-        return [(mb, layer, "s")]
+        return [(mb, layer - 1, "comb")] if layer >= 1 else []
     if name == "gemm":
         return [(mb, layer, "disp")]
     if name == "comb":
         return [(mb, layer, "gemm")]
     if name == "s_bwd":
-        # 本层 comb 结束 + 层 ℓ+1 的 disp_bwd（锚点）
-        out = [(mb, layer, "comb")]
+        out = [(mb, layer, "s"), (mb, layer, "comb")]
         if layer + 1 <= L - 1:
             out.append((mb, layer + 1, "disp_bwd"))
         return out
     if name == "comb_bwd":
-        return [(mb, layer, "s_bwd")]
+        out = [(mb, layer, "comb")]
+        if layer + 1 <= L - 1:
+            out.append((mb, layer + 1, "disp_bwd"))
+        return out
     if name == "gemm_dx":
         return [(mb, layer, "comb_bwd")]
     if name == "disp_bwd":
         return [(mb, layer, "gemm_dx")]
-    if name in ("gemm_dw", "s_dw"):
+    if name == "gemm_dw":
         return [(mb, layer, "comb_bwd")]
+    if name == "s_dw":
+        return [(mb, layer, "s_bwd")]
     raise ValueError(name)
 
 
