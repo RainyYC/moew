@@ -15,13 +15,13 @@ from judge.core.acceptance import CASES, cases_dir, load_expected
 
 #: 题面原文给出的 Time（CONTRACT §7 表格）。
 EXPECTED: dict[str, int] = {
-    "ex1": 592,
+    "ex1": 560,
     "ex2": 4880,
     "ex3": 7000,
     "ex4": 3200,
     "ex5": 416,
-    "ex6": 1744,
-    "mini": 180,
+    "ex6": 1696,
+    "mini": 164,
 }
 
 #: CONTRACT §1 的 ``lb`` 字段示例（ex1）与各例的引擎下界。

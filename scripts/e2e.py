@@ -40,9 +40,10 @@ LOOPBACK_PORT = int(os.environ.get("E2E_PORT", "3081"))
 EXTERNAL_URL = os.environ.get("JUDGE_URL", "http://123.60.231.190:4014")
 CASES = ["ex1", "ex2", "ex3", "ex4", "ex5", "ex6"]
 # 2026-10-29 规则（V·P ≤ R + 共享专家可重叠）下的求解器结果
-SOLVER_TIME = {"ex1": 560, "ex2": 4880, "ex3": 6072, "ex4": 3200, "ex5": 368, "ex6": 1696}
+SOLVER_TIME = {"ex1": 560, "ex2": 4880, "ex3": 6072, "ex4": 3200, "ex5": 416, "ex6": 1696}
 # 题面基线（2026-10 版：D 取消后 ex3 的题面值从 4000 变 7000）
-BASE = {"ex1": 592, "ex2": 4880, "ex3": 7000, "ex4": 3200, "ex5": 416, "ex6": 1744}
+# 题面样例基线（2026-10-29 版）
+BASE = {"ex1": 560, "ex2": 4880, "ex3": 7000, "ex4": 3200, "ex5": 416, "ex6": 1696}
 
 RESULTS: list[tuple[str, str, str]] = []  # (status, name, detail)
 
@@ -226,7 +227,7 @@ def main(argv: list[str] | None = None) -> int:
 
         # ---- 5. 负例：非法解 ----
         illegal = (REPO / "cases/ex1.out").read_text(encoding="utf-8")
-        illegal = illegal.replace("16 0:0:disp 1:0:s", "0 0:0:disp 1:0:s", 1)  # disp 早于 s 结束
+        illegal = illegal.replace("140 0:0:comb 1:0:gemm", "100 0:0:comb 1:0:gemm", 1)  # comb 早于 gemm 结束
         status, body = http_json(f"{base}/api/evaluate", "POST", {"case": "ex1", "output": illegal})
         check(status == 200 and body.get("ok") is False and body.get("time") is None,
               "负例·非法解 200 + ok:false + time:null", f"{status} ok={body and body.get('ok')}")

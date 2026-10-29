@@ -13,5 +13,5 @@ SCHEDULE
 2020 0:0:gemm_dw
 2400 0:0:disp_bwd 1:0:gemm_dx
 2420 1:0:gemm_dw
-2800 0:0:s_dw 1:0:disp_bwd
-3200 1:0:s_dw
+2440 0:0:s_dw 1:0:s_dw
+2800 1:0:disp_bwd

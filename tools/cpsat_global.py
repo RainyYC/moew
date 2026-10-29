@@ -154,7 +154,7 @@ def build_model(case, V, P, D, psi, ms, time_limit):
         if name == "gemm":
             return [(mb, layer, "disp")]
         if name == "comb":
-            return [(mb, layer, "gemm")]
+            return [(mb, layer, "gemm"), (mb, layer, "s")]
         if name == "s_bwd":
             d = [(mb, layer, "s"), (mb, layer, "comb")]
             if layer + 1 <= L - 1:
@@ -168,9 +168,7 @@ def build_model(case, V, P, D, psi, ms, time_limit):
         if name == "gemm_dx":
             return [(mb, layer, "comb_bwd")]
         if name == "disp_bwd":
-            return [(mb, layer, "gemm_dx")]
-        if name == "s_dw":
-            return [(mb, layer, "s_bwd")]  # 2026-10-29：只等共享专家的输入梯度
+            return [(mb, layer, "gemm_dx"), (mb, layer, "s_bwd")]
         return [(mb, layer, "comb_bwd")]
 
     for mb in range(nmb):

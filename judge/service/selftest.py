@@ -271,7 +271,7 @@ def _wait_ready(host: str, port: int, limit: float = 10.0) -> None:
 
 def _illegal_output(text: str) -> str:
     """把 ex1 的 comb 从调度里删掉 → 缺操作（missing）。"""
-    return text.replace("156 0:0:comb 1:0:gemm", "156 1:0:gemm")
+    return text.replace("140 0:0:comb 1:0:gemm", "140 1:0:gemm")
 
 
 # --------------------------------------------------------------------------- #
@@ -306,7 +306,7 @@ def run_checks(checker: Checker, h: Harness, root: Path) -> None:
         status, cases = h.get("/api/cases")
         assert status == 200 and {item["case"] for item in cases} >= {"ex1", "ex2", "mini"}
         base = {item["case"]: item["base"] for item in cases}
-        assert base["ex1"] == 592 and base["mini"] == 180, base
+        assert base["ex1"] == 560 and base["mini"] == 164, base
         status, versions = h.get("/api/versions")
         assert status == 200 and versions == []
         return "health/meta/cases/versions 空账本 OK"
@@ -317,11 +317,11 @@ def run_checks(checker: Checker, h: Harness, root: Path) -> None:
     def check_evaluate_ok() -> str:
         status, body = h.post("/api/evaluate", {"case": "ex1", "output": ideal})
         assert status == 200, status
-        assert body["ok"] is True and body["time"] == 592, body
+        assert body["ok"] is True and body["time"] == 560, body
         # 无副作用：不写账本
         assert h.ledger_rows() == []
         assert ledger.is_file() and ledger.read_text(encoding="utf-8") == ""
-        return "ex1 → time=592，200，账本仍为空"
+        return "ex1 → time=560，200，账本仍为空"
 
     checker.check("POST /api/evaluate 合法解（200 + time）", check_evaluate_ok)
 
@@ -383,11 +383,11 @@ def run_checks(checker: Checker, h: Harness, root: Path) -> None:
         assert view["state"] == "done", view
         assert view["total"] == 2 and view["done"] == 2, view
         results = {item["case"]: item for item in view["results"]}
-        assert results["ex1"]["ok"] and results["ex1"]["time"] == 592, results["ex1"]
+        assert results["ex1"]["ok"] and results["ex1"]["time"] == 560, results["ex1"]
         assert results["ex2"]["ok"] and results["ex2"]["time"] == 4880, results["ex2"]
         assert view["started_at"] and view["created_at"] and view["deadline_at"], view
         state_log.append(view["state"])
-        return "queued→…→done，2/2 例，592/4880"
+        return "queued→…→done，2/2 例，560/4880"
 
     checker.check("POST /api/runs（A 式）状态流转与结果", check_run_flow)
 
@@ -574,7 +574,7 @@ def run_checks(checker: Checker, h: Harness, root: Path) -> None:
         first, second = rows[-2], rows[-1]
         assert first["solver_cmd"] == fake_solver and second["solver_cmd"] == fake_solver
         assert first["commit"] == second["commit"] == "deadbee"
-        assert first["cases"][0]["time"] == second["cases"][0]["time"] == 592
+        assert first["cases"][0]["time"] == second["cases"][0]["time"] == 560
         assert first["cases"][0]["output_sha256"] == second["cases"][0]["output_sha256"]
         # ops 只存路径，且文件真的在
         case_entry = first["cases"][0]
@@ -708,7 +708,7 @@ def run_checks(checker: Checker, h: Harness, root: Path) -> None:
         legal = h.cli(["eval", "cases/ex1.in", "cases/ex1.out", "--json"])
         assert legal.returncode == 0, (legal.returncode, legal.stderr[-400:])
         payload = json.loads(legal.stdout)
-        assert payload["ok"] and payload["time"] == 592
+        assert payload["ok"] and payload["time"] == 560
         illegal_path = root / "illegal.out"
         illegal_path.write_text(_illegal_output(ideal), encoding="utf-8")
         illegal = h.cli(["eval", "cases/ex1.in", str(illegal_path), "--json"])
@@ -735,7 +735,7 @@ def run_checks(checker: Checker, h: Harness, root: Path) -> None:
         )
         assert completed.returncode == 0, (completed.returncode, completed.stdout[-500:], completed.stderr[-500:])
         view = json.loads(completed.stdout)
-        assert view["state"] == "done" and view["results"][0]["time"] == 592, view
+        assert view["state"] == "done" and view["results"][0]["time"] == 560, view
         assert len(h.ledger_rows()) == before + 1
         status, versions = h.get("/api/versions")
         entry = [item for item in versions if item["run_id"] == view["run_id"]]
@@ -743,7 +743,7 @@ def run_checks(checker: Checker, h: Harness, root: Path) -> None:
         # 人类可读摘要：几行、能贴进对话
         human = h.cli(["run", "--version", "cli-human", "--commit", "c0ffee1", "--cases", "ex1", "--url", h.base])
         assert human.returncode == 0, (human.returncode, human.stderr[-300:])
-        assert "Time=592" in human.stdout and len(human.stdout.splitlines()) <= 8, human.stdout
+        assert "Time=560" in human.stdout and len(human.stdout.splitlines()) <= 8, human.stdout
         return "CLI run 落账本，/api/versions 能聚合出该行（score=1.0, rank 非空）"
 
     checker.check("CLI run 落账本 + versions 聚合", check_cli_run)

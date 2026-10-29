@@ -23,25 +23,25 @@ from judge.core.acceptance import cases_dir
 
 #: 题面/契约给出的验收 Time（CONTRACT §7）。
 EXPECTED_TIME: dict[str, int] = {
-    "ex1": 592,
+    "ex1": 560,
     "ex2": 4880,
-    "ex3": 4000,
+    "ex3": 7000,
     "ex4": 3200,
     "ex5": 416,
-    "ex6": 1744,
-    "mini": 180,
+    "ex6": 1696,
+    "mini": 164,
 }
 
 #: 默认开关下 ``evaluate()`` 结果的 sha256（``json.dumps(..., sort_keys=True,
 #: separators=(",", ":"))``）。用来锁住"两趟重构 + 开关都不改变默认路径的输出"。
 GOLDEN_SHA256: dict[str, str] = {
-    "ex1": "18d737075049c164197e8a4f65bad0986f7c52b631ce251f23e7818fbcec6210",
+    "ex1": "886afacc55aed2e6848fc646bff5f115fabee4b3435e0a71b9a548e40e80e8dd",
     "ex2": "8669cd92c91ba4daeddc9bd38ea3623394bce8f97c7cf9a7ac0c8e0db65ec03b",
     "ex3": "efeb94015fe9af5c5ba6b45f24d9cc4e2cc6c6322451972a9a93134e4b904e49",
     "ex4": "2a116608b2bb6ef7ef9bbd8288a73f7db474ec9905d1240c141406b811ef0f10",
-    "ex5": "4f2ed5c981430be7af53c94890388c529120f427726e01d258cf07e6dcc7cdc8",
-    "ex6": "c7d5e8980099901227ac11df420b677c50bad6403557a6f61247ec5a95d3362d",
-    "mini": "7f5bc28b8fb1432267c8600b6d2347f2cc863a021e53b1b7160b0866228978b8",
+    "ex5": "4c9ec4fcb24004a8f831e4e8ac0c274be9fb61af838182acc1c88bc992792761",
+    "ex6": "9212e82c20fa29f55aacb44f2121ca12853fccddda30290e25d5d3a5c70381c3",
+    "mini": "e2ae8ae3cd1fb2bac4d37e68e164d599e698405d9edb88e94b3b9409373030aa",
 }
 
 
@@ -146,8 +146,8 @@ class RowOrderIndependence(unittest.TestCase):
     def test_real_dependency_violation_still_rejected(self) -> None:
         """防"修反"：真正把 comb 提前到 gemm 完成之前，仍必须报 dependency。"""
         case, text = _load("ex1")
-        # 0:0:gemm 在 86 开始、时长 24（结束 110）；把 0:0:comb 提前到 100
-        broken = text.replace("156 0:0:comb 1:0:gemm", "100 0:0:comb 1:0:gemm")
+        # 0:0:gemm 在 70 开始、时长 24（结束 94）；把 0:0:comb 提前到 80
+        broken = text.replace("140 0:0:comb 1:0:gemm", "80 0:0:comb 1:0:gemm")
         result = evaluate(case, broken)
         self.assertFalse(result["ok"])
         self.assertIsNone(result["time"])
@@ -156,14 +156,14 @@ class RowOrderIndependence(unittest.TestCase):
         target = [error for error in result["errors"] if error["at"] == "0:0:comb" and error["category"] == "dependency"]
         self.assertTrue(target, result["errors"][:5])
         self.assertEqual(target[0]["depends_on"], "0:0:gemm")
-        self.assertEqual(target[0]["dep_end"], 110)
+        self.assertEqual(target[0]["dep_end"], 94)
 
     def test_engine_conflict_across_rows_still_rejected(self) -> None:
         """两个同引擎的非零操作写在**同一 t 的两行**里，仍必须报 engine（F1 修复不能放过它）。"""
         case, text = _load("ex1")
         # 把 1:0:s 挪到 t=0 的**下一行**：两者都是时长 16 的计算操作，同一卡组同一引擎
-        broken = text.replace("0 0:0:s\n", "0 0:0:s\n0 1:0:s\n")
-        broken = broken.replace("16 0:0:disp 1:0:s", "16 0:0:disp")
+        broken = text.replace("0 0:0:disp 0:0:s\n", "0 0:0:disp 0:0:s\n0 1:0:s\n")
+        broken = broken.replace("16 1:0:s\n", "")
         result = evaluate(case, broken)
         self.assertFalse(result["ok"])
         engine_errors = [error for error in result["errors"] if error["category"] == "engine"]
@@ -186,7 +186,7 @@ class ZeroLengthCommSwitch(unittest.TestCase):
     def test_default_counts_zero_length_transfers(self) -> None:
         case, text = _load("ex5")  # P=1 ⇒ 所有通信时长为 0
         result = evaluate(case, text)
-        self.assertEqual([group["movl"] for group in result["groups"]], [1, 1])
+        self.assertEqual([group["movl"] for group in result["groups"]], [2, 2])
         self.assertEqual(result["time"], 416)
 
     def test_disabled_switch_changes_movl_only(self) -> None:
@@ -194,7 +194,7 @@ class ZeroLengthCommSwitch(unittest.TestCase):
         with mock.patch.object(memory, "ZERO_LEN_COMM_COUNTS", False):
             disabled = evaluate(case, text)
         enabled = evaluate(case, text)
-        self.assertEqual([group["movl"] for group in enabled["groups"]], [1, 1])
+        self.assertEqual([group["movl"] for group in enabled["groups"]], [2, 2])
         self.assertEqual([group["movl"] for group in disabled["groups"]], [0, 0])
         # 只影响 Movl：Mexp/Mact/Time/合法性都不变
         self.assertEqual([group["mexp"] for group in disabled["groups"]], [40, 40])
@@ -207,7 +207,7 @@ class ZeroLengthCommSwitch(unittest.TestCase):
         with mock.patch.object(memory, "ZERO_LEN_COMM_COUNTS", False):
             disabled = evaluate(case, text)
         self.assertEqual(disabled["groups"][0]["movl"], 1)
-        self.assertEqual(disabled["time"], 180)
+        self.assertEqual(disabled["time"], 164)
         self.assertTrue(disabled["ok"])
 
     def test_activation_zero_length_is_never_skipped(self) -> None:

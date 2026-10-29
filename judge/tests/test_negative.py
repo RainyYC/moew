@@ -56,14 +56,14 @@ class NegativeCases(unittest.TestCase):
 
     def test_missing_op(self) -> None:
         case, text = _load("ex1")
-        broken = _replace(text, "156 0:0:comb 1:0:gemm", "156 1:0:gemm")
+        broken = _replace(text, "140 0:0:comb 1:0:gemm", "140 1:0:gemm")
         result = evaluate(case, broken)
         matched = self.assert_errors(result, "missing")
         self.assertIn("0:0:comb", [error["at"] for error in matched])
 
     def test_duplicate_op(self) -> None:
         case, text = _load("ex1")
-        broken = _replace(text, "156 0:0:comb 1:0:gemm", "156 0:0:comb 0:0:comb 1:0:gemm")
+        broken = _replace(text, "140 0:0:comb 1:0:gemm", "140 0:0:comb 0:0:comb 1:0:gemm")
         matched = self.assert_errors(evaluate(case, broken), "duplicate")
         self.assertEqual(matched[0]["at"], "0:0:comb")
         self.assertIsInstance(matched[0]["t"], int)
@@ -71,19 +71,19 @@ class NegativeCases(unittest.TestCase):
 
     def test_dependency_early(self) -> None:
         case, text = _load("ex1")
-        # 0:0:s_bwd 原在 226（= comb 结束），提前到 220 就违反了「反向等本层前向完成」
-        broken = _replace(text, "226 0:0:s_bwd 1:0:comb", "220 0:0:s_bwd 1:0:comb")
+        # 0:0:s_bwd 原在 210（= comb 结束），提前到 204 就违反了「反向不得早于本层 comb 结束」
+        broken = _replace(text, "210 0:0:s_bwd 1:0:comb", "204 0:0:s_bwd 1:0:comb")
         matched = self.assert_errors(evaluate(case, broken), "dependency")
         self.assertEqual(matched[0]["at"], "0:0:s_bwd")
-        self.assertEqual(matched[0]["t"], 220)
+        self.assertEqual(matched[0]["t"], 204)
         self.assertEqual(matched[0]["depends_on"], "0:0:comb")
-        self.assertEqual(matched[0]["dep_end"], 226)
+        self.assertEqual(matched[0]["dep_end"], 210)
 
     def test_engine_conflict(self) -> None:
         case, text = _load("ex1")
         # 两个 microbatch 的 s 落在同一卡组同一计算引擎的同一时刻（s 时长 16，非 0）
-        broken = _replace(text, "0 0:0:s\n", "0 0:0:s 1:0:s\n")
-        broken = _replace(broken, "16 0:0:disp 1:0:s", "16 0:0:disp")
+        broken = _replace(text, "0 0:0:disp 0:0:s\n", "0 0:0:disp 0:0:s 1:0:s\n")
+        broken = _replace(broken, "16 1:0:s\n", "")
         matched = self.assert_errors(evaluate(case, broken), "engine")
         self.assertEqual(matched[0]["at"], "1:0:s")
         self.assertEqual(matched[0]["t"], 0)
@@ -106,8 +106,8 @@ class NegativeCases(unittest.TestCase):
     def test_dependency_listed_before_its_predecessor(self) -> None:
         """comb 写在 gemm 之前（跨行）：因果性分支「依赖尚未登记」。"""
         case, text = _load("ex1")
-        broken = _replace(text, "86 0:0:gemm 1:0:disp", "86 0:0:comb 1:0:disp")
-        broken = _replace(broken, "156 0:0:comb 1:0:gemm", "156 0:0:gemm 1:0:gemm")
+        broken = _replace(text, "70 0:0:gemm 1:0:disp", "70 0:0:comb 1:0:disp")
+        broken = _replace(broken, "140 0:0:comb 1:0:gemm", "140 0:0:gemm 1:0:gemm")
         matched = self.assert_errors(evaluate(case, broken), "dependency")
         self.assertIn("0:0:comb", [error["at"] for error in matched])
         self.assertIn("0:0:gemm", [error.get("depends_on") for error in matched])

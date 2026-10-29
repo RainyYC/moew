@@ -14,14 +14,18 @@ SCHEDULE
 1240 1:1:comb
 1632 0:1:s
 1640 1:1:comb_bwd 1:1:s_bwd
-2040 0:1:disp 1:1:gemm_dw 1:1:s_dw
+2040 0:1:disp 1:1:gemm_dw
 2064 1:1:gemm_dx
+2088 1:1:s_dw
 2440 0:1:gemm 1:1:disp_bwd
 2840 0:1:comb 1:0:comb_bwd 1:0:s_bwd
-3240 0:1:comb_bwd 0:1:s_bwd 1:0:gemm_dx 1:0:s_dw
+3240 0:1:comb_bwd 0:1:s_bwd 1:0:gemm_dx
 3256 1:0:disp_bwd 1:0:gemm_dw
-3640 0:1:gemm_dx 0:1:s_dw
+3272 1:0:s_dw
+3640 0:1:gemm_dx
 3664 0:1:disp_bwd 0:1:gemm_dw
+3688 0:1:s_dw
 4064 0:0:comb_bwd 0:0:s_bwd
-4464 0:0:gemm_dx 0:0:s_dw
+4464 0:0:gemm_dx
 4480 0:0:disp_bwd 0:0:gemm_dw
+4496 0:0:s_dw

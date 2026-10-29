@@ -94,16 +94,16 @@ COMM_NAMES: frozenset[str] = frozenset(OP_NAMES[i] for i in COMM_OPS)
 #: * ``s_dw`` 只等 ``s_bwd``（自己的输入梯度），不再等 ``comb_bwd``；
 #: * ``s_bwd ≥ comb`` 保留（本层前向完成后才能算它的输入梯度）。
 DEPS: tuple[tuple[int, ...], ...] = (
-    (),  # s（共享专家前向：同层无前驱）
-    (),  # disp（不再等 s：共享专家前向可重叠；跨层的"上一层的 comb"在 sim 里加）
+    (),  # s（共享专家前向：只等本层输入，跨层边在 sim 里加）
+    (),  # disp（同上；不再等 s）
     (OP_INDEX["disp"],),  # gemm
-    (OP_INDEX["gemm"],),  # comb
-    (OP_INDEX["s"], OP_INDEX["comb"]),  # s_bwd（自己的前向 + 本层前向完成）
-    (OP_INDEX["comb"],),  # comb_bwd（反向链的头：等本层前向，不再等 s_bwd）
+    (OP_INDEX["gemm"], OP_INDEX["s"]),  # comb（共享专家前向须在 comb 之前收尾）
+    (OP_INDEX["comb"],),  # s_bwd（不得早于本层 comb 结束；跨层边在 sim 里加）
+    (OP_INDEX["comb"],),  # comb_bwd（同上；反向链的头）
     (OP_INDEX["comb_bwd"],),  # gemm_dx
-    (OP_INDEX["comb_bwd"],),  # gemm_dw
-    (OP_INDEX["gemm_dx"],),  # disp_bwd
-    (OP_INDEX["s_bwd"],),  # s_dw（只等共享专家的输入梯度）
+    (OP_INDEX["comb_bwd"],),  # gemm_dw（只等 comb_bwd）
+    (OP_INDEX["gemm_dx"], OP_INDEX["s_bwd"]),  # disp_bwd（须等共享专家的输入梯度）
+    (OP_INDEX["comb_bwd"],),  # s_dw（只等 comb_bwd）
 )
 
 

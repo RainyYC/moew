@@ -123,7 +123,7 @@ class PureFunctions(unittest.TestCase):
         ):
             result = evaluate(case, output_text)
         self.assertTrue(result["ok"])
-        self.assertEqual(result["time"], 592)
+        self.assertEqual(result["time"], 560)
 
     def test_evaluate_same_input_same_output(self) -> None:
         case = parse_case(cases_dir() / "ex2.in")

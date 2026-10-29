@@ -81,15 +81,15 @@ COMM_OPS: tuple[int, ...] = tuple(i for i, engine in enumerate(ENGINE) if engine
 #: 共享专家自身保持 ``s → s_bwd → s_dw``。与 `judge/core/model.DEPS` 逐项一致。
 DEPS: tuple[tuple[int, ...], ...] = (
     (),  # s
-    (),  # disp（不再等 s；跨层的上一层 comb 由 sched 加）
+    (),  # disp（不再等 s；跨层边由 sched 加）
     (OP_DISP,),  # gemm
-    (OP_GEMM,),  # comb
-    (OP_S, OP_COMB),  # s_bwd（自己的前向 + 本层前向完成）
+    (OP_GEMM, OP_S),  # comb（共享专家前向须在 comb 之前收尾）
+    (OP_COMB,),  # s_bwd
     (OP_COMB,),  # comb_bwd（反向链的头）
     (OP_COMB_BWD,),  # gemm_dx
     (OP_COMB_BWD,),  # gemm_dw
-    (OP_GEMM_DX,),  # disp_bwd
-    (OP_S_BWD,),  # s_dw
+    (OP_GEMM_DX, OP_S_BWD),  # disp_bwd（须等共享专家的输入梯度）
+    (OP_COMB_BWD,),  # s_dw
 )
 
 

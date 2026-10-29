@@ -35,7 +35,7 @@ class ResultShape(unittest.TestCase):
         result = evaluate(case, text)
         self.assertEqual(set(result), RESULT_KEYS)
         self.assertTrue(result["ok"])
-        self.assertEqual(result["time"], 592)
+        self.assertEqual(result["time"], 560)
         self.assertEqual(result["lb"], 560)  # CONTRACT §1 示例
         self.assertEqual(result["grid"], {"V": 1, "P": 2})
         self.assertEqual(result["K"], 1)
@@ -43,7 +43,7 @@ class ResultShape(unittest.TestCase):
         # CONTRACT §1 示例：engines 的四个量完全一致
         self.assertEqual(
             result["engines"],
-            [{"v": 0, "comp": 240, "comm": 560, "comm_first": 16, "comm_last": 576}],
+            [{"v": 0, "comp": 240, "comm": 560, "comm_first": 0, "comm_last": 560}],
         )
         group = result["groups"][0]
         self.assertEqual(set(group), {"v", "mexp", "movl", "mact", "limit"})
@@ -53,7 +53,7 @@ class ResultShape(unittest.TestCase):
 
     def test_illegal_result_shape(self) -> None:
         case, text = _read("ex1")
-        broken = text.replace("156 0:0:comb 1:0:gemm", "156 1:0:gemm")
+        broken = text.replace("140 0:0:comb 1:0:gemm", "140 1:0:gemm")
         result = evaluate(case, broken)
         self.assertEqual(set(result), RESULT_KEYS)
         self.assertFalse(result["ok"])
@@ -72,7 +72,7 @@ class ResultShape(unittest.TestCase):
         times = [op["t"] for op in ops]
         self.assertEqual(times, sorted(times), "ops 必须按声明顺序（t 非降）")
         self.assertEqual(len({(op["mb"], op["l"], op["op"]) for op in ops}), 20)
-        self.assertEqual(result["time"], 592)
+        self.assertEqual(result["time"], 560)
 
     def test_json_serialisable_and_deterministic(self) -> None:
         case, text = _read("ex5")

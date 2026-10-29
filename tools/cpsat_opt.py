@@ -80,7 +80,7 @@ def deps_of(mb: int, layer: int, name: str, L: int) -> list[tuple[int, int, str]
     if name == "gemm":
         return [(mb, layer, "disp")]
     if name == "comb":
-        return [(mb, layer, "gemm")]
+        return [(mb, layer, "gemm"), (mb, layer, "s")]  # 共享专家前向须在 comb 之前收尾
     if name == "s_bwd":
         out = [(mb, layer, "s"), (mb, layer, "comb")]
         if layer + 1 <= L - 1:
@@ -94,11 +94,9 @@ def deps_of(mb: int, layer: int, name: str, L: int) -> list[tuple[int, int, str]
     if name == "gemm_dx":
         return [(mb, layer, "comb_bwd")]
     if name == "disp_bwd":
-        return [(mb, layer, "gemm_dx")]
-    if name == "gemm_dw":
+        return [(mb, layer, "gemm_dx"), (mb, layer, "s_bwd")]
+    if name in ("gemm_dw", "s_dw"):
         return [(mb, layer, "comb_bwd")]
-    if name == "s_dw":
-        return [(mb, layer, "s_bwd")]
     raise ValueError(name)
 
 

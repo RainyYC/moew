@@ -45,12 +45,12 @@ from solver import casein, judgedbridge, solve  # noqa: E402
 
 #: CONTRACT §7 冻结的 6 个官方样例目标（题面原文值；求解要求 Time ≤ 该值）。
 TARGETS: dict[str, int] = {
-    "ex1": 592,
+    "ex1": 560,
     "ex2": 4880,
     "ex3": 7000,  # 2026-10 版：D 取消后 V=2,P=2，题面值从 4000 变 7000
     "ex4": 3200,
     "ex5": 416,
-    "ex6": 1744,
+    "ex6": 1696,
 }
 
 #: 题面 §5.4 的单例墙钟上限（秒）。
