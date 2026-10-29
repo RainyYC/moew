@@ -33,10 +33,11 @@ ENGINE = {
     "s": "C", "disp": "N", "gemm": "C", "comb": "N", "s_bwd": "C",
     "comb_bwd": "N", "gemm_dx": "C", "gemm_dw": "C", "disp_bwd": "N", "s_dw": "C",
 }
+#: 2026-10-29 版题面 §4.2 第 1 条：共享专家不在路由专家链上。
 BASE_DEPS = {
-    "s": (), "disp": ("s",), "gemm": ("disp",), "comb": ("gemm",), "s_bwd": ("comb",),
-    "comb_bwd": ("s_bwd",), "gemm_dx": ("comb_bwd",), "gemm_dw": ("comb_bwd",),
-    "disp_bwd": ("gemm_dx",), "s_dw": ("comb_bwd",),
+    "s": (), "disp": (), "gemm": ("disp",), "comb": ("gemm", "s"),
+    "s_bwd": ("comb",), "comb_bwd": ("comb",), "gemm_dx": ("comb_bwd",),
+    "gemm_dw": ("comb_bwd",), "disp_bwd": ("gemm_dx", "s_bwd"), "s_dw": ("comb_bwd",),
 }
 
 
@@ -155,9 +156,9 @@ def build(case: dict, out: dict) -> dict:
 
 def deps_of(layer: int, layers: int, op: str) -> list[tuple[int, str]]:
     need = [(layer, q) for q in BASE_DEPS[op]]
-    if op == "s" and layer > 0:
+    if op in ("s", "disp") and layer > 0:
         need.append((layer - 1, "comb"))
-    if op == "s_bwd" and layer < layers - 1:
+    if op in ("s_bwd", "comb_bwd") and layer < layers - 1:
         need.append((layer + 1, "disp_bwd"))
     return need
 
