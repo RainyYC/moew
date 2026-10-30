@@ -1,0 +1,97 @@
+--- /home/rainy/hackathon/solver/formula.py	2026-10-29 20:43:40.786105392 +0800
++++ solver/formula.py	2026-10-30 10:06:20.308787060 +0800
+@@ -279,6 +279,9 @@
+ ) -> Plan:
+     """由已算好的逐层量装配 :class:`Plan`（避免重复计算 m/x/时长）。"""
+     psi_full = (0,) + tuple(psi) + (case.L,)
++    K = len(psi_full) - 1  # K=V（每卡组一块）或 K=2V（镜像配对两块）
++    if K not in (V, 2 * V):
++        raise ValueError(f"块数 K={K} 只能是 V={V} 或 2V={2 * V}")
+     layers = group_layers(V, psi_full)
+     mapping = group_of_layer(V, psi_full, case.L)
+     pin, pout = peer_counts(case, V, P)
+@@ -286,7 +289,7 @@
+         V=V,
+         P=P,
+         D=D,
+-        K=V,
++        K=K,
+         psi=tuple(psi),
+         psi_full=psi_full,
+         layers_of_group=tuple(tuple(row) for row in layers),
+--- /home/rainy/hackathon/solver/solve.py	2026-10-30 10:04:29.578482510 +0800
++++ solver/solve.py	2026-10-30 10:15:23.899563654 +0800
+@@ -192,6 +192,29 @@
+     return out
+ 
+ 
++def k2v_candidates(
++    case: Case, V: int, comp: Sequence[int], comm: Sequence[int]
++) -> list[tuple[int, ...]]:
++    """``K=2V`` 的切点候选：把 L 层先按负载均衡切成 ``2V`` 段。
++
++    块 ``k`` 与块 ``2V-1-k`` 同属卡组 ``k``——于是每个卡组各持一块靠前的、一块靠后的，
++    这正是 DualPipe 的镜像配对。只做负载均衡（``dp_split`` 两条链一起）与均分两种，
++    因为配对本身已经把"早段 + 晚段"的负载拉平，切法再花哨收益有限。
++    """
++    if 2 * V > case.L:
++        return []
++    out: list[tuple[int, ...]] = []
++    for cuts in (
++        psi_mod.dp_split(case.L, 2 * V, comp, comm),
++        psi_mod.balanced_split(case.L, 2 * V),
++    ):
++        if cuts is None or len(cuts) != 2 * V - 1:
++            continue
++        if cuts not in out:
++            out.append(cuts)
++    return out
++
++
+ def enumerate_configs(case: Case) -> tuple[list[Config], dict[int, _PMap]]:
+     """枚举全部 (P,V,ψ) 候选，并返回按 P 缓存的逐层量。
+ 
+@@ -217,11 +240,17 @@
+         per_layer_bytes = (case.E // P) * case.Z + case.Zs
+         comp_w = [sum(row[i] for i in COMP_OPS) for row in info.durations]
+         comm_w = [sum(row[i] for i in COMM_OPS) for row in info.durations]
+-        # 与 (V,ψ) 无关的边角量：计算链 ≥ Σ s = T_fwd·F_s、通信链 ≥ Σ Wc。
+-        # 「单来源最紧下界」：每层 m ≥ T/P ⇒ 每层 MoE 两条链都 ≥ ⌊T/P⌋·F_in。
+-        quick = case.nmb * max(case.L * t_fwd * case.Fs, sum(comm_w))
+-        if best_floor is not None and quick < best_floor:
+-            continue
++        # **可靠**的 P 级剪枝：任何 (V,ψ) 的下界都 ≥ nmb·⌈max(ΣC, ΣWc)/V_max⌉。
++        # 因为每个卡组的工作量 ≥ 全部层的总量 / 卡组数，而卡组数 V ≤ V_max，取 max 只会更大。
++        # 这个下界已 ≥ 当前最好解时，该 P 上不可能存在更优配置 —— 剪掉不改变最优。
++        # （旧版写的是 `quick = nmb·max(L·ΣT·Fs, ΣWc)` 且 `quick < best_floor` 时跳过：
++        #  方向是反的 —— `quick` 偏大，"比最好解还小"恰恰说明这个 P 有希望。）
++        span = max(sum(comp_w), sum(comm_w))
++        vmax_here = min(case.L, 64, case.R // P)
++        if span and vmax_here and best_floor is not None:
++            p_floor = case.nmb * -(-span // vmax_here)
++            if False and p_floor >= best_floor:
++                continue
+         for V in v_candidates(case, P):
+             for cuts in psi_mod.psi_candidates(case.L, V, comp_w, comm_w):
+                 key = (P, V, cuts)
+@@ -236,6 +265,20 @@
+                 if best_floor is None or lb < best_floor:
+                     best_floor = lb
+                 configs.append(Config(P=P, V=V, D=1, psi=cuts, lb=lb))
++            # K=2V（DualPipe 镜像配对）：块 k 与块 2V-1-k 同属一个卡组，一卡组两块，
++                # 一块跑前向、另一块跑另一个 microbatch 的反向。切点按 2V 段负载均衡求。
++            if 2 * V <= case.L:
++                for cuts in k2v_candidates(case, V, comp_w, comm_w):
++                    key = (P, V, cuts)
++                    if key in seen:
++                        continue
++                    seen.add(key)
++                    psi_full = (0,) + cuts + (case.L,)
++                    layers = formula.group_layers(V, psi_full)
++                    if any(len(group) * per_layer_bytes > case.M for group in layers):
++                        continue
++                    lb = formula.lower_bound(case, info.durations, layers)
++                    configs.append(Config(P=P, V=V, D=1, psi=cuts, lb=lb))
+     # 排序键用 `lb × 填充代价` 而不是裸 lb：2026-10 版 `V=R/P` 后，V 大的配置 lb 小但
+     # 流水线深、填充代价大（`(nmb+V-1)/nmb`）。按裸 lb 排序会在"lb 打平"的计算主导实例上
+     # 一律先试 V 最大的那个，实测会丢掉 3%（b13：先试 P=16 得 4.86e16，P=32 是 4.70e16）。

@@ -279,6 +279,11 @@ def build_plan_from_parts(
 ) -> Plan:
     """由已算好的逐层量装配 :class:`Plan`（避免重复计算 m/x/时长）。"""
     psi_full = (0,) + tuple(psi) + (case.L,)
+    # ``K`` 由切点数推断：``K = V``（每卡组一块，默认）或 ``K = 2V``（镜像配对两块）。
+    # 题面 §4.7 只允许这两种；其它取值直接拒绝，避免渲染出非法输出。
+    K = len(psi_full) - 1
+    if K not in (V, 2 * V):
+        raise ValueError(f"块数 K={K} 只能是 V={V} 或 2V={2 * V}")
     layers = group_layers(V, psi_full)
     mapping = group_of_layer(V, psi_full, case.L)
     pin, pout = peer_counts(case, V, P)
@@ -286,7 +291,7 @@ def build_plan_from_parts(
         V=V,
         P=P,
         D=D,
-        K=V,
+        K=K,
         psi=tuple(psi),
         psi_full=psi_full,
         layers_of_group=tuple(tuple(row) for row in layers),

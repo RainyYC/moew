@@ -1,0 +1,659 @@
+{
+  "n": 50,
+  "t2_base_vs_t2_cur_differ": [],
+  "t2_cur_vs_val_cur_differ": [],
+  "geomean_val_over_t2base": 1.0,
+  "geomean_val_over_t2cur": 1.0,
+  "rows": [
+    {
+      "case": "r128_v4_c4a.txt",
+      "t2_base": 23699410,
+      "t2_cur": 23699410,
+      "val_cur": 23699410,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r128_v8_c4.txt",
+      "t2_base": 24363545,
+      "t2_cur": 24363545,
+      "val_cur": 24363545,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r128_v8_c8a.txt",
+      "t2_base": 12166030,
+      "t2_cur": 12166030,
+      "val_cur": 12166030,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r128_v8_c8b.txt",
+      "t2_base": 5714198,
+      "t2_cur": 5714198,
+      "val_cur": 5714198,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r16_p4_trap.txt",
+      "t2_base": 23841468,
+      "t2_cur": 23841468,
+      "val_cur": 23841468,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r20_p2_flat.txt",
+      "t2_base": 33475223,
+      "t2_cur": 33475223,
+      "val_cur": 33475223,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r24_p3_flat.txt",
+      "t2_base": 28462378,
+      "t2_cur": 28462378,
+      "val_cur": 28462378,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r24_p4_block.txt",
+      "t2_base": 55823890,
+      "t2_cur": 55823890,
+      "val_cur": 55823890,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r256_v4_c4.txt",
+      "t2_base": 64625020,
+      "t2_cur": 64625020,
+      "val_cur": 64625020,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r256_v8_c16.txt",
+      "t2_base": 53309912,
+      "t2_cur": 53309912,
+      "val_cur": 53309912,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r256_v8_c4.txt",
+      "t2_base": 40346335,
+      "t2_cur": 40346335,
+      "val_cur": 40346335,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r256_v8_c8a.txt",
+      "t2_base": 29258410,
+      "t2_cur": 29258410,
+      "val_cur": 29258410,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r32_p8_ramp.txt",
+      "t2_base": 18620348,
+      "t2_cur": 18620348,
+      "val_cur": 18620348,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r64_v2_c2.txt",
+      "t2_base": 2600248,
+      "t2_cur": 2600248,
+      "val_cur": 2600248,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r64_v2_c4.txt",
+      "t2_base": 5046076,
+      "t2_cur": 5046076,
+      "val_cur": 5046076,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r64_v4_c4a.txt",
+      "t2_base": 2831948,
+      "t2_cur": 2831948,
+      "val_cur": 2831948,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r64_v4_c4b.txt",
+      "t2_base": 5579036,
+      "t2_cur": 5579036,
+      "val_cur": 5579036,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r64_v4_c4c.txt",
+      "t2_base": 10272255,
+      "t2_cur": 10272255,
+      "val_cur": 10272255,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r64_v4_c4d.txt",
+      "t2_base": 24301023,
+      "t2_cur": 24301023,
+      "val_cur": 24301023,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r64_v4_c4e.txt",
+      "t2_base": 36876336,
+      "t2_cur": 36876336,
+      "val_cur": 36876336,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r64_v8_c16a.txt",
+      "t2_base": 6473240,
+      "t2_cur": 6473240,
+      "val_cur": 6473240,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r64_v8_c16b.txt",
+      "t2_base": 106581594,
+      "t2_cur": 106581594,
+      "val_cur": 106581594,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r64_v8_c16c.txt",
+      "t2_base": 40430360,
+      "t2_cur": 40430360,
+      "val_cur": 40430360,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r64_v8_c8a.txt",
+      "t2_base": 5282831,
+      "t2_cur": 5282831,
+      "val_cur": 5282831,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r64_v8_c8b.txt",
+      "t2_base": 3388464,
+      "t2_cur": 3388464,
+      "val_cur": 3388464,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r64_v8_c8c.txt",
+      "t2_base": 7206270,
+      "t2_cur": 7206270,
+      "val_cur": 7206270,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r64_v8_c8d.txt",
+      "t2_base": 5239340,
+      "t2_cur": 5239340,
+      "val_cur": 5239340,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r64_v8_c8e.txt",
+      "t2_base": 15815960,
+      "t2_cur": 15815960,
+      "val_cur": 15815960,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r64_v8_c8f.txt",
+      "t2_base": 20964124,
+      "t2_cur": 20964124,
+      "val_cur": 20964124,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "r64_v8_c8g.txt",
+      "t2_base": 40667662,
+      "t2_cur": 40667662,
+      "val_cur": 40667662,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x01_lr_block_p2.txt",
+      "t2_base": 3282440,
+      "t2_cur": 3282440,
+      "val_cur": 3282440,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x02_lr_ramp_c16.txt",
+      "t2_base": 22820434,
+      "t2_cur": 22820434,
+      "val_cur": 22820434,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x03_lr_trap_p3.txt",
+      "t2_base": 14744268,
+      "t2_cur": 14744268,
+      "val_cur": 14744268,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x04_lr_inter_p5.txt",
+      "t2_base": 34254480,
+      "t2_cur": 34254480,
+      "val_cur": 34254480,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x05_lr_tight_p6.txt",
+      "t2_base": 20057280,
+      "t2_cur": 20057280,
+      "val_cur": 20057280,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x06_lr_trap_p7.txt",
+      "t2_base": 12743198,
+      "t2_cur": 12743198,
+      "val_cur": 12743198,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x07_lr_flat_p10.txt",
+      "t2_base": 22547730,
+      "t2_cur": 22547730,
+      "val_cur": 22547730,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x08_lr_lowb_p4.txt",
+      "t2_base": 10077636,
+      "t2_cur": 10077636,
+      "val_cur": 10077636,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x09_lr_skew_p6.txt",
+      "t2_base": 24060896,
+      "t2_cur": 24060896,
+      "val_cur": 24060896,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x10_lr_tight_p8.txt",
+      "t2_base": 21783313,
+      "t2_cur": 21783313,
+      "val_cur": 21783313,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x11_lr_deep_p3.txt",
+      "t2_base": 15657616,
+      "t2_cur": 15657616,
+      "val_cur": 15657616,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x12_lr_close_p10.txt",
+      "t2_base": 33947616,
+      "t2_cur": 33947616,
+      "val_cur": 33947616,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x13_lr_twochunk_p8.txt",
+      "t2_base": 17242088,
+      "t2_cur": 17242088,
+      "val_cur": 17242088,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x14_lr_twochunk_p15.txt",
+      "t2_base": 95755245,
+      "t2_cur": 95755245,
+      "val_cur": 95755245,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x15_lr_twochunk_p10.txt",
+      "t2_base": 19023800,
+      "t2_cur": 19023800,
+      "val_cur": 19023800,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x16_vl_trap4_ramp.txt",
+      "t2_base": 4325802,
+      "t2_cur": 4325802,
+      "val_cur": 4325802,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x17_vl_tight_block.txt",
+      "t2_base": 6298808,
+      "t2_cur": 6298808,
+      "val_cur": 6298808,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x18_vl_tight_small.txt",
+      "t2_base": 1808324,
+      "t2_cur": 1808324,
+      "val_cur": 1808324,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x19_vl_trap4_fs4.txt",
+      "t2_base": 8283726,
+      "t2_cur": 8283726,
+      "val_cur": 8283726,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    },
+    {
+      "case": "x20_vl_flat_control.txt",
+      "t2_base": 2437848,
+      "t2_cur": 2437848,
+      "val_cur": 2437848,
+      "t2_status": [
+        "OK",
+        "OK"
+      ],
+      "val_status": "OK",
+      "val_over_t2base": 1.0,
+      "val_over_t2cur": 1.0
+    }
+  ]
+}

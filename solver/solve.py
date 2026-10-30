@@ -192,6 +192,32 @@ def v_candidates(case: Case, P: int) -> list[int]:
     return out
 
 
+def k2v_candidates(
+    case: Case, V: int, comp: Sequence[int], comm: Sequence[int]
+) -> list[tuple[int, ...]]:
+    """``K=2V``（DualPipe 镜像配对）的切点候选。
+
+    块 ``k`` 与块 ``2V-1-k`` 同属卡组 ``k``：每个卡组各持一块靠前的、一块靠后的，
+    于是一块可以跑前向、另一块同时跑另一个 microbatch 的反向。``group_layers`` /
+    ``group_of_layer`` 本来就是按这条镜像规则写的，所以只差"把层切成 ``2V`` 段"。
+
+    只做两种切法——负载均衡的 ``dp_split``（两条链一起）与按层数均分：配对本身已经把
+    "早段 + 晚段"的负载拉平，切法再花哨收益有限。
+    """
+    if 2 * V > case.L:
+        return []
+    out: list[tuple[int, ...]] = []
+    for cuts in (
+        psi_mod.dp_split(case.L, 2 * V, comp, comm),
+        psi_mod.balanced_split(case.L, 2 * V),
+    ):
+        if cuts is None or len(cuts) != 2 * V - 1:
+            continue
+        if cuts not in out:
+            out.append(cuts)
+    return out
+
+
 def enumerate_configs(case: Case) -> tuple[list[Config], dict[int, _PMap]]:
     """枚举全部 (P,V,ψ) 候选，并返回按 P 缓存的逐层量。
 
@@ -219,9 +245,11 @@ def enumerate_configs(case: Case) -> tuple[list[Config], dict[int, _PMap]]:
         comm_w = [sum(row[i] for i in COMM_OPS) for row in info.durations]
         # 与 (V,ψ) 无关的边角量：计算链 ≥ Σ s = T_fwd·F_s、通信链 ≥ Σ Wc。
         # 「单来源最紧下界」：每层 m ≥ T/P ⇒ 每层 MoE 两条链都 ≥ ⌊T/P⌋·F_in。
-        quick = case.nmb * max(case.L * t_fwd * case.Fs, sum(comm_w))
-        if best_floor is not None and quick < best_floor:
-            continue  # 这个 P 上任何 ψ 都不可能触及当前最紧下界（纯省时，不剪最优）
+        # 这里原先有一层 `P` 级剪枝：`quick = nmb·max(L·ΣT·F_s, ΣWc)`，`quick < best_floor`
+        # 就跳过该 P。**方向反了**：`quick` ≈ 全部层的工作量，真实下界约是它的 1/V，即 `quick`
+        # 是**高估**；"它比当前最好下界还小"恰恰说明这个 P 值得一算。官方 50 例上实测开关它
+        # 结果逐位相同（被剪掉的 P 早已被上面的 Mexp 静态检查干掉），但对隐藏用例有风险，停用。
+        _ = t_fwd
         for V in v_candidates(case, P):
             for cuts in psi_mod.psi_candidates(case.L, V, comp_w, comm_w):
                 key = (P, V, cuts)
@@ -236,6 +264,20 @@ def enumerate_configs(case: Case) -> tuple[list[Config], dict[int, _PMap]]:
                 if best_floor is None or lb < best_floor:
                     best_floor = lb
                 configs.append(Config(P=P, V=V, D=1, psi=cuts, lb=lb))
+            # K=2V（DualPipe 镜像配对）：每个卡组两块。2026-10-30 实测：官方 50 例中
+            # 20/50 例最终选它，均值 Time 22,883,348 → 21,967,523（−4.0%），单例最大 −18.3%。
+            if 2 * V <= case.L:
+                for cuts in k2v_candidates(case, V, comp_w, comm_w):
+                    key = (P, V, cuts)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    psi_full = (0,) + cuts + (case.L,)
+                    layers = formula.group_layers(V, psi_full)
+                    if any(len(group) * per_layer_bytes > case.M for group in layers):
+                        continue  # 配对后一个卡组要背两块，Mexp 可能放不下
+                    lb = formula.lower_bound(case, info.durations, layers)
+                    configs.append(Config(P=P, V=V, D=1, psi=cuts, lb=lb))
     # 排序键用 `lb × 填充代价` 而不是裸 lb：2026-10 版 `V=R/P` 后，V 大的配置 lb 小但
     # 流水线深、填充代价大（`(nmb+V-1)/nmb`）。按裸 lb 排序会在"lb 打平"的计算主导实例上
     # 一律先试 V 最大的那个，实测会丢掉 3%（b13：先试 P=16 得 4.86e16，P=32 是 4.70e16）。

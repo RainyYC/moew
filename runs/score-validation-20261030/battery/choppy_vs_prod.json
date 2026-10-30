@@ -1,0 +1,101 @@
+{
+ "b02-m512": {
+  "P": 2,
+  "V": 64,
+  "nmb": 102,
+  "comp_span_pct": 0.0,
+  "comm_span_pct": 0.0,
+  "seg_span_pct": 0.0,
+  "seg_mean_over_max": 1.0,
+  "bound_mean": 540672000000000,
+  "bound_max": 540672000000000
+ },
+ "b03-m256": {
+  "P": 4,
+  "V": 64,
+  "nmb": 102,
+  "comp_span_pct": 0.0,
+  "comm_span_pct": 0.0,
+  "seg_span_pct": 0.0,
+  "seg_mean_over_max": 1.0,
+  "bound_mean": 811008000000000,
+  "bound_max": 811008000000000
+ },
+ "b04-m96": {
+  "P": 8,
+  "V": 64,
+  "nmb": 102,
+  "comp_span_pct": 0.0,
+  "comm_span_pct": 0.0,
+  "seg_span_pct": 0.0,
+  "seg_mean_over_max": 1.0,
+  "bound_mean": 946176000000000,
+  "bound_max": 946176000000000
+ },
+ "b07-mixed": {
+  "P": 2,
+  "V": 64,
+  "nmb": 1000,
+  "comp_span_pct": 0.010816591304352308,
+  "comm_span_pct": 0.0,
+  "seg_span_pct": 0.0,
+  "seg_mean_over_max": 1.0,
+  "bound_mean": 3483238400000000,
+  "bound_max": 3483238400000000
+ },
+ "b08-narrow": {
+  "P": 4,
+  "V": 64,
+  "nmb": 256,
+  "comp_span_pct": 0.0,
+  "comm_span_pct": 0.0,
+  "seg_span_pct": 0.0,
+  "seg_mean_over_max": 1.0,
+  "bound_mean": 1567948800000000,
+  "bound_max": 1567948800000000
+ },
+ "b10-high-k": {
+  "P": 2,
+  "V": 64,
+  "nmb": 512,
+  "comp_span_pct": 0.0,
+  "comm_span_pct": 0.0,
+  "seg_span_pct": 0.0,
+  "seg_mean_over_max": 1.0,
+  "bound_mean": 117760000000000,
+  "bound_max": 117760000000000
+ },
+ "b11-short-l": {
+  "P": 4,
+  "V": 4,
+  "nmb": 1000,
+  "comp_span_pct": 0.0,
+  "comm_span_pct": 0.0,
+  "seg_span_pct": 0.0,
+  "seg_mean_over_max": 1.0,
+  "bound_mean": 4929945600000000,
+  "bound_max": 4929945600000000
+ },
+ "b13-balanced-compute": {
+  "P": 64,
+  "V": 8,
+  "nmb": 102,
+  "comp_span_pct": 0.0,
+  "comm_span_pct": 0.0,
+  "seg_span_pct": 0.0,
+  "seg_mean_over_max": 1.0,
+  "bound_mean": 42860544000000000,
+  "bound_max": 42860544000000000
+ },
+ "b06-maxmb-tight": {
+  "P": 4,
+  "V": 64,
+  "nmb": 1000,
+  "comp_span_pct": 0.0,
+  "comm_span_pct": 0.0,
+  "seg_span_pct": 0.0,
+  "seg_mean_over_max": 1.0,
+  "bound_mean": 5224857600000000,
+  "bound_max": 5224857600000000
+ }
+}

@@ -178,8 +178,12 @@ class BatteryB13Test(unittest.TestCase):
         solution = solve.solve_case(case, budget=7.0)
         self.assertIsNotNone(solution)
         self.assertLess(time.monotonic() - started, 9.5)
-        self.assertLessEqual(solution.time, 46_326_548_000_000_000,
-                             "b13 比 2026-10-30 基线更差（探窗顺序 / 预算分配回退）")
+        # 2026-10-30：预算从 9.2 s 下调到 7.6 s（给 10 s 时限留 2.4 s 余量）。b13 在 7.6 s 下
+        # 是 4.757e16；历史值 4.633e16 需要 ≥9.0 s 预算才拿得到。官方 50 例全量对比显示这次
+        # 预算下调不改变成绩（均值 22,884,835 → 22,883,348），所以这里按**生产预算**的实际值
+        # 设界，只拦"无意的算法退化"，不再追求需要更多预算才能达成的历史值。
+        self.assertLessEqual(solution.time, 47_600_000_000_000_000,
+                             "b13 比生产预算（7.6 s）下的基线更差（探窗顺序 / 预算分配回退）")
 
 
 if __name__ == "__main__":

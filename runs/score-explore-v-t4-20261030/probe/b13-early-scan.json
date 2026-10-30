@@ -1,0 +1,273 @@
+[
+ {
+  "W": 20,
+  "budget": 6.0,
+  "P": 64,
+  "V": 8,
+  "K": 8,
+  "psi": [
+   8,
+   16,
+   24,
+   32,
+   40,
+   48,
+   56
+  ],
+  "window": 20,
+  "mode": "early",
+  "variant": [
+   true,
+   false,
+   false,
+   false
+  ],
+  "time": 47572895000000000,
+  "lb": 40108032000000000,
+  "grader_time": 47572895000000000,
+  "out": "/home/rainy/hackathon/runs/score-explore-v-t4-20261030/out/b13.earlyonly.W20-B6.0.out",
+  "log": [
+   "[\u679a\u4e3e] b13-balanced-compute: 27 \u4e2a (P,V,D,\u03c8) \u5019\u9009\uff0c\u6700\u5c0f lb=40108032000000000",
+   "    [\u586b\u9699] P=64 V=8 \u2192 Time=61569005000000000 (lb=40108032000000000)",
+   "    [\u63a2\u7a97] W=3 early \u2192 Time=47572895000000000 (lb=40108032000000000)"
+  ]
+ },
+ {
+  "W": 25,
+  "budget": 6.0,
+  "P": 64,
+  "V": 8,
+  "K": 8,
+  "psi": [
+   8,
+   16,
+   24,
+   32,
+   40,
+   48,
+   56
+  ],
+  "window": 25,
+  "mode": "early",
+  "variant": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "time": 46729618000000000,
+  "lb": 40108032000000000,
+  "grader_time": 46729618000000000,
+  "out": "/home/rainy/hackathon/runs/score-explore-v-t4-20261030/out/b13.earlyonly.W25-B6.0.out",
+  "log": [
+   "[\u679a\u4e3e] b13-balanced-compute: 27 \u4e2a (P,V,D,\u03c8) \u5019\u9009\uff0c\u6700\u5c0f lb=40108032000000000",
+   "    [\u586b\u9699] P=64 V=8 \u2192 Time=61569005000000000 (lb=40108032000000000)",
+   "    [\u63a2\u7a97] W=3 early \u2192 Time=47817517000000000 (lb=40108032000000000)",
+   "    [\u8d2a\u5fc3] P=64 V=8 D=1 psi=(8, 16, 24, 32, 40, 48, 56) W=25 early \u53d8\u4f53=(False, False, False, False) \u2192 Time=46729618000000000 (lb=40108032000000000)"
+  ]
+ },
+ {
+  "W": 12,
+  "budget": 6.0,
+  "P": 64,
+  "V": 8,
+  "K": 8,
+  "psi": [
+   8,
+   16,
+   24,
+   32,
+   40,
+   48,
+   56
+  ],
+  "window": 12,
+  "mode": "early",
+  "variant": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "time": 56891166000000000,
+  "lb": 40108032000000000,
+  "grader_time": 56891166000000000,
+  "out": "/home/rainy/hackathon/runs/score-explore-v-t4-20261030/out/b13.earlyonly.W12-B6.0.out",
+  "log": [
+   "[\u679a\u4e3e] b13-balanced-compute: 27 \u4e2a (P,V,D,\u03c8) \u5019\u9009\uff0c\u6700\u5c0f lb=40108032000000000",
+   "    [\u586b\u9699] P=64 V=8 \u2192 Time=61569005000000000 (lb=40108032000000000)",
+   "    [\u63a2\u7a97] W=3 early \u2192 Time=57892069000000000 (lb=40108032000000000)",
+   "    [\u8d2a\u5fc3] P=64 V=8 D=1 psi=(8, 16, 24, 32, 40, 48, 56) W=12 early \u53d8\u4f53=(True, False, True, False) \u2192 Time=57880644000000000 (lb=40108032000000000)",
+   "    [\u8d2a\u5fc3] P=64 V=8 D=1 psi=(8, 16, 24, 32, 40, 48, 56) W=12 early \u53d8\u4f53=(False, False, False, False) \u2192 Time=56891166000000000 (lb=40108032000000000)"
+  ]
+ },
+ {
+  "W": 34,
+  "budget": 6.0,
+  "P": 64,
+  "V": 8,
+  "K": 8,
+  "psi": [
+   8,
+   16,
+   24,
+   32,
+   40,
+   48,
+   56
+  ],
+  "window": 34,
+  "mode": "early",
+  "variant": [
+   true,
+   false,
+   false,
+   false
+  ],
+  "time": 48357404000000000,
+  "lb": 40108032000000000,
+  "grader_time": 48357404000000000,
+  "out": "/home/rainy/hackathon/runs/score-explore-v-t4-20261030/out/b13.earlyonly.W34-B6.0.out",
+  "log": [
+   "[\u679a\u4e3e] b13-balanced-compute: 27 \u4e2a (P,V,D,\u03c8) \u5019\u9009\uff0c\u6700\u5c0f lb=40108032000000000",
+   "    [\u586b\u9699] P=64 V=8 \u2192 Time=61569005000000000 (lb=40108032000000000)",
+   "    [\u63a2\u7a97] W=3 early \u2192 Time=48357404000000000 (lb=40108032000000000)"
+  ]
+ },
+ {
+  "W": 20,
+  "budget": 8.0,
+  "P": 64,
+  "V": 8,
+  "K": 8,
+  "psi": [
+   8,
+   16,
+   24,
+   32,
+   40,
+   48,
+   56
+  ],
+  "window": 20,
+  "mode": "early",
+  "variant": [
+   true,
+   false,
+   false,
+   false
+  ],
+  "time": 47572895000000000,
+  "lb": 40108032000000000,
+  "grader_time": 47572895000000000,
+  "out": "/home/rainy/hackathon/runs/score-explore-v-t4-20261030/out/b13.earlyonly.W20-B8.0.out",
+  "log": [
+   "[\u679a\u4e3e] b13-balanced-compute: 27 \u4e2a (P,V,D,\u03c8) \u5019\u9009\uff0c\u6700\u5c0f lb=40108032000000000",
+   "    [\u586b\u9699] P=64 V=8 \u2192 Time=61569005000000000 (lb=40108032000000000)",
+   "    [\u63a2\u7a97] W=3 early \u2192 Time=47572895000000000 (lb=40108032000000000)"
+  ]
+ },
+ {
+  "W": 25,
+  "budget": 8.0,
+  "P": 64,
+  "V": 8,
+  "K": 8,
+  "psi": [
+   8,
+   16,
+   24,
+   32,
+   40,
+   48,
+   56
+  ],
+  "window": 25,
+  "mode": "early",
+  "variant": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "time": 46729618000000000,
+  "lb": 40108032000000000,
+  "grader_time": 46729618000000000,
+  "out": "/home/rainy/hackathon/runs/score-explore-v-t4-20261030/out/b13.earlyonly.W25-B8.0.out",
+  "log": [
+   "[\u679a\u4e3e] b13-balanced-compute: 27 \u4e2a (P,V,D,\u03c8) \u5019\u9009\uff0c\u6700\u5c0f lb=40108032000000000",
+   "    [\u586b\u9699] P=64 V=8 \u2192 Time=61569005000000000 (lb=40108032000000000)",
+   "    [\u63a2\u7a97] W=3 early \u2192 Time=47817517000000000 (lb=40108032000000000)",
+   "    [\u8d2a\u5fc3] P=64 V=8 D=1 psi=(8, 16, 24, 32, 40, 48, 56) W=25 early \u53d8\u4f53=(False, False, False, False) \u2192 Time=46729618000000000 (lb=40108032000000000)"
+  ]
+ },
+ {
+  "W": 12,
+  "budget": 8.0,
+  "P": 64,
+  "V": 8,
+  "K": 8,
+  "psi": [
+   8,
+   16,
+   24,
+   32,
+   40,
+   48,
+   56
+  ],
+  "window": 12,
+  "mode": "early",
+  "variant": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "time": 56891166000000000,
+  "lb": 40108032000000000,
+  "grader_time": 56891166000000000,
+  "out": "/home/rainy/hackathon/runs/score-explore-v-t4-20261030/out/b13.earlyonly.W12-B8.0.out",
+  "log": [
+   "[\u679a\u4e3e] b13-balanced-compute: 27 \u4e2a (P,V,D,\u03c8) \u5019\u9009\uff0c\u6700\u5c0f lb=40108032000000000",
+   "    [\u586b\u9699] P=64 V=8 \u2192 Time=61569005000000000 (lb=40108032000000000)",
+   "    [\u63a2\u7a97] W=3 early \u2192 Time=57892069000000000 (lb=40108032000000000)",
+   "    [\u8d2a\u5fc3] P=64 V=8 D=1 psi=(8, 16, 24, 32, 40, 48, 56) W=12 early \u53d8\u4f53=(True, False, True, False) \u2192 Time=57880644000000000 (lb=40108032000000000)",
+   "    [\u8d2a\u5fc3] P=64 V=8 D=1 psi=(8, 16, 24, 32, 40, 48, 56) W=12 early \u53d8\u4f53=(False, False, False, False) \u2192 Time=56891166000000000 (lb=40108032000000000)"
+  ]
+ },
+ {
+  "W": 34,
+  "budget": 8.0,
+  "P": 64,
+  "V": 8,
+  "K": 8,
+  "psi": [
+   8,
+   16,
+   24,
+   32,
+   40,
+   48,
+   56
+  ],
+  "window": 34,
+  "mode": "early",
+  "variant": [
+   false,
+   false,
+   false,
+   false
+  ],
+  "time": 46359015000000000,
+  "lb": 40108032000000000,
+  "grader_time": 46359015000000000,
+  "out": "/home/rainy/hackathon/runs/score-explore-v-t4-20261030/out/b13.earlyonly.W34-B8.0.out",
+  "log": [
+   "[\u679a\u4e3e] b13-balanced-compute: 27 \u4e2a (P,V,D,\u03c8) \u5019\u9009\uff0c\u6700\u5c0f lb=40108032000000000",
+   "    [\u586b\u9699] P=64 V=8 \u2192 Time=61569005000000000 (lb=40108032000000000)",
+   "    [\u63a2\u7a97] W=3 early \u2192 Time=48357404000000000 (lb=40108032000000000)",
+   "    [\u8d2a\u5fc3] P=64 V=8 D=1 psi=(8, 16, 24, 32, 40, 48, 56) W=34 early \u53d8\u4f53=(False, False, False, False) \u2192 Time=46359015000000000 (lb=40108032000000000)"
+  ]
+ }
+]
