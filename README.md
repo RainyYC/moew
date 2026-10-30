@@ -14,7 +14,12 @@
 > [`docs/reports/report-placement-fillboost.md`](docs/reports/report-placement-fillboost.md)
 
 **先读 [`docs/reports/solution-report.md`](docs/reports/solution-report.md)** —— 完整解题报告
-（问题建模、依赖模型、15 条策略点、逐例成绩、残差分析、否决项）。
+（问题建模与 LaTeX 公式、搜索空间、调度内核、成绩、**被否决方案单独一章**）。
+
+配套：
+[`docs/reports/report-placement-fillboost.md`](docs/reports/report-placement-fillboost.md)（放置与 fill_boost 的细节）、
+[`docs/reviews/eval-opt-placement-partition-20261030.md`](docs/reviews/eval-opt-placement-partition-20261030.md)（分支合入评估）。
+旧版报告已归档至 [`docs/reports/archive/`](docs/reports/archive/)。
 
 ## 目录
 
