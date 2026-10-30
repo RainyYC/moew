@@ -1,6 +1,6 @@
 # MoE 调度求解器（Scale v8）
 
-当前提交件为自包含的 C++17 单文件 [`src/solver.cpp`](src/solver.cpp)。官方 50 个用例全部通过，平均 `Time` 为 **20,407,224.34**，最长记录墙钟为 8.783 秒（官方单例限时 10 秒）。算法模型、完整搜索流程、复杂度、使用方式和逐例结果见[当前求解器完整报告](docs/reports/current-solver-report.md)，也可运行 `make report` 查看。官方 `run_all.py` 的文件参数验收记录保存在 [`results/runner_input_fix/`](results/runner_input_fix/)。
+当前提交件为自包含的 C++17 单文件 [`src/solver.cpp`](src/solver.cpp)。50 个官方用例均通过官方 grader，平均 `Time` 为 **20,368,250.60**，平均墙钟为 9.22093 秒，最长为 9.23372 秒（单例限时 10 秒）。算法模型、完整搜索流程、复杂度、使用方式和逐例结果见[当前求解器完整报告](docs/reports/current-solver-report.md)，也可运行 `make report` 查看。本轮 50 例串行验收与官方 runner 代表 smoke 记录保存在 [`results/budget_search/full50/`](results/budget_search/full50/)；完整批次由 `scripts/compare_budget_search.py` 驱动并调用官方 grader，官方 `run_all.py` 只记录了代表用例。
 
 ## 快速开始
 
@@ -32,11 +32,11 @@ python3 data/official/Problem/run_all.py --cmd "./build/solver" --timeout 10
 ./scripts/run_acceptance.sh v7_replay ac auto '' off
 ```
 
-## 本轮重构验收与架构图
+## 归档验收与架构图
 
-重构验收 summary 记录每例退出状态、墙钟和官方 `Time`。所有 50 例通过，官方 `Time` 与冻结 v8 逐例相同；构建脚本、单文件源码、验收表和编码规范的校验值见 [`results/refactor_v8/SHA256SUMS`](results/refactor_v8/SHA256SUMS)。旧验收校验清单 [`results/scale_v8_default/SHA256SUMS`](results/scale_v8_default/SHA256SUMS) 继续指向 `backup/pre-refactor-v8/` 中的原始源码和二进制，作为历史证据保留。
+此前的单文件重构验收记录保存在 `results/refactor_v8/`，其中 50 例通过且 `Time` 与当时冻结的 v8 逐例相同；它不代表当前预算扩展后的成绩。对应文件身份见 [`results/refactor_v8/SHA256SUMS`](results/refactor_v8/SHA256SUMS)。旧验收校验清单 [`results/scale_v8_default/SHA256SUMS`](results/scale_v8_default/SHA256SUMS) 继续指向 `backup/pre-refactor-v8/` 中的原始源码和二进制，作为历史证据保留。
 
-下面两张图描述已经验收的 v8 算法和调度工作流，且均已通过自动浏览器检查。图中证据锁定于整理前已验收的 v8 源码与报告；当前工作树经过本轮单文件重构，50 例逐项验收确认算法行为相同。额外 P/V 扩宽实验另见下文及实验报告，不属于图示范围。
+下面两张图描述已验收的 v8 算法和调度工作流，且均已通过自动浏览器检查。图中证据锁定于图示对应的源码与报告，不包含当前新增的按时间扩展局部搜索阶段；无需把图示解释为该阶段的流程图。额外 P/V 扩宽实验另见下文及实验报告，不属于图示范围。
 
 - [v8 搜索架构图](.archify/architecture-moe-v8-20261030-183058/moe-v8-architecture.html)
 - [v8 调度工作流图](.archify/workflow-moe-v8-20261030-183058/moe-v8-workflow.html)
@@ -51,8 +51,8 @@ python3 data/official/Problem/run_all.py --cmd "./build/solver" --timeout 10
 - 完整原 `algorithm_v5` 目录及历史报告在 `backup/algorithm_v5/`；旧工作区代码、脚本、工具和文档按原相对路径归入 `backup/legacy_workspace/`。重构前的 v8 源码和构建件保存在 `backup/pre-refactor-v8/`。
 - `backup/MIGRATION_MANIFEST.json` 记录迁移前后的路径及正式源码、验收程序和结果文件的 SHA256。
 
-当前默认运行启用 scale v8 搜索。`--scale=off` 可关闭扩展布局、波前和局部资源顺序搜索；默认 `--scale=auto` 在 `--borrow=ac`、`--diff=auto` 时启用这些阶段。更多细节、指标和限制见[当前求解器完整报告](docs/reports/current-solver-report.md)。
+当前默认运行启用 scale v8 搜索。局部资源顺序搜索在保留小例有限前缀后，还会按绝对时间预算扩展；`--budget-ms=9000..9500` 设置扩展预算，默认 9200 毫秒。`--scale=off` 可关闭扩展布局、波前和局部资源顺序搜索；默认 `--scale=auto` 在 `--borrow=ac`、`--diff=auto` 时启用这些阶段。更多细节、指标和限制见[当前求解器完整报告](docs/reports/current-solver-report.md)。
 
-GitHub 保留源码、报告、架构图和验收汇总；构建二进制及逐例原始输出按 `.gitignore` 留在本地，可通过构建和验收脚本生成。当前发布文件可用 `sha256sum -c results/runner_input_fix/SOURCE_SHA256SUMS` 核对。`results/refactor_v8/` 的校验清单保留对应验收身份，已变化的文件指向 `backup/before-runner-input-fix/` 中的快照；完整运行清单还包含本地二进制及逐例输出。
+GitHub 保留源码、报告、架构图和验收汇总；构建二进制及逐例原始输出按 `.gitignore` 留在本地，可通过构建和验收脚本生成。当前源码与本轮 50 例验收身份可用 `sha256sum -c results/budget_search/full50/SOURCE_SHA256SUMS` 核对。`results/refactor_v8/` 的校验清单保留对应验收身份，已变化的文件指向 `backup/before-runner-input-fix/` 中的快照；完整运行清单还包含本地二进制及逐例输出。
 
 整理前保存的 10 个顶层与 2 个嵌套 worktree（含未提交内容）位于 [`backup/worktrees/`](backup/worktrees/)，其路径映射见 [worktree 归档说明](backup/worktrees/README.md) 与 [manifest](backup/worktrees/archive_manifest.json)。普通文件迁移清单及校验记录见 [backup/MIGRATION_MANIFEST.json](backup/MIGRATION_MANIFEST.json)；归档目录导航见 [backup/README.md](backup/README.md)。

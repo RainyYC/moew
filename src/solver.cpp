@@ -1234,6 +1234,7 @@ namespace local_engine_polish {
 using i128 = __int128_t;
 struct Stats {
     long long evaluated = 0, accepted = 0, strict_improve = 0, tie_moves = 0;
+    int memory_fast_groups = 0;
     int rounds = 0;
     bool exhausted = true;
 };
@@ -1252,7 +1253,12 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
                    const std::vector<event_sched::Op>& input, i128 M, i128 U, i128 Ua,
                    i128 resident_per_layer, std::vector<event_sched::Op>& output, i128& best_time,
                    Stats& stats, std::chrono::steady_clock::time_point deadline,
-                   long long max_evaluations = 12000) {
+                   long long max_evaluations = 12000, int variant = 0) {
+    if (std::chrono::steady_clock::now() >= deadline) {
+        output = input;
+        return true;
+    }
+    output = input;
     const int n = mb * L * 10;
     if ((int)input.size() != n) {
         return false;
@@ -1260,6 +1266,9 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
     std::vector<std::pair<int, int>> base_edges;
     auto edge = [&](int a, int b) { base_edges.push_back({a, b}); };
     for (int m = 0; m < mb; m++) {
+        if ((m & 31) == 0 && std::chrono::steady_clock::now() >= deadline) {
+            return true;
+        }
         for (int l = 0; l < L; l++) {
             int b = id(m, l, 0, L);
             edge(b + 1, b + 2);
@@ -1291,6 +1300,9 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
     using Key = std::pair<int, int>;
     std::map<Key, std::vector<int>> seq;
     for (int m = 0; m < mb; m++) {
+        if ((m & 31) == 0 && std::chrono::steady_clock::now() >= deadline) {
+            return true;
+        }
         for (int l = 0; l < L; l++) {
             for (int o = 0; o < 10; o++) {
                 if (dur[l][o] > 0) {
@@ -1310,6 +1322,28 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
         base_indegree[b]++;
     }
     // Exact official closed-interval resource and memory legality check.
+    std::vector<unsigned char> memory_always_ok(G, 1);
+    for (int g = 0; g < G; g++) {
+        int layers = 0;
+        for (int l = 0; l < L; l++) {
+            layers += (group[l] == g);
+        }
+        i128 comm_upper = 0;
+        for (int l = 0; l < L; l++) {
+            if (group[l] == g) {
+                for (int o : {1, 3, 5, 8}) {
+                    comm_upper = std::max(comm_upper, dur[l][o]);
+                }
+            }
+        }
+        i128 fixed_upper = (i128)layers * resident_per_layer + 2 * U + (i128)layers * mb * Ua;
+        if (comm_upper == 0) {
+            fixed_upper -= 2 * U;
+        }
+        memory_always_ok[g] = fixed_upper <= M;
+        stats.memory_fast_groups += memory_always_ok[g];
+    }
+    bool memory_all_fast = stats.memory_fast_groups == G;
     auto memory_ok = [&](const std::vector<i128>& st, const std::vector<i128>& en) {
         // Closed intervals overlap when one reservation ends exactly as another begins.
         auto peak_closed = [](std::vector<std::pair<i128, i128>>& a) {
@@ -1333,6 +1367,9 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
             return best;
         };
         for (int g = 0; g < G; g++) {
+            if (memory_always_ok[g]) {
+                continue;
+            }
             int layers = 0;
             for (int l = 0; l < L; l++) {
                 layers += (group[l] == g);
@@ -1373,35 +1410,41 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
                 indeg[v[j]]++;
             }
         }
-        std::priority_queue<int, std::vector<int>, std::greater<int>> q;
+        std::vector<int> q;
+        q.reserve(n);
         for (int i = 0; i < n; i++) {
             if (!indeg[i]) {
-                q.push(i);
+                q.push_back(i);
             }
         }
         std::vector<i128> st(n, 0), en(n, 0);
         int done = 0;
         tm = 0;
         sum_end = 0;
-        while (!q.empty()) {
-            int u = q.top();
-            q.pop();
+        for (size_t qi = 0; qi < q.size(); qi++) {
+            if ((qi & 255) == 0 && std::chrono::steady_clock::now() >= deadline) {
+                return false;
+            }
+            int u = q[qi];
             done++;
             int l = (u / 10) % L, o = u % 10;
             en[u] = st[u] + dur[l][o];
             tm = std::max(tm, en[u]);
+            if (tm > best_time) {
+                return false;
+            }
             sum_end += en[u];
             for (int v : base_out[u]) {
                 st[v] = std::max(st[v], en[u]);
                 if (--indeg[v] == 0) {
-                    q.push(v);
+                    q.push_back(v);
                 }
             }
             int v = next[u];
             if (v >= 0) {
                 st[v] = std::max(st[v], en[u] + next_gap[u]);
                 if (--indeg[v] == 0) {
-                    q.push(v);
+                    q.push_back(v);
                 }
             }
         }
@@ -1448,8 +1491,7 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
     for (auto& o : input) {
         best_secondary += o.start + dur[o.l][o.op];
     }
-    output = input;
-    for (int gap = 0; gap <= 1; gap++) {
+    for (int gap = 0; gap <= (variant > 0 && memory_all_fast ? 0 : 1); gap++) {
         if (std::chrono::steady_clock::now() >= deadline) {
             return true;
         }
@@ -1482,24 +1524,27 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
     }
     std::vector<int> topo;
     {
-        std::queue<int> q;
+        std::vector<int> q;
+        q.reserve(n);
         for (int i = 0; i < n; i++) {
             if (!indeg[i]) {
-                q.push(i);
+                q.push_back(i);
             }
         }
-        while (!q.empty()) {
-            int u = q.front();
-            q.pop();
+        for (size_t qi = 0; qi < q.size(); qi++) {
+            if ((qi & 255) == 0 && std::chrono::steady_clock::now() >= deadline) {
+                return true;
+            }
+            int u = q[qi];
             topo.push_back(u);
             for (int v : base_out[u]) {
                 if (--indeg[v] == 0) {
-                    q.push(v);
+                    q.push_back(v);
                 }
             }
             int v = next[u];
             if (v >= 0 && --indeg[v] == 0) {
-                q.push(v);
+                q.push_back(v);
             }
         }
     }
@@ -1509,6 +1554,9 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
     std::vector<i128> start(n, 0), finish(n, 0);
     std::vector<int> par(n, -1);
     for (int u : topo) {
+        if ((u & 255) == 0 && std::chrono::steady_clock::now() >= deadline) {
+            return true;
+        }
         int l = (u / 10) % L, o = u % 10;
         finish[u] = start[u] + dur[l][o];
         for (int v : base_out[u]) {
@@ -1538,6 +1586,9 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
     std::reverse(cp.begin(), cp.end());
     std::map<int, std::map<Key, std::vector<int>>> windows;
     for (size_t i = 0; i < cp.size();) {
+        if ((i & 255) == 0 && std::chrono::steady_clock::now() >= deadline) {
+            return true;
+        }
         int u = cp[i], l = (u / 10) % L, o = u % 10;
         if (dur[l][o] <= 0) {
             i++;
@@ -1577,7 +1628,7 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
         if (resource_lb > best_time) {
             return;
         }
-        for (int gap = 0; gap <= 1; gap++) {
+        for (int gap = 0; gap <= (variant > 0 && memory_all_fast ? 0 : 1); gap++) {
             if (stats.evaluated >= max_evaluations ||
                 std::chrono::steady_clock::now() >= deadline) {
                 stats.exhausted = false;
@@ -1610,9 +1661,50 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
             }
         }
     }
-    for (int distance = 1; distance <= 8 && stats.exhausted; distance++) {
-        for (int dir : {-1, 1}) {
-            for (auto& kr : critical_by_resource) {
+    std::vector<int> distances, dirs;
+    for (int d = 1; d <= 8; d++) {
+        distances.push_back(d);
+    }
+    dirs = {-1, 1};
+    if (variant > 0) {
+        for (int d : {12, 16, 24, 32}) {
+            distances.push_back(d);
+        }
+        std::rotate(distances.begin(), distances.begin() + ((variant * 7) % distances.size()),
+                    distances.end());
+        if (variant % 2) {
+            std::reverse(dirs.begin(), dirs.end());
+        }
+    }
+    std::vector<Key> resources;
+    for (auto& kr : critical_by_resource) {
+        resources.push_back(kr.first);
+    }
+    if (!resources.empty() && variant > 0) {
+        std::rotate(resources.begin(), resources.begin() + ((variant * 13) % resources.size()),
+                    resources.end());
+    }
+    if (variant > 0) {
+        for (auto& kr : critical_by_resource) {
+            auto& ops = kr.second;
+            if (!ops.empty()) {
+                std::rotate(ops.begin(), ops.begin() + ((variant * 37) % ops.size()), ops.end());
+                if (variant % 2) {
+                    std::reverse(ops.begin(), ops.end());
+                }
+            }
+        }
+    }
+    for (int distance : distances) {
+        if (variant > 0 && variant % 4 == 0) {
+            break;
+        }
+        if (!stats.exhausted) {
+            break;
+        }
+        for (int dir : dirs) {
+            for (const auto& resource : resources) {
+                auto& kr = *critical_by_resource.find(resource);
                 for (int z : kr.second) {
                     if (!stats.exhausted) {
                         break;
@@ -1640,7 +1732,30 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
     }
     // For each block size, spread the first pass across all resources before
     // completing additional windows. Each window enumerates every permutation.
-    for (int len = 4; len <= 7 && stats.exhausted; len++) {
+    std::vector<int> lengths = {4, 5, 6, 7};
+    if (variant > 0) {
+        std::rotate(lengths.begin(), lengths.begin() + ((variant / 4) % lengths.size()),
+                    lengths.end());
+    }
+    auto unrank_permutation = [](std::vector<int> items, size_t rank) {
+        std::vector<int> result;
+        result.reserve(items.size());
+        for (size_t left = items.size(); left > 0; left--) {
+            size_t factorial = 1;
+            for (size_t k = 2; k < left; k++) {
+                factorial *= k;
+            }
+            size_t index = rank / factorial;
+            rank %= factorial;
+            result.push_back(items[index]);
+            items.erase(items.begin() + index);
+        }
+        return result;
+    };
+    for (int len : lengths) {
+        if (!stats.exhausted) {
+            break;
+        }
         auto wit = windows.find(len);
         if (wit == windows.end()) {
             continue;
@@ -1650,8 +1765,27 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
         for (auto& kv : by_resource) {
             max_windows = std::max(max_windows, kv.second.size());
         }
-        for (size_t wi = 0; wi < max_windows && stats.exhausted; wi++) {
+        std::vector<Key> window_resources;
+        for (auto& kv : by_resource) {
+            window_resources.push_back(kv.first);
+        }
+        if (variant > 0) {
             for (auto& kv : by_resource) {
+                if (!kv.second.empty()) {
+                    std::rotate(kv.second.begin(), kv.second.begin() + (variant % kv.second.size()),
+                                kv.second.end());
+                }
+            }
+            if (!window_resources.empty()) {
+                std::rotate(
+                    window_resources.begin(),
+                    window_resources.begin() + ((variant * 13 + len) % window_resources.size()),
+                    window_resources.end());
+            }
+        }
+        for (size_t wi = 0; wi < max_windows && stats.exhausted; wi++) {
+            for (const Key& resource : window_resources) {
+                auto& kv = *by_resource.find(resource);
                 if (wi >= kv.second.size()) {
                     continue;
                 }
@@ -1666,25 +1800,41 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
                     continue;
                 }
                 auto& v = it->second;
-                auto block = std::vector<int>(v.begin() + a, v.begin() + a + len), perm = block,
-                     accepted_block = block;
-                std::sort(perm.begin(), perm.end());
+                auto block = std::vector<int>(v.begin() + a, v.begin() + a + len);
+                auto sorted = block;
+                std::sort(sorted.begin(), sorted.end());
+                size_t permutation_count = 1;
+                for (int k = 2; k <= len; k++) {
+                    permutation_count *= k;
+                }
+                size_t start_rank = 0;
+                if (variant > 0) {
+                    start_rank = ((size_t)variant * 997 + wi * 37 + (size_t)a) % permutation_count;
+                }
+                auto start_perm = variant > 0 ? unrank_permutation(sorted, start_rank) : sorted;
+                auto perm = start_perm;
+                auto accepted_block = block;
                 do {
-                    if (perm == block) {
-                        continue;
-                    }
-                    std::copy(perm.begin(), perm.end(), v.begin() + a);
-                    long long before = stats.accepted;
-                    try_seq();
-                    if (stats.accepted > before) {
-                        accepted_block = perm;
-                    } else {
-                        std::copy(accepted_block.begin(), accepted_block.end(), v.begin() + a);
+                    if (perm != block) {
+                        std::copy(perm.begin(), perm.end(), v.begin() + a);
+                        long long before = stats.accepted;
+                        try_seq();
+                        if (stats.accepted > before) {
+                            accepted_block = perm;
+                        } else {
+                            std::copy(accepted_block.begin(), accepted_block.end(), v.begin() + a);
+                        }
                     }
                     if (!stats.exhausted) {
                         break;
                     }
-                } while (std::next_permutation(perm.begin(), perm.end()));
+                    if (!std::next_permutation(perm.begin(), perm.end())) {
+                        perm = sorted;
+                    }
+                    if (perm == start_perm) {
+                        break;
+                    }
+                } while (true);
                 if (!stats.exhausted) {
                     break;
                 }
@@ -2154,6 +2304,7 @@ struct Options {
     int force_p = 0;
     bool serial = false, do_list = false, list_deep = false, list_deep_topos = false;
     bool force_wave = false;
+    int budget_ms = 9200;
     string borrow = "ac", diff = "auto", scale = "auto";
     string input_path;
 };
@@ -2193,6 +2344,13 @@ Options parse_options(int argc, char** argv) {
             options.borrow = a.substr(9);
         } else if (a.rfind("--diff=", 0) == 0) {
             options.diff = a.substr(7);
+        } else if (a.rfind("--budget-ms=", 0) == 0) {
+            size_t used = 0;
+            int value = stoi(a.substr(12), &used);
+            if (used != a.size() - 12 || value < 9000 || value > 9500) {
+                throw runtime_error("--budget-ms must be an integer from 9000 to 9500");
+            }
+            options.budget_ms = value;
         }
     }
     return options;
@@ -3265,40 +3423,81 @@ void run_scale_v8_search(const InputData& x, const vector<PartitionCandidate>& p
 }
 
 void polish_final_schedule(const InputData& x, ScheduleResult& best, bool serial, bool do_wave,
-                           chrono::steady_clock::time_point main_start) {
-    if (!serial && do_wave && !best.ops.empty() && (i128)x.mb * x.L * 10 <= 8000 &&
-        chrono::steady_clock::now() + chrono::milliseconds(100) < main_start + chrono::seconds(9)) {
+                           chrono::steady_clock::time_point main_start, int budget_ms) {
+    if (!serial && do_wave && !best.ops.empty()) {
         auto dur = compute_durations(x, best.c);
         local_engine_polish::Stats total;
         total.exhausted = true;
         i128 resident = (x.E / best.c.P) * x.Z + x.Zs;
-        auto deadline = main_start + chrono::seconds(9);
-        for (int round = 0;
-             round < 4 && chrono::steady_clock::now() + chrono::milliseconds(100) < deadline;
-             round++) {
+        auto prefix_deadline = main_start + chrono::seconds(9);
+        auto deadline = main_start + chrono::milliseconds(budget_ms);
+        int prefix_rounds = 0;
+        // Preserve the original small-instance search prefix and its per-round cap.
+        if ((i128)x.mb * x.L * 10 <= 8000) {
+            for (int round = 0;
+                 round < 4 &&
+                 chrono::steady_clock::now() + chrono::milliseconds(100) < prefix_deadline;
+                 round++) {
+                vector<event_sched::Op> polished;
+                i128 pol_time = best.time;
+                local_engine_polish::Stats part;
+                local_engine_polish::polish(x.mb, x.L, best.G, best.group, dur, best.ops, x.M, x.U,
+                                            x.Ua, resident, polished, pol_time, part,
+                                            prefix_deadline, 3000);
+                total.evaluated += part.evaluated;
+                total.accepted += part.accepted;
+                total.strict_improve += part.strict_improve;
+                total.tie_moves += part.tie_moves;
+                total.memory_fast_groups = part.memory_fast_groups;
+                total.rounds++;
+                prefix_rounds++;
+                total.exhausted = total.exhausted && part.exhausted;
+                if (part.accepted == 0) {
+                    break;
+                }
+                if (pol_time < best.time) {
+                    best.time = pol_time;
+                }
+                best.ops.swap(polished);
+            }
+        }
+        int pass = 1;
+        i128 anchor_time = best.time;
+        auto extension_start = chrono::steady_clock::now();
+        long long ext_evaluated = 0, ext_accepted = 0, ext_improved = 0;
+        int ext_fast_groups = 0;
+        while (chrono::steady_clock::now() + chrono::milliseconds(30) < deadline &&
+               !(best.time == 0)) {
             vector<event_sched::Op> polished;
             i128 pol_time = best.time;
             local_engine_polish::Stats part;
             local_engine_polish::polish(x.mb, x.L, best.G, best.group, dur, best.ops, x.M, x.U,
-                                        x.Ua, resident, polished, pol_time, part, deadline, 3000);
-            total.evaluated += part.evaluated;
-            total.accepted += part.accepted;
-            total.strict_improve += part.strict_improve;
-            total.tie_moves += part.tie_moves;
-            total.rounds++;
-            total.exhausted = total.exhausted && part.exhausted;
-            if (part.accepted == 0) {
+                                        x.Ua, resident, polished, pol_time, part, deadline, 700,
+                                        pass);
+            ext_evaluated += part.evaluated;
+            ext_accepted += part.accepted;
+            ext_improved += part.strict_improve;
+            ext_fast_groups = part.memory_fast_groups;
+            if (part.accepted && pol_time <= best.time) {
+                best.time = pol_time;
+                best.ops.swap(polished);
+            }
+            // An entire pass with no legal improvement still changes the next pass seed.
+            if (best.time == 0) {
                 break;
             }
-            if (pol_time < best.time) {
-                best.time = pol_time;
-            }
-            best.ops.swap(polished);
+            pass++;
         }
         cerr << "LOCAL_ENGINE evaluated=" << total.evaluated << " accepted=" << total.accepted
              << " strict_improve=" << total.strict_improve << " tie_moves=" << total.tie_moves
-             << " rounds=" << total.rounds << " Time=" << to_decimal(best.time)
-             << " exhausted=" << total.exhausted << " main_seconds="
+             << " rounds=" << total.rounds << " prefix_rounds=" << prefix_rounds
+             << " extension_passes=" << (pass - 1) << " extension_evaluated=" << ext_evaluated
+             << " extension_accepted=" << ext_accepted << " extension_improved=" << ext_improved
+             << " memory_fast_groups=" << ext_fast_groups
+             << " anchor_Time=" << to_decimal(anchor_time) << " extension_seconds="
+             << chrono::duration<double>(chrono::steady_clock::now() - extension_start).count()
+             << " Time=" << to_decimal(best.time) << " exhausted=" << total.exhausted
+             << " main_seconds="
              << chrono::duration<double>(chrono::steady_clock::now() - main_start).count() << "\n";
     }
 }
@@ -3396,7 +3595,7 @@ int main(int argc, char** argv) {
                                   diff_enabled, main_start, borrow);
         ScheduleResult v7_incumbent = best;
         run_scale_v8_search(x, pcs, v7_incumbent, best, serial, do_wave, main_start);
-        polish_final_schedule(x, best, serial, do_wave, main_start);
+        polish_final_schedule(x, best, serial, do_wave, main_start, options.budget_ms);
         write_output(x, best, serial);
     } catch (const exception& e) {
         cerr << "input/options error: " << e.what() << "\n";

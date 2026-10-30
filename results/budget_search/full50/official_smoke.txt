@@ -1,0 +1,13 @@
+solver: /home/rainy/hackathon/build/solver
+cases:  /tmp/budget_official_smoke_cases (3 files)
+limit:  10.0 s per case (solver only; grader time excluded)
+
+case                                          status       TIME    CPU(s)   wall(s)
+------------------------------------------------------------------------------------
+r128_v4_c4a.txt                                   OK   22702165     9.203     9.206
+r256_v8_c4.txt                                    OK   39678875     9.220     9.225
+x01_lr_block_p2.txt                               OK    2390000     9.169     9.173
+
+summary: OK=3
+TIME: valid=3/3  mean=21590346.7  min=2390000  max=39678875
+CPU(s): mean=9.197  max=9.220

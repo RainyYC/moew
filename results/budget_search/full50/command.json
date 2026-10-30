@@ -1,0 +1,18 @@
+{
+  "compile_command": "g++ -std=c++17 -O2 -pipe -Wall -Wextra src/solver.cpp -o build/solver_budget_candidate",
+  "run_command": "python3 scripts/compare_budget_search.py build/solver_budget_candidate results/budget_search/full50",
+  "run_argv": [
+    "python3",
+    "scripts/compare_budget_search.py",
+    "build/solver_budget_candidate",
+    "results/budget_search/full50"
+  ],
+  "official_grader": "data/official/Problem/grader.py",
+  "baseline": "results/runner_input_fix/summary.tsv",
+  "sha256": {
+    "src/solver.cpp": "045840c3c001949c3052f60a12d0ae7aace935734414de493e026ca85efc0ba1",
+    "build/solver_budget_candidate": "62e4d392c1acccd0d1dc015ecd27e3509dbe8f3b8593060ef9bc9ebc889c6538",
+    "data/official/Problem/grader.py": "c42d5f0675e33cbfc1d40bdcafbb8aa40b6d0a4e26377e69405cdbb2b167cfbc"
+  },
+  "official_smoke_command": "python3 -u data/official/Problem/run_all.py --cmd /home/rainy/hackathon/build/solver --timeout 10 --cases /tmp/budget_official_smoke_cases"
+}
