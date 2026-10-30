@@ -93,4 +93,6 @@ duration 数组按这些名字逐槽赋值；序列化名字表则按同一协�
 
 导出结果是确定性的，不写时间戳。`make submission-check` 会比较现有 `submission/solver.cpp` 与当前展开结果；最终文件可按独立 C++17 源文件编译。
 
-静态模块检查记录位于 `results/module_refactor/`；性能对照仍待验收，本说明不据此声称运行时间不变。
+静态模块检查记录位于 `results/module_refactor/`。固定工作量对照保持 stdout 字节和搜索计数一致，固定工作量 CPU 汇总未观察到整体变慢；这不构成加速保证。详细重复次数、CPU 数值和逐例结果见[模块重构验证记录](../results/module_refactor/README.md)。
+
+当前冻结 full50 记录为 50/50 合法、0 超时，平均 Time 20,367,560.88，平均墙钟 9.21923433584 秒，最长 9.236006493 秒（`x15_lr_twochunk_p10`）；与固定基线相比，47 例相同、3 例较高。针对性复测均合法、0 超时；不同默认运行的新旧版本胜负方向不一致，说明绝对截止预算下可完成的迭代数和最终 Time 会波动，因此默认运行不承诺每次得到相同 Time。默认截止运行的 CPU 时间都接近预算上限，因此不把它作为性能回退证据；未观察到固定工作量整体变慢的判断来自固定评估数/固定 pass 对照。复测详情见 `results/module_refactor/paired_recheck/comparison.json`；full50 原始结果保持冻结，不被复测覆盖。

@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "f2d9973f-2bc8-4016-8f8a-ddc7ed44f677",
+  "status": "current",
+  "command": "deliver",
+  "type": "sequence",
+  "input": "/home/rainy/hackathon/.archify/sequence-solver-runtime-20261030-222608/candidate.json",
+  "output": "/home/rainy/hackathon/.archify/sequence-solver-runtime-20261030-222608/solver-runtime.html",
+  "specification": {
+    "sha256": "405b8f6e409a73dcffef49f408e78b15e1942c6d1ba1cd5bb3048f9f6435d0de",
+    "bytes": 7031
+  },
+  "artifact": {
+    "sha256": "ca45cddfbe08e84ba980c0a54d315d1acac2d79faffaf4831111b13a0c0615f0",
+    "bytes": 851688
+  }
+}

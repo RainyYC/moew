@@ -1,0 +1,25 @@
+{
+  "source_revision": "b6f107a989327f34b5767b744c9a1ac54dbfc2b7",
+  "compile_commands": [
+    "g++ -std=c++17 -O2 -pipe -Wall -Wextra src/solver.cpp -o build/solver_modular_candidate",
+    "g++ -std=c++17 -O2 -pipe -Wall -Wextra submission/solver.cpp -o build/solver_amalgamated_candidate"
+  ],
+  "run_argv": [
+    "/usr/bin/python3",
+    "scripts/compare_solver_search.py",
+    "build/solver_modular_candidate",
+    "results/module_refactor/full50",
+    "--baseline",
+    "results/retiming_speed/full50/summary.tsv"
+  ],
+  "baseline": "results/retiming_speed/full50/summary.tsv",
+  "binary_equivalence": "modular and standalone binaries are byte-identical",
+  "sha256": {
+    "src/solver.cpp": "0599f10ba8078c81a22880b2cff0492061c72a1a5929b8d5bc16e8a929573401",
+    "submission/solver.cpp": "cc69f2991d39c415b4838ffda352a6ee2b5867f2d45672054dc5f3f0f01d3880",
+    "build/solver_modular_candidate": "09a283409f48c7c06bb8e9d7f3fc2ac62c7ce7cf3f69628cb083e5f1235475b8",
+    "build/solver_amalgamated_candidate": "09a283409f48c7c06bb8e9d7f3fc2ac62c7ce7cf3f69628cb083e5f1235475b8",
+    "build/solver_before_module_split": "61ce0ceedb62f18cd277b5f8b34c3dd771542049aa0fb649c78acfde305656d6",
+    "data/official/Problem/grader.py": "c42d5f0675e33cbfc1d40bdcafbb8aa40b6d0a4e26377e69405cdbb2b167cfbc"
+  }
+}

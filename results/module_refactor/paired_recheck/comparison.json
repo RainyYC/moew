@@ -1,0 +1,747 @@
+{
+  "runs": 16,
+  "all_successful": true,
+  "default_pairs": [
+    {
+      "case": "r24_p3_flat",
+      "old_scores": [
+        22118210,
+        22118210
+      ],
+      "new_scores": [
+        22088422,
+        22101510
+      ],
+      "old_cpu_seconds": [
+        9.187837,
+        9.198718999999997
+      ],
+      "new_cpu_seconds": [
+        9.185744000000001,
+        9.203110999999993
+      ],
+      "old_stdout_sha256": [
+        "1a59e7983784f95095c506534d8d40a6b488854377a9d37a6895bb7973276cc2",
+        "1a59e7983784f95095c506534d8d40a6b488854377a9d37a6895bb7973276cc2"
+      ],
+      "new_stdout_sha256": [
+        "b2e6a84b5e24b6607132448d2496f57302789395231fc6adae7e5688f3e54bfc",
+        "981cd0ebccf3932d270a731d00047d2d8972986aa0ca4e817d0cf7700d9d957c"
+      ],
+      "old_engine_counts": [
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "714",
+            "strict_improve": "1",
+            "tie_moves": "713",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "12",
+            "extension_evaluated": "8400",
+            "extension_accepted": "430",
+            "extension_improved": "13",
+            "memory_fast_groups": "8",
+            "anchor_Time": "22185686",
+            "extension_seconds": "0.847966",
+            "Time": "22118210",
+            "exhausted": "0",
+            "main_seconds": "9.18566"
+          }
+        ],
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "714",
+            "strict_improve": "1",
+            "tie_moves": "713",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "11",
+            "extension_evaluated": "7700",
+            "extension_accepted": "430",
+            "extension_improved": "13",
+            "memory_fast_groups": "8",
+            "anchor_Time": "22185686",
+            "extension_seconds": "0.839044",
+            "Time": "22118210",
+            "exhausted": "0",
+            "main_seconds": "9.19652"
+          }
+        ]
+      ],
+      "new_engine_counts": [
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "714",
+            "strict_improve": "1",
+            "tie_moves": "713",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "15",
+            "extension_evaluated": "10500",
+            "extension_accepted": "448",
+            "extension_improved": "17",
+            "memory_fast_groups": "8",
+            "anchor_Time": "22185686",
+            "extension_seconds": "1.05897",
+            "Time": "22088422",
+            "exhausted": "0",
+            "main_seconds": "9.18279"
+          }
+        ],
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "714",
+            "strict_improve": "1",
+            "tie_moves": "713",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "15",
+            "extension_evaluated": "10098",
+            "extension_accepted": "447",
+            "extension_improved": "16",
+            "memory_fast_groups": "8",
+            "anchor_Time": "22185686",
+            "extension_seconds": "1.04353",
+            "Time": "22101510",
+            "exhausted": "0",
+            "main_seconds": "9.20048"
+          }
+        ]
+      ],
+      "old_stable_engine_counts": [
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "714",
+            "strict_improve": "1",
+            "tie_moves": "713",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "12",
+            "extension_evaluated": "8400",
+            "extension_accepted": "430",
+            "extension_improved": "13",
+            "memory_fast_groups": "8",
+            "anchor_Time": "22185686",
+            "Time": "22118210",
+            "exhausted": "0"
+          }
+        ],
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "714",
+            "strict_improve": "1",
+            "tie_moves": "713",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "11",
+            "extension_evaluated": "7700",
+            "extension_accepted": "430",
+            "extension_improved": "13",
+            "memory_fast_groups": "8",
+            "anchor_Time": "22185686",
+            "Time": "22118210",
+            "exhausted": "0"
+          }
+        ]
+      ],
+      "new_stable_engine_counts": [
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "714",
+            "strict_improve": "1",
+            "tie_moves": "713",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "15",
+            "extension_evaluated": "10500",
+            "extension_accepted": "448",
+            "extension_improved": "17",
+            "memory_fast_groups": "8",
+            "anchor_Time": "22185686",
+            "Time": "22088422",
+            "exhausted": "0"
+          }
+        ],
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "714",
+            "strict_improve": "1",
+            "tie_moves": "713",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "15",
+            "extension_evaluated": "10098",
+            "extension_accepted": "447",
+            "extension_improved": "16",
+            "memory_fast_groups": "8",
+            "anchor_Time": "22185686",
+            "Time": "22101510",
+            "exhausted": "0"
+          }
+        ]
+      ]
+    },
+    {
+      "case": "x09_lr_skew_p6",
+      "old_scores": [
+        17164896,
+        17164896
+      ],
+      "new_scores": [
+        17164896,
+        17147936
+      ],
+      "old_cpu_seconds": [
+        9.201194999999998,
+        9.202172999999988
+      ],
+      "new_cpu_seconds": [
+        9.190465999999997,
+        9.172583000000003
+      ],
+      "old_stdout_sha256": [
+        "efc1214901e9720ea3ab93d922b2646b99574d906f55eb85c54252d31ee20d87",
+        "efc1214901e9720ea3ab93d922b2646b99574d906f55eb85c54252d31ee20d87"
+      ],
+      "new_stdout_sha256": [
+        "efc1214901e9720ea3ab93d922b2646b99574d906f55eb85c54252d31ee20d87",
+        "9f10e0bba6ea0eb9ea35c0c2d0d4915e8fb8a954e254a6d485cc6abe74000992"
+      ],
+      "old_engine_counts": [
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "786",
+            "strict_improve": "12",
+            "tie_moves": "774",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "72",
+            "extension_evaluated": "50400",
+            "extension_accepted": "476",
+            "extension_improved": "12",
+            "memory_fast_groups": "9",
+            "anchor_Time": "17192416",
+            "extension_seconds": "3.28269",
+            "Time": "17164896",
+            "exhausted": "0",
+            "main_seconds": "9.20011"
+          }
+        ],
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "786",
+            "strict_improve": "12",
+            "tie_moves": "774",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "71",
+            "extension_evaluated": "49620",
+            "extension_accepted": "476",
+            "extension_improved": "12",
+            "memory_fast_groups": "9",
+            "anchor_Time": "17192416",
+            "extension_seconds": "3.24321",
+            "Time": "17164896",
+            "exhausted": "0",
+            "main_seconds": "9.20028"
+          }
+        ]
+      ],
+      "new_engine_counts": [
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "786",
+            "strict_improve": "12",
+            "tie_moves": "774",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "72",
+            "extension_evaluated": "50400",
+            "extension_accepted": "476",
+            "extension_improved": "12",
+            "memory_fast_groups": "9",
+            "anchor_Time": "17192416",
+            "extension_seconds": "3.3236",
+            "Time": "17164896",
+            "exhausted": "0",
+            "main_seconds": "9.18901"
+          }
+        ],
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "786",
+            "strict_improve": "12",
+            "tie_moves": "774",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "75",
+            "extension_evaluated": "52500",
+            "extension_accepted": "478",
+            "extension_improved": "14",
+            "memory_fast_groups": "9",
+            "anchor_Time": "17192416",
+            "extension_seconds": "3.29951",
+            "Time": "17147936",
+            "exhausted": "0",
+            "main_seconds": "9.17044"
+          }
+        ]
+      ],
+      "old_stable_engine_counts": [
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "786",
+            "strict_improve": "12",
+            "tie_moves": "774",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "72",
+            "extension_evaluated": "50400",
+            "extension_accepted": "476",
+            "extension_improved": "12",
+            "memory_fast_groups": "9",
+            "anchor_Time": "17192416",
+            "Time": "17164896",
+            "exhausted": "0"
+          }
+        ],
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "786",
+            "strict_improve": "12",
+            "tie_moves": "774",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "71",
+            "extension_evaluated": "49620",
+            "extension_accepted": "476",
+            "extension_improved": "12",
+            "memory_fast_groups": "9",
+            "anchor_Time": "17192416",
+            "Time": "17164896",
+            "exhausted": "0"
+          }
+        ]
+      ],
+      "new_stable_engine_counts": [
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "786",
+            "strict_improve": "12",
+            "tie_moves": "774",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "72",
+            "extension_evaluated": "50400",
+            "extension_accepted": "476",
+            "extension_improved": "12",
+            "memory_fast_groups": "9",
+            "anchor_Time": "17192416",
+            "Time": "17164896",
+            "exhausted": "0"
+          }
+        ],
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "786",
+            "strict_improve": "12",
+            "tie_moves": "774",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "75",
+            "extension_evaluated": "52500",
+            "extension_accepted": "478",
+            "extension_improved": "14",
+            "memory_fast_groups": "9",
+            "anchor_Time": "17192416",
+            "Time": "17147936",
+            "exhausted": "0"
+          }
+        ]
+      ]
+    },
+    {
+      "case": "x12_lr_close_p10",
+      "old_scores": [
+        27946170,
+        27967350
+      ],
+      "new_scores": [
+        27968079,
+        27959850
+      ],
+      "old_cpu_seconds": [
+        9.182063,
+        9.188200000000009
+      ],
+      "new_cpu_seconds": [
+        9.200589999999998,
+        9.189585999999991
+      ],
+      "old_stdout_sha256": [
+        "90c76edf3d03e6bdcf66ac26c6e6b4e1b9ed482103a9863d81bb53295ae46e50",
+        "4f14c649118ee3cca0f9d235f2eaa9d87dc4930539e2f6d6db49e6acf0318cdb"
+      ],
+      "new_stdout_sha256": [
+        "4108da27c2888f81b750e5d31408d8d26ff3ddd2bbf368b5b11f6ef53642ac20",
+        "de49fbdd614ff402bb5a3896eb27634ebeaf194d9c29c7bdb18ac711260c7cf7"
+      ],
+      "old_engine_counts": [
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "335",
+            "strict_improve": "21",
+            "tie_moves": "314",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "109",
+            "extension_evaluated": "76300",
+            "extension_accepted": "560",
+            "extension_improved": "191",
+            "memory_fast_groups": "12",
+            "anchor_Time": "28430790",
+            "extension_seconds": "4.95186",
+            "Time": "27946170",
+            "exhausted": "0",
+            "main_seconds": "9.17954"
+          }
+        ],
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "335",
+            "strict_improve": "21",
+            "tie_moves": "314",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "105",
+            "extension_evaluated": "73500",
+            "extension_accepted": "553",
+            "extension_improved": "188",
+            "memory_fast_groups": "12",
+            "anchor_Time": "28430790",
+            "extension_seconds": "4.85956",
+            "Time": "27967350",
+            "exhausted": "0",
+            "main_seconds": "9.18615"
+          }
+        ]
+      ],
+      "new_engine_counts": [
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "335",
+            "strict_improve": "21",
+            "tie_moves": "314",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "104",
+            "extension_evaluated": "72525",
+            "extension_accepted": "550",
+            "extension_improved": "187",
+            "memory_fast_groups": "12",
+            "anchor_Time": "28430790",
+            "extension_seconds": "4.82527",
+            "Time": "27968079",
+            "exhausted": "0",
+            "main_seconds": "9.20029"
+          }
+        ],
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "335",
+            "strict_improve": "21",
+            "tie_moves": "314",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "107",
+            "extension_evaluated": "74900",
+            "extension_accepted": "558",
+            "extension_improved": "190",
+            "memory_fast_groups": "12",
+            "anchor_Time": "28430790",
+            "extension_seconds": "4.94568",
+            "Time": "27959850",
+            "exhausted": "0",
+            "main_seconds": "9.18756"
+          }
+        ]
+      ],
+      "old_stable_engine_counts": [
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "335",
+            "strict_improve": "21",
+            "tie_moves": "314",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "109",
+            "extension_evaluated": "76300",
+            "extension_accepted": "560",
+            "extension_improved": "191",
+            "memory_fast_groups": "12",
+            "anchor_Time": "28430790",
+            "Time": "27946170",
+            "exhausted": "0"
+          }
+        ],
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "335",
+            "strict_improve": "21",
+            "tie_moves": "314",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "105",
+            "extension_evaluated": "73500",
+            "extension_accepted": "553",
+            "extension_improved": "188",
+            "memory_fast_groups": "12",
+            "anchor_Time": "28430790",
+            "Time": "27967350",
+            "exhausted": "0"
+          }
+        ]
+      ],
+      "new_stable_engine_counts": [
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "335",
+            "strict_improve": "21",
+            "tie_moves": "314",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "104",
+            "extension_evaluated": "72525",
+            "extension_accepted": "550",
+            "extension_improved": "187",
+            "memory_fast_groups": "12",
+            "anchor_Time": "28430790",
+            "Time": "27968079",
+            "exhausted": "0"
+          }
+        ],
+        [
+          {
+            "evaluated": "12000",
+            "accepted": "335",
+            "strict_improve": "21",
+            "tie_moves": "314",
+            "rounds": "4",
+            "prefix_rounds": "4",
+            "extension_passes": "107",
+            "extension_evaluated": "74900",
+            "extension_accepted": "558",
+            "extension_improved": "190",
+            "memory_fast_groups": "12",
+            "anchor_Time": "28430790",
+            "Time": "27959850",
+            "exhausted": "0"
+          }
+        ]
+      ]
+    }
+  ],
+  "pass8": {
+    "old_stdout_sha256": [
+      "6d451099992f91c78b57675e16a64aafa0393e404ef1c1d0c2bfb4c5be9596f0",
+      "6d451099992f91c78b57675e16a64aafa0393e404ef1c1d0c2bfb4c5be9596f0"
+    ],
+    "new_stdout_sha256": [
+      "6d451099992f91c78b57675e16a64aafa0393e404ef1c1d0c2bfb4c5be9596f0",
+      "6d451099992f91c78b57675e16a64aafa0393e404ef1c1d0c2bfb4c5be9596f0"
+    ],
+    "old_engine_counts": [
+      [
+        {
+          "evaluated": "12000",
+          "accepted": "714",
+          "strict_improve": "1",
+          "tie_moves": "713",
+          "rounds": "4",
+          "prefix_rounds": "4",
+          "extension_passes": "8",
+          "extension_evaluated": "5600",
+          "extension_accepted": "392",
+          "extension_improved": "9",
+          "memory_fast_groups": "8",
+          "anchor_Time": "22185686",
+          "extension_seconds": "0.631892",
+          "Time": "22127936",
+          "exhausted": "0",
+          "main_seconds": "8.90187"
+        }
+      ],
+      [
+        {
+          "evaluated": "12000",
+          "accepted": "714",
+          "strict_improve": "1",
+          "tie_moves": "713",
+          "rounds": "4",
+          "prefix_rounds": "4",
+          "extension_passes": "8",
+          "extension_evaluated": "5600",
+          "extension_accepted": "392",
+          "extension_improved": "9",
+          "memory_fast_groups": "8",
+          "anchor_Time": "22185686",
+          "extension_seconds": "0.646735",
+          "Time": "22127936",
+          "exhausted": "0",
+          "main_seconds": "8.95932"
+        }
+      ]
+    ],
+    "new_engine_counts": [
+      [
+        {
+          "evaluated": "12000",
+          "accepted": "714",
+          "strict_improve": "1",
+          "tie_moves": "713",
+          "rounds": "4",
+          "prefix_rounds": "4",
+          "extension_passes": "8",
+          "extension_evaluated": "5600",
+          "extension_accepted": "392",
+          "extension_improved": "9",
+          "memory_fast_groups": "8",
+          "anchor_Time": "22185686",
+          "extension_seconds": "0.636267",
+          "Time": "22127936",
+          "exhausted": "0",
+          "main_seconds": "8.85759"
+        }
+      ],
+      [
+        {
+          "evaluated": "12000",
+          "accepted": "714",
+          "strict_improve": "1",
+          "tie_moves": "713",
+          "rounds": "4",
+          "prefix_rounds": "4",
+          "extension_passes": "8",
+          "extension_evaluated": "5600",
+          "extension_accepted": "392",
+          "extension_improved": "9",
+          "memory_fast_groups": "8",
+          "anchor_Time": "22185686",
+          "extension_seconds": "0.638653",
+          "Time": "22127936",
+          "exhausted": "0",
+          "main_seconds": "8.81706"
+        }
+      ]
+    ],
+    "old_stable_engine_counts": [
+      [
+        {
+          "evaluated": "12000",
+          "accepted": "714",
+          "strict_improve": "1",
+          "tie_moves": "713",
+          "rounds": "4",
+          "prefix_rounds": "4",
+          "extension_passes": "8",
+          "extension_evaluated": "5600",
+          "extension_accepted": "392",
+          "extension_improved": "9",
+          "memory_fast_groups": "8",
+          "anchor_Time": "22185686",
+          "Time": "22127936",
+          "exhausted": "0"
+        }
+      ],
+      [
+        {
+          "evaluated": "12000",
+          "accepted": "714",
+          "strict_improve": "1",
+          "tie_moves": "713",
+          "rounds": "4",
+          "prefix_rounds": "4",
+          "extension_passes": "8",
+          "extension_evaluated": "5600",
+          "extension_accepted": "392",
+          "extension_improved": "9",
+          "memory_fast_groups": "8",
+          "anchor_Time": "22185686",
+          "Time": "22127936",
+          "exhausted": "0"
+        }
+      ]
+    ],
+    "new_stable_engine_counts": [
+      [
+        {
+          "evaluated": "12000",
+          "accepted": "714",
+          "strict_improve": "1",
+          "tie_moves": "713",
+          "rounds": "4",
+          "prefix_rounds": "4",
+          "extension_passes": "8",
+          "extension_evaluated": "5600",
+          "extension_accepted": "392",
+          "extension_improved": "9",
+          "memory_fast_groups": "8",
+          "anchor_Time": "22185686",
+          "Time": "22127936",
+          "exhausted": "0"
+        }
+      ],
+      [
+        {
+          "evaluated": "12000",
+          "accepted": "714",
+          "strict_improve": "1",
+          "tie_moves": "713",
+          "rounds": "4",
+          "prefix_rounds": "4",
+          "extension_passes": "8",
+          "extension_evaluated": "5600",
+          "extension_accepted": "392",
+          "extension_improved": "9",
+          "memory_fast_groups": "8",
+          "anchor_Time": "22185686",
+          "Time": "22127936",
+          "exhausted": "0"
+        }
+      ]
+    ],
+    "old_cpu_seconds": [
+      8.904318000000004,
+      8.961880000000008
+    ],
+    "new_cpu_seconds": [
+      8.859449999999995,
+      8.818504999999988
+    ],
+    "all_stdout_identical": true,
+    "all_engine_counts_identical": true
+  }
+}

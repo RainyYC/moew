@@ -1,10 +1,10 @@
 # 当前求解器完整解题报告
 
-报告日期：2026-10-30。实现依据：[src/solver.cpp](../../src/solver.cpp)。提交形式：自包含 C++17 单文件。
+报告日期：2026-10-30。模块化实现入口：[src/solver.cpp](../../src/solver.cpp)。裁判提交件：[submission/solver.cpp](../../submission/solver.cpp)，为可独立编译的自包含 C++17 单文件。
 
 当前算法联合选择专家并行规模、层布局、逐层专家映射和操作时间表。它先利用负载代理与事件模拟筛选布局，再围绕可行解搜索 microbatch 窗口、专家放置、操作优先级、波前和资源执行顺序。所有阶段共同优化官方定义的完成时间 `Time`。
 
-当前 50 例验收覆盖给定的全部用例，**50/50 通过官方 grader，平均 Time 为 20,366,017.76**。本文的算法、参数和结果均对应上述提交文件；逐例结果见第 13 节。
+第 12–13 节报告当前模块提交件的冻结 full50 结果。之后的针对性复测已完成并单独记录，不覆盖本批次。默认截止预算会使搜索迭代数和最终 Time 波动，因此默认运行不保证每次得到相同 Time；复测详情见[模块重构验证记录](../../results/module_refactor/README.md)。本文算法描述以当前模块源码和导出提交件为准。
 
 ## 1. 问题与优化变量
 
@@ -117,6 +117,14 @@ flowchart LR
     cb --> sw["s_dw"]
     dx --> db["disp_bwd"]
     sb --> db
+    classDef fwdCompute fill:#eff6ff,stroke:#2563eb,color:#1e3a8a
+    classDef fwdNetwork fill:#ecfeff,stroke:#0891b2,color:#155e75
+    classDef bwdCompute fill:#fff7ed,stroke:#ea580c,color:#9a3412
+    classDef bwdNetwork fill:#faf5ff,stroke:#9333ea,color:#6b21a8
+    class s,gemm fwdCompute
+    class disp,comb fwdNetwork
+    class sb,dx,dw,sw bwdCompute
+    class cb,db bwdNetwork
 ~~~
 
 相邻层还存在两组边：
@@ -163,7 +171,9 @@ $$
 
 ## 4. 总体流水线
 
-交互图：[整体架构](../../.archify/architecture-moe-budget-20261030-211601/moe-budget-architecture.html)与[算法工作流](../../.archify/workflow-moe-budget-20261030-211601/moe-budget-workflow.html)。架构图说明单文件内部职责与调用关系，工作流图说明默认搜索次序、规模分支和累计时间预算。
+交互图：[整体架构](../../.archify/architecture-moe-budget-20261030-211601/moe-budget-architecture.html)、[算法工作流](../../.archify/workflow-moe-budget-20261030-211601/moe-budget-workflow.html)、[模块调用时序（浅色）](../../.archify/sequence-solver-runtime-20261030-222608/index.html)和[operation 时间线与依赖 DAG 全 trace](../visualizations/case-flow-r64-v4-c4b/index.html)。前两图展示算法阶段和搜索运行关系，不代表源文件布局；模块调用时序展示调用顺序、返回与预算边界，operation trace 按任务/DAG 层级展示依赖与资源顺序，二者粒度不同。
+
+全 trace 实例 `r64_v4_c4b` 含 4,480 个操作、6,016 条模型 DAG 依赖边和 14 条 group/engine 泳道。颜色为前向计算 C 蓝、前向通信 N 青、反向计算 C 橙、反向通信 N 紫；七个 group 的平均利用率为 C 82.85%、N 82.30%。
 
 默认参数为 `--borrow=ac --diff=auto --scale=auto`。主流程如下：
 
@@ -550,28 +560,36 @@ DP 对每一个 $V$ 都重新建表，不能把整个候选生成写成一次 $O
 - 搜索截止依赖机器负载，接近限时时实际完成的候选数可能改变。
 - 验收结论针对给定 50 个最终用例，不外推为任意分布上的性能保证。
 
-## 11. 单文件组织与运行接口
+## 11. 模块组织与运行接口
 
 ### 11.1 源码结构
 
-全部实现位于 `src/solver.cpp`，使用显式标准库头文件，无项目本地头文件依赖。
+维护源码按职责拆在 `src/` 下，`src/solver.cpp` 是唯一编译入口并定义全局 `main`。该入口只构成一个 C++17 翻译单元，所有模块实现仍在同一次编译中可见。`make submission` 将入口递归展开为自包含裁判件 `submission/solver.cpp`；裁判提交身份以这个导出文件和下表完整模块清单为准。
 
-| 位置 | 职责 |
+| 文件 | 职责 |
 |---|---|
-| `event_sched` 命名空间 | DAG 构建、事件调度、准入与通信缓冲控制 |
-| `grouped_placement` 命名空间 | 类型压缩、模式枚举、DFS 与映射还原 |
-| `list_sched` 命名空间 | 离线列表、波前排序与空档填充 |
-| `local_engine_polish` 命名空间 | 资源链、关键路径邻域、重新定时与内存验证 |
-| `InputData / Candidate / PartitionCandidate / ScheduleResult` | 输入、布局候选、每个 P 的代表和完整解 |
-| `read_input / compute_durations / generate_candidates` | 输入、精确时长及初始候选 |
-| `refine_initial_candidates` 及后续搜索入口 | 按主流程执行布局和调度搜索 |
-| `write_output / main` | 参数控制、阶段串联及正式输出 |
+| `src/common.hpp` | 标准库依赖与 operation/engine 协议编号。 |
+| `src/core/operation_graph.hpp` | 节点编码/解码和共享每层 DAG 边定义。 |
+| `src/model/problem.hpp`, `src/model/scheduled_operation.hpp` | 输入、候选、调度结果和操作值对象。 |
+| `src/io/numeric.hpp`, `src/io/input.hpp`, `src/io/options.hpp`, `src/io/output.hpp` | 整数工具、输入、命令行选项与输出。 |
+| `src/placement/expert_mapping.hpp`, `src/placement/grouped_placement.hpp` | 专家映射、时长代价模型和分组 placement 搜索。 |
+| `src/scheduling/event_scheduler.hpp`, `src/scheduling/list_scheduler.hpp` | 事件调度和列表/波前调度内核。 |
+| `src/search/limits.hpp` | 搜索时间/数量预算、数值分母和无穷大哨兵。 |
+| `src/search/candidate_search.hpp`, `src/search/layout_search.hpp`, `src/search/initial_search.hpp` | 初始候选、布局评估与 incumbent 选择。 |
+| `src/search/window_search.hpp`, `src/search/window_borrow.hpp`, `src/search/boost_search.hpp`, `src/search/placement_search.hpp` | 窗口、奖励和专家放置搜索。 |
+| `src/search/list_search.hpp`, `src/search/wave_search.hpp` | 列表与波前搜索阶段。 |
+| `src/search/local_engine_polish.hpp`, `src/search/polish_driver.hpp` | 资源顺序局部搜索及其阶段预算编排。 |
+| `src/app/solver.hpp` | 搜索流程顶层编排。 |
+| `src/solver.cpp` | 唯一模块编译入口和全局 `main`。 |
+| `submission/solver.cpp` | `make submission` 生成的自包含裁判提交件。 |
+
+操作语义编号、共享 DAG 边顺序及常量保留理由见[模块设计说明](../module-design.md)。operation 数组和序列化表按同一枚举顺序排列；统一 DAG helper 保留边插入次序以维持拓扑/ready tie 遍历。预算、分母和无穷值使用带单位/语义的常量；数制基数、公式系数、启发式候选顺序和 hash mixing 数值按原意保留。
 
 项目格式要求见 [编码规范](../coding-style.md) 与 [.clang-format](../../.clang-format)：四空格缩进、控制语句加花括号、类型与函数命名区分，并保留便于对照公式的问题域符号。
 
 ### 11.2 构建与单例验证
 
-在仓库根目录执行：
+在仓库根目录编译维护源码并可单例验证：
 
 ~~~sh
 make build
@@ -585,6 +603,16 @@ python3 data/official/Problem/grader.py \
 ~~~sh
 g++ -std=c++17 -O2 -pipe -Wall -Wextra src/solver.cpp -o build/solver
 ~~~
+
+生成并检查单文件裁判提交件：
+
+~~~sh
+make submission
+make submission-check
+g++ -std=c++17 -O2 -pipe -Wall -Wextra submission/solver.cpp -o build/solver-submission
+~~~
+
+导出器仅递归展开 `src/` 内的本地头文件，保留标准库 include，为模块添加 begin/end 注释并去除 `#pragma once`。越界、缺失或不支持的 include 会报错；规范的带尾部注释本地 include 也会被展开。输出不含时间戳，且可由 `make submission-check` 检查是否与模块源码一致。
 
 程序接受单个位置参数指定输入文件；没有文件参数或参数为 `-` 时从标准输入读题。文件路径可以在搜索选项之前或之后。无法打开文件、输入为空或缺少必要字段时，程序向标准错误写出诊断并以非零状态退出。
 
@@ -646,86 +674,84 @@ make official
 
 ## 12. 当前验收口径与总体结果
 
-本报告的 50 例结果由 `scripts/compare_solver_search.py` 对 `build/solver_retiming_speed` 串行运行生成；该二进制与 `build/solver` 的 SHA-256 相同。每例以文件路径参数传入，单例限时 10 秒，并由官方 [grader.py](../../data/official/Problem/grader.py) 验证；运行期间保持空的标准输入管道打开。结果和验证记录见 [retiming speed full50 summary](../../results/retiming_speed/full50/summary.tsv) 与 [validation.json](../../results/retiming_speed/full50/validation.json)。源码和构建件身份见第 14 节。
+当前模块提交件由 `build/solver_modular_candidate` 串行运行官方 50 例，结果由 `scripts/compare_solver_search.py` 写入 [module_refactor full50 summary](../../results/module_refactor/full50/summary.tsv) 并由官方 [grader.py](../../data/official/Problem/grader.py) 验证；每例限时 10 秒。运行参数和源版本记录在 [command.json](../../results/module_refactor/full50/command.json)，计数与均值记录在 [validation.json](../../results/module_refactor/full50/validation.json)。
 
-50 例全部通过，0 失败、0 超时。用例范围为层数 3–64、microbatch 数 6–512、操作节点数 640–76,800，每例合法 P 数量为 2–9。该全量批次使用自建 runner，不是官方 `run_all.py` 的全量运行。另有三例官方 `run_all.py` 代表验证，记录见 [official_smoke.txt](../../results/retiming_speed/full50/official_smoke.txt)：`r128_v4_c4a` 9.205 秒、`r256_v8_c4` 9.225 秒、`x01_lr_block_p2` 9.180 秒，均通过；这三例不代表官方全量运行。
-
-最终源码另以 `--polish-pass-limit=24` 在四例上比较 `wide` 与 `auto`；[comparison.json](../../results/retiming_speed/equivalence/comparison.json) 记录四例输出逐字相同，wide 平均墙钟 3.970926 秒，auto 3.632690 秒（快 8.517817%）。该对照固定了搜索 pass 数，只验证评估器数值路径与耗时，不代替不限 pass 的 full50 Time 统计。三档数值边界和 DAG/资源合法性断言记录在 [boundary_test.txt](../../results/retiming_speed/equivalence/boundary_test.txt)。
+本次记录为 **50/50 合法通过，0 失败，0 超时**。该批次与固定基线相比，47 例 Time 相同、3 例较高。针对性复测已确认不同默认预算运行的迭代数和最终 Time 会波动，因此本节和第 13 节保留本次完整批次的原始数据；复测不会替换这批结果。详细复测及固定工作量验证见[独立验证记录](../../results/module_refactor/README.md)。
 
 | 指标 | 当前记录 |
 |---|---:|
 | 用例数 | 50 |
 | 官方 grader 有效通过 | 50 / 50 |
 | 失败或超时 | 0 |
-| Time 算术平均值 | **20,366,017.76** |
+| Time 算术平均值 | **20,367,560.88** |
 | Time 中位数 | 14,212,582 |
 | 最小 Time | 1,724,136 |
 | 最大 Time | 106,105,860 |
-| 求解器平均墙钟 | 9.22303 秒 |
-| 求解器墙钟中位数 | 约 9.231 秒 |
-| 求解器最长墙钟 | 9.234449 秒 |
-| 最长墙钟用例 | `r64_v8_c16b` |
+| 求解器平均墙钟 | 9.21923433584 秒 |
+| 求解器墙钟中位数 | 9.231 秒 |
+| 求解器最长墙钟 | 9.236006493 秒 |
+| 最长墙钟用例 | `x15_lr_twochunk_p10` |
 
-平均 Time 是每个用例等权的算术平均，不是归一化优化百分比，也不是求解器平均运行秒数。全量批次每例墙钟包含求解器启动、搜索和答案输出，不包含之后运行的 grader。数据和逐例验收记录由上述 summary 与 validation 文件提供。
+Time 是官方 grader 计算的离散时间单位；全量批次的墙钟包含求解器启动、搜索和答案输出，不包含之后运行的 grader。本表保持本次完整批次原始结果；针对性复测另行记录。
 
 ## 13. 与官方 Python 样例解的逐用例对照
 
-下表 50 例均通过官方 grader。官方参考 Time 取自[官方 Python 样例运行报告](../../data/official/Problem/report_python.txt)中的 50 条 `OK` 记录；当前 Time 和墙钟来自 [retiming speed full50 summary](../../results/retiming_speed/full50/summary.tsv)。官方参考是样例解成绩，不代表最优答案。较官方降幅按 `100 × (官方参考 Time − 当前 Time) / 官方参考 Time` 计算，正值表示当前 Time 更低，负值表示当前 Time 更高；百分比保留两位小数。
+下表依据当前模块提交件的 [full50 summary](../../results/module_refactor/full50/summary.tsv) 与官方 [Python 样例运行报告](../../data/official/Problem/report_python.txt) 核算。50 例均通过官方 grader；官方参考 Time 取自 50 条 `OK` 记录。正降幅表示当前 Time 更低，负值表示当前 Time 更高，百分比保留两位小数。当前墙钟取自模块提交件 full50 记录。
 
 | 用例 | 官方参考 Time | 当前 Time | 较官方降幅 | 当前墙钟（秒） |
 |---|---:|---:|---:|---:|
-| r128_v4_c4a | 29,209,485 | 22,702,165 | 22.28% | 9.230 |
-| r128_v8_c4 | 28,889,912 | 24,108,480 | 16.55% | 9.230 |
+| r128_v4_c4a | 29,209,485 | 22,702,165 | 22.28% | 9.231 |
+| r128_v8_c4 | 28,889,912 | 24,108,480 | 16.55% | 9.231 |
 | r128_v8_c8a | 14,392,210 | 12,126,730 | 15.74% | 9.231 |
 | r128_v8_c8b | 6,523,237 | 5,137,097 | 21.25% | 9.230 |
 | r16_p4_trap | 41,126,400 | 17,319,480 | 57.89% | 9.230 |
-| r20_p2_flat | 48,440,251 | 27,319,325 | 43.60% | 9.230 |
-| r24_p3_flat | 43,880,506 | 22,058,128 | 49.73% | 9.231 |
+| r20_p2_flat | 48,440,251 | 27,319,325 | 43.60% | 9.231 |
+| r24_p3_flat | 43,880,506 | 22,104,110 | 49.63% | 9.231 |
 | r24_p4_block | 116,599,980 | 45,127,920 | 61.30% | 9.231 |
-| r256_v4_c4 | 81,966,748 | 64,596,759 | 21.19% | 9.230 |
-| r256_v8_c16 | 64,562,944 | 53,017,200 | 17.88% | 9.230 |
+| r256_v4_c4 | 81,966,748 | 64,596,759 | 21.19% | 9.231 |
+| r256_v8_c16 | 64,562,944 | 53,017,200 | 17.88% | 9.231 |
 | r256_v8_c4 | 53,760,115 | 39,678,875 | 26.19% | 9.231 |
 | r256_v8_c8a | 35,497,678 | 29,101,860 | 18.02% | 9.231 |
 | r32_p8_ramp | 42,251,936 | 14,159,172 | 66.49% | 9.231 |
-| r64_v2_c2 | 2,863,918 | 2,504,782 | 12.54% | 9.180 |
-| r64_v2_c4 | 5,499,711 | 4,959,439 | 9.82% | 9.231 |
-| r64_v4_c4a | 3,292,576 | 2,515,856 | 23.59% | 9.230 |
-| r64_v4_c4b | 7,265,456 | 5,508,618 | 24.18% | 9.182 |
+| r64_v2_c2 | 2,863,918 | 2,504,782 | 12.54% | 9.182 |
+| r64_v2_c4 | 5,499,711 | 4,959,439 | 9.82% | 9.181 |
+| r64_v4_c4a | 3,292,576 | 2,515,856 | 23.59% | 9.180 |
+| r64_v4_c4b | 7,265,456 | 5,508,618 | 24.18% | 9.231 |
 | r64_v4_c4c | 12,551,075 | 9,923,947 | 20.93% | 9.231 |
 | r64_v4_c4d | 29,001,442 | 24,301,023 | 16.21% | 9.231 |
-| r64_v4_c4e | 43,605,352 | 36,838,424 | 15.52% | 9.230 |
+| r64_v4_c4e | 43,605,352 | 36,838,424 | 15.52% | 9.231 |
 | r64_v8_c16a | 7,545,376 | 6,278,640 | 16.79% | 9.231 |
-| r64_v8_c16b | 128,523,346 | 106,105,860 | 17.44% | 9.234 |
-| r64_v8_c16c | 54,690,200 | 39,679,400 | 27.45% | 9.231 |
+| r64_v8_c16b | 128,523,346 | 106,105,860 | 17.44% | 9.231 |
+| r64_v8_c16c | 54,690,200 | 39,679,400 | 27.45% | 9.233 |
 | r64_v8_c8a | 6,276,144 | 5,142,294 | 18.07% | 9.231 |
-| r64_v8_c8b | 3,756,094 | 2,772,615 | 26.18% | 9.180 |
+| r64_v8_c8b | 3,756,094 | 2,772,615 | 26.18% | 9.230 |
 | r64_v8_c8c | 8,590,922 | 7,050,382 | 17.93% | 9.231 |
 | r64_v8_c8d | 6,713,980 | 5,204,315 | 22.49% | 9.230 |
-| r64_v8_c8e | 18,658,360 | 15,560,600 | 16.60% | 9.231 |
-| r64_v8_c8f | 24,130,497 | 20,094,932 | 16.72% | 9.230 |
-| r64_v8_c8g | 50,176,120 | 39,840,752 | 20.60% | 9.231 |
-| x01_lr_block_p2 | 4,170,000 | 2,390,000 | 42.69% | 9.233 |
-| x02_lr_ramp_c16 | 39,384,000 | 17,128,740 | 56.51% | 9.234 |
-| x03_lr_trap_p3 | 21,938,112 | 10,284,928 | 53.12% | 9.230 |
-| x04_lr_inter_p5 | 49,136,226 | 25,444,320 | 48.22% | 9.233 |
-| x05_lr_tight_p6 | 30,491,760 | 13,976,944 | 54.16% | 9.234 |
-| x06_lr_trap_p7 | 19,913,040 | 8,991,872 | 54.84% | 9.230 |
-| x07_lr_flat_p10 | 48,935,040 | 16,454,670 | 66.37% | 9.230 |
-| x08_lr_lowb_p4 | 12,204,630 | 6,764,512 | 44.57% | 9.230 |
-| x09_lr_skew_p6 | 35,217,446 | 17,147,936 | 51.31% | 9.180 |
-| x10_lr_tight_p8 | 27,761,489 | 18,903,491 | 31.91% | 9.231 |
-| x11_lr_deep_p3 | 18,135,208 | 13,238,784 | 27.00% | 9.230 |
-| x12_lr_close_p10 | 43,576,815 | 27,945,636 | 35.87% | 9.180 |
-| x13_lr_twochunk_p8 | 31,151,616 | 12,517,820 | 59.82% | 9.184 |
-| x14_lr_twochunk_p15 | 132,491,520 | 81,323,640 | 38.62% | 9.231 |
-| x15_lr_twochunk_p10 | 28,590,656 | 14,265,992 | 50.10% | 9.231 |
-| x16_vl_trap4_ramp | 4,621,864 | 4,039,228 | 12.61% | 9.230 |
-| x17_vl_tight_block | 7,193,396 | 5,871,780 | 18.37% | 9.230 |
-| x18_vl_tight_small | 1,983,424 | 1,724,136 | 13.07% | 9.183 |
-| x19_vl_trap4_fs4 | 8,371,935 | 6,926,127 | 17.27% | 9.230 |
-| x20_vl_flat_control | 2,758,004 | 2,225,262 | 19.32% | 9.181 |
-| **均值（Time）** | **31,765,363.04** | **20,366,017.76** | **35.89%（均值比值降幅）** | — |
-| **逐例降幅算术平均** | — | — | **31.14%** | — |
+| r64_v8_c8e | 18,658,360 | 15,560,600 | 16.60% | 9.235 |
+| r64_v8_c8f | 24,130,497 | 20,094,932 | 16.72% | 9.232 |
+| r64_v8_c8g | 50,176,120 | 39,840,752 | 20.60% | 9.232 |
+| x01_lr_block_p2 | 4,170,000 | 2,390,000 | 42.69% | 9.181 |
+| x02_lr_ramp_c16 | 39,384,000 | 17,128,740 | 56.51% | 9.184 |
+| x03_lr_trap_p3 | 21,938,112 | 10,284,928 | 53.12% | 9.231 |
+| x04_lr_inter_p5 | 49,136,226 | 25,444,320 | 48.22% | 9.231 |
+| x05_lr_tight_p6 | 30,491,760 | 13,976,944 | 54.16% | 9.231 |
+| x06_lr_trap_p7 | 19,913,040 | 8,991,872 | 54.84% | 9.232 |
+| x07_lr_flat_p10 | 48,935,040 | 16,454,670 | 66.37% | 9.231 |
+| x08_lr_lowb_p4 | 12,204,630 | 6,764,512 | 44.57% | 9.181 |
+| x09_lr_skew_p6 | 35,217,446 | 17,164,896 | 51.26% | 9.231 |
+| x10_lr_tight_p8 | 27,761,489 | 18,903,491 | 31.91% | 9.185 |
+| x11_lr_deep_p3 | 18,135,208 | 13,238,784 | 27.00% | 9.232 |
+| x12_lr_close_p10 | 43,576,815 | 27,959,850 | 35.84% | 9.181 |
+| x13_lr_twochunk_p8 | 31,151,616 | 12,517,820 | 59.82% | 9.232 |
+| x14_lr_twochunk_p15 | 132,491,520 | 81,323,640 | 38.62% | 9.181 |
+| x15_lr_twochunk_p10 | 28,590,656 | 14,265,992 | 50.10% | 9.236 |
+| x16_vl_trap4_ramp | 4,621,864 | 4,039,228 | 12.61% | 9.231 |
+| x17_vl_tight_block | 7,193,396 | 5,871,780 | 18.37% | 9.182 |
+| x18_vl_tight_small | 1,983,424 | 1,724,136 | 13.07% | 9.180 |
+| x19_vl_trap4_fs4 | 8,371,935 | 6,926,127 | 17.27% | 9.181 |
+| x20_vl_flat_control | 2,758,004 | 2,225,262 | 19.32% | 9.231 |
+| **均值（Time）** | **31,765,363.04** | **20,367,560.88** | **35.88%（均值比值降幅）** | — |
+| **逐例降幅算术平均** | — | — | **31.13%** | — |
 
 “均值比值降幅”先分别计算 50 例官方参考 Time 和当前 Time 的算术平均，再按公式计算二者降幅；“逐例降幅算术平均”则直接对 50 个逐例百分比取平均，两种统计口径不同。
 
@@ -733,32 +759,24 @@ make official
 
 | 材料 | 用途 |
 |---|---|
-| [src/solver.cpp](../../src/solver.cpp) | 当前完整实现及默认参数 |
+| [src/solver.cpp](../../src/solver.cpp) | 唯一翻译单元入口及全局 `main` |
+| [submission/solver.cpp](../../submission/solver.cpp) | 自包含 C++17 裁判提交件 |
+| [模块设计说明](../module-design.md) | 模块职责、依赖、operation 编号、DAG 与常量原则 |
+| [模块重构固定工作量验证](../../results/module_refactor/fixed_work/validation.json) | 六例、两轮、两版本共 24 次运行的逐字输出/搜索计数及 CPU 记录 |
+| [模块独立头文件检查](../../results/module_refactor/header_checks.json) | 25 个头文件独立编译记录 |
+| [模块运行时序图](../../.archify/sequence-solver-runtime-20261030-222608/index.html) | 浅色模块调用时序 |
+| [operation 全 trace 图](../visualizations/case-flow-r64-v4-c4b/index.html) | 全量 operation 时间线、依赖 DAG 和引擎利用率 |
 | [题目定义](../problem/problem-v5.md) | 输入输出、操作、依赖和内存模型 |
 | [官方验收器](../../data/official/Problem/grader.py) | 独立合法性检查和 Time 计算 |
-| [full50 验收汇总](../../results/retiming_speed/full50/summary.tsv) | 本文的 50 例结果及统计 |
+| [当前模块 full50 汇总](../../results/module_refactor/full50/summary.tsv) | 本文的 50 例结果及统计 |
 | [官方 Python 样例成绩](../../data/official/Problem/report_python.txt) | 第 13 节官方参考 Time 来源 |
-| [full50 验证记录](../../results/retiming_speed/full50/validation.json) | 有效数、超时数及总体统计 |
-| [官方 runner 代表 smoke](../../results/retiming_speed/full50/official_smoke.txt) | 三个代表用例通过官方 run_all.py |
-| [最终源码 24-pass 逐字比较](../../results/retiming_speed/equivalence/comparison.json) | 四例 wide/auto 输出字节相同的最终版本复核 |
-| [数值边界测试结果](../../results/retiming_speed/equivalence/boundary_test.txt) | 64 位安全路径及两类 128 位回退断言 |
-| [源码身份清单](../../results/retiming_speed/full50/SOURCE_SHA256SUMS) | 当前源码、报告及验收器身份 |
-| [全量比较 runner](../../scripts/compare_solver_search.py) | 50 例串行运行、官方 grader 比较与结果记录 |
-| [构建脚本](../../scripts/build.sh) | 编译命令 |
+| [当前模块 full50 验证记录](../../results/module_refactor/full50/validation.json) | 有效数、超时数及总体统计 |
+| [针对性复测记录](../../results/module_refactor/paired_recheck/comparison.json) | 默认截止预算波动与固定 pass 对照 |
+| [构建脚本](../../scripts/build.sh) | 从模块入口编译 |
+| [导出脚本](../../scripts/amalgamate.py) | 递归生成裁判单文件并校验一致性 |
+| [full50 运行命令与代码身份](../../results/module_refactor/full50/command.json) | 50 例串行运行、官方 grader 比较与结果记录 |
 | [验收脚本](../../scripts/run_acceptance.sh) | 逐例运行、超时和 grader 调用 |
 
-实验编译使用 `g++ -std=c++17 -O2 -pipe -Wall -Wextra`，源文件为 `backup/retiming_speed_experiment/solver.cpp`，与正式 `src/solver.cpp` 字节相同。全量比较使用 `build/solver_retiming_speed`，它与正式路径 `build/solver` 字节相同。报告对应的 SHA-256：
+固定工作量输出/计数复核及独立头文件编译记录见 `results/module_refactor/`；重构验证细节不作为当前算法成绩。模块入口与导出提交二进制逐字节相同，SHA-256 为 `09a283409f48c7c06bb8e9d7f3fc2ac62c7ce7cf3f69628cb083e5f1235475b8`。
 
-~~~text
-src/solver.cpp
-7c58b4cfdcc65f9fbb917aa8bcfc142ae6409dc4337a2a210a9d60144fdd1a49
-
-build/solver
-61ce0ceedb62f18cd277b5f8b34c3dd771542049aa0fb649c78acfde305656d6
-
-build/solver_retiming_speed
-61ce0ceedb62f18cd277b5f8b34c3dd771542049aa0fb649c78acfde305656d6
-
-data/official/Problem/grader.py
-c42d5f0675e33cbfc1d40bdcafbb8aa40b6d0a4e26377e69405cdbb2b167cfbc
-~~~
+提交身份由导出的 `submission/solver.cpp` 与第 11.1 节全部模块文件共同确定。此次 full50 运行对应 commit `b6f107a989327f34b5767b744c9a1ac54dbfc2b7`；编译和 binary SHA-256 记录在 [command.json](../../results/module_refactor/full50/command.json)。

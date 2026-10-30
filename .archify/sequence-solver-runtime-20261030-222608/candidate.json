@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "求解器运行时序",
+    "locale": "zh-CN",
+    "output": ".archify/sequence-solver-runtime-20261030-222608/solver-runtime.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:RainyYC/moew.git",
+      "link_mode": "local-only",
+      "revision": "b6f107a989327f34b5767b744c9a1ac54dbfc2b7"
+    }
+  },
+  "participants": [
+    {"id":"runner","type":"external","label":"外部 runner","sublabel":"用例传入 / 验收","sources":[{"path":"scripts/run_acceptance.sh","line":24,"end_line":40}]},
+    {"id":"main","type":"backend","label":"solver::run","sublabel":"输入、阶段编排、共享计时","sources":[{"path":"src/app/solver.hpp","line":16,"end_line":71}]},
+    {"id":"io","type":"backend","label":"输入 / 输出","sublabel":"实例解析与排程文本序列化","sources":[{"path":"src/io/input.hpp","line":7,"end_line":44},{"path":"src/io/output.hpp","line":8,"end_line":52}]},
+    {"id":"search","type":"backend","label":"搜索阶段","sublabel":"候选 / 搜索编排","sources":[{"path":"src/search/candidate_search.hpp","line":7,"end_line":90},{"path":"src/search/initial_search.hpp","line":13,"end_line":51},{"path":"src/search/wave_search.hpp","line":8,"end_line":35}]},
+    {"id":"mapping","type":"backend","label":"专家映射","sublabel":"为每层构造并改进专家分配","sources":[{"path":"src/placement/expert_mapping.hpp","line":8,"end_line":60}]},
+    {"id":"scheduler","type":"backend","label":"排程内核","sublabel":"事件驱动 DAG 排程","sources":[{"path":"src/scheduling/event_scheduler.hpp","line":8,"end_line":29},{"path":"src/scheduling/event_scheduler.hpp","line":156,"end_line":190},{"path":"src/search/layout_search.hpp","line":66,"end_line":84}]},
+    {"id":"grader","type":"external","label":"官方 grader","sublabel":"runner 单独启动的进程","sources":[{"path":"scripts/run_acceptance.sh","line":33,"end_line":37}]}
+  ],
+  "messages": [
+    {"id":"invoke","from":"runner","to":"main","y":160,"label":"启动 solver 并提供用例路径","variant":"emphasis"},
+    {"id":"read","from":"main","to":"io","y":190,"label":"read_input(stream)","variant":"default"},
+    {"id":"input-return","from":"io","to":"main","y":220,"label":"实例参数与逐层负载","variant":"return"},
+    {"id":"candidate-start","from":"main","to":"search","y":260,"label":"generate_candidates：枚举可行 P/V","variant":"emphasis","note":"筛 P/V 约束；每个 P 生成专家映射。"},
+    {"id":"mapping-call","from":"search","to":"mapping","y":315,"label":"build_expert_map(x, P)","variant":"default"},
+    {"id":"mapping-return","from":"mapping","to":"search","y":345,"label":"逐层专家映射与代价","variant":"return"},
+    {"id":"candidate-return","from":"search","to":"main","y":375,"label":"候选集 P/V 与分段","variant":"return"},
+    {"id":"initial","from":"main","to":"search","y":415,"label":"refine_initial_candidates","variant":"emphasis","note":"probe 排序后精化最多两个；保留三种锚点。"},
+    {"id":"probe-layout","from":"search","to":"scheduler","y":470,"label":"evaluate_layouts → schedule","variant":"default","note":"只接受合法且更优排程。"},
+    {"id":"probe-return","from":"scheduler","to":"search","y":515,"label":"操作排程与 makespan","variant":"return"},
+    {"id":"initial-return","from":"search","to":"main","y":550,"label":"best + probe_base + v5_base","variant":"return"},
+    {"id":"window","from":"main","to":"search","y":595,"label":"可选：window borrow","variant":"default","note":"borrow=windows/ac/all；非 serial。"},
+    {"id":"window-return","from":"search","to":"main","y":650,"label":"更新 best（若有改进）","variant":"return"},
+    {"id":"boost-placement","from":"main","to":"search","y":690,"label":"可选：boost 与替代放置","variant":"default","note":"borrow 配置启用 boost 或 placement。"},
+    {"id":"boost-return","from":"search","to":"main","y":750,"label":"更新 best","variant":"return"},
+    {"id":"list","from":"main","to":"search","y":795,"label":"可选：list 搜索 / diff","variant":"default","note":"serial 与 diff / do_list 开关控制。"},
+    {"id":"list-return","from":"search","to":"main","y":850,"label":"v7 incumbent","variant":"return"},
+    {"id":"wave","from":"main","to":"search","y":895,"label":"可选：额外 P 搜索与 wave","variant":"default","note":"小实例额外 P；wave 共用 9 秒截止。"},
+    {"id":"wave-scheduler","from":"search","to":"scheduler","y":950,"label":"wave 候选重排","variant":"default"},
+    {"id":"wave-return","from":"scheduler","to":"search","y":985,"label":"操作排程与 makespan","variant":"return"},
+    {"id":"polish","from":"main","to":"search","y":1010,"label":"可选：local polish prefix → extension","variant":"default","note":"prefix 最多4轮，共享9秒；extension到 budget。"},
+    {"id":"polish-return","from":"search","to":"main","y":1065,"label":"精化后的 best","variant":"return"},
+    {"id":"write","from":"main","to":"io","y":1100,"label":"write_output(best)","variant":"emphasis"},
+    {"id":"answer","from":"io","to":"runner","y":1130,"label":"写出完整排程文本","variant":"return"},
+    {"id":"grade","from":"runner","to":"grader","y":1170,"label":"solver 退出后由 runner 单独运行","variant":"dashed"}
+  ],
+  "activations": [
+    {"participant":"main","from":160,"to":1140,"type":"backend"},
+    {"participant":"io","from":190,"to":225,"type":"backend"},
+    {"participant":"search","from":260,"to":1070,"type":"backend"},
+    {"participant":"mapping","from":315,"to":350,"type":"backend"},
+    {"participant":"scheduler","from":470,"to":520,"type":"backend"},
+    {"participant":"scheduler","from":950,"to":990,"type":"backend"},
+    {"participant":"grader","from":1170,"to":1190,"type":"external"}
+  ],
+  "cards": [
+    {"dot":"amber","title":"共享预算时钟","items":["main_start 在解析参数与读入前建立，搜索阶段都从这个时刻累计。","默认总预算 9200ms，可配置范围为 9000–9500ms；wave 与 polish prefix 都看 main_start + 9000ms。","list 的 8 秒或 deep 30 秒是各自的停止检查值，不表示阶段获得新的总预算。"]},
+    {"dot":"cyan","title":"操作颜色约定（本图未画操作时间线）","items":["前向计算：s / gemm — #2563eb（蓝）","前向通信：disp / comb — #0891b2（青）","反向计算：s_bwd / gemm_dx / gemm_dw / s_dw — #ea580c（橙）","反向通信：comb_bwd / disp_bwd — #9333ea（紫）"]},
+    {"dot":"slate","title":"时序边界与抽象","items":["本图消息表示模块函数调用与返回，不表示前向操作先于反向操作；事件调度器按 DAG 依赖和资源可用时刻交错排程。","四类操作颜色是后续操作级时间线的颜色约定，本图没有把模块调用染成任一操作类别。","官方 grader 是 runner 在 solver 输出并退出后调用的外部进程。"]}
+  ]
+}
