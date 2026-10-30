@@ -1,9 +1,10 @@
 #include "window_borrow.hpp"
 // Window-limit borrowing from frozen initial incumbents.
-#include "layout_search.hpp"
-#include "limits.hpp"
 #include "../placement/expert_mapping.hpp"
 #include "../scheduling/event_scheduler.hpp"
+#include "../scheduling/schedule_api.hpp"
+#include "layout_search.hpp"
+#include "limits.hpp"
 namespace solver {
 using namespace std;
 ScheduleResult run_window_borrow(const InputData& x, ScheduleResult best,
@@ -78,9 +79,14 @@ ScheduleResult run_window_borrow(const InputData& x, ScheduleResult best,
                     for (int w : wins) {
                         vector<event_sched::Op> ops;
                         i128 tm;
-                        if (event_sched::schedule(x.mb, x.L, anchor.G, anchor.group, dur, ng, caps,
-                                                  buf, w, ops, tm, 0) &&
-                            tm < trial.time) {
+                        scheduling::ProblemView problem{x.mb, x.L, anchor.G, anchor.group, dur, ng};
+                        scheduling::Scheduler<scheduling::EventScheduleStrategy> scheduler(problem);
+                        scheduling::EventConfig config;
+                        config.activation_capacity = &caps;
+                        config.communication_buffers = &buf;
+                        config.window = w;
+                        scheduling::ScheduleOutput output{ops, tm};
+                        if (scheduler.run(config, output) && tm < trial.time) {
                             trial.time = tm;
                             trial.ops.swap(ops);
                         }

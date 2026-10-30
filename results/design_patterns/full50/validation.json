@@ -1,0 +1,26 @@
+{
+  "count": 50,
+  "valid": 50,
+  "timeouts": 0,
+  "failures": 0,
+  "mean_time": 20369802.98,
+  "min_time": 1724136,
+  "max_time": 106105860,
+  "median_time": 14212582.0,
+  "mean_cpu_from_rounded_rows": 9.19714,
+  "mean_wall_from_rounded_rows": 9.19928,
+  "max_wall_from_rounded_rows": 9.225,
+  "max_wall_cases": [
+    "r256_v8_c4",
+    "r64_v8_c8g"
+  ],
+  "baseline_mean": 20365419.2,
+  "improved": 0,
+  "tied": 46,
+  "regressed": 4,
+  "official_mean": 31765363.04,
+  "mean_official_case_reduction_pct": 31.12928620080178,
+  "official_mean_reduction_pct": 35.874169124559764,
+  "raw_official_report": "results/design_patterns/official-run-all.txt",
+  "timing_note": "CPU/wall row values in the unmodified official runner report are rounded to 3 decimals."
+}

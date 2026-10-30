@@ -1,6 +1,8 @@
 #include "list_scheduler.hpp"
+
 #include "../common.hpp"
 #include "../core/operation_graph.hpp"
+#include "schedule_api.hpp"
 
 // ===== list_scheduler =====
 namespace list_sched {
@@ -35,12 +37,11 @@ struct Later {
     }
 };
 bool schedule(int mb, int L, int G, const std::vector<int>& grp, const Dur& d,
-                     const std::vector<int>& ng, int W, int vi, bool early, int gap, int fs, int fm,
-                     i128 busy, int ratio10, bool ramp, std::vector<Op>& out, i128& tm,
-                     std::vector<i128>* starts, std::vector<i128>* ends,
-                     bool wave_rank, bool fill_gaps, int rank_mode, int A,
-                     int B, int phase, int pitch_num, int pitch_den,
-                     int duration_head, bool mb_desc, int dw_order) {
+              const std::vector<int>& ng, int W, int vi, bool early, int gap, int fs, int fm,
+              i128 busy, int ratio10, bool ramp, std::vector<Op>& out, i128& tm,
+              std::vector<i128>* starts, std::vector<i128>* ends, bool wave_rank, bool fill_gaps,
+              int rank_mode, int A, int B, int phase, int pitch_num, int pitch_den,
+              int duration_head, bool mb_desc, int dw_order) {
     (void)mb_desc;  // Kept in the stable scheduler call signature; currently not used.
     if (mb < 1 || L < 1 || G < 1 || vi < 0 || vi >= limits::kVariantCount) {
         return false;
@@ -314,3 +315,17 @@ bool schedule(int mb, int L, int G, const std::vector<int>& grp, const Dur& d,
     return true;
 }
 }  // namespace list_sched
+
+namespace scheduling {
+bool ListScheduleStrategy::schedule(const ProblemView& problem, const ListConfig& config,
+                                    ScheduleOutput& output) {
+    return list_sched::schedule(
+        problem.mb, problem.layers, problem.groups, problem.layer_group, problem.durations,
+        problem.group_layers, config.window, config.variant, config.early, config.gap,
+        config.fill_groups, config.fill_microbatches, config.busy, config.ratio_tenths, config.ramp,
+        output.operations, output.makespan, output.starts, output.ends, config.wave_rank,
+        config.fill_gaps, config.rank_mode, config.rank_a, config.rank_b, config.phase,
+        config.pitch_numerator, config.pitch_denominator, config.duration_head,
+        config.microbatch_descending, config.weight_gradient_order);
+}
+}  // namespace scheduling

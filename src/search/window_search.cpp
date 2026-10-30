@@ -1,9 +1,10 @@
 #include "window_search.hpp"
 // Release-one window sweep for the initial schedule.
-#include "layout_search.hpp"
-#include "limits.hpp"
 #include "../placement/expert_mapping.hpp"
 #include "../scheduling/event_scheduler.hpp"
+#include "../scheduling/schedule_api.hpp"
+#include "layout_search.hpp"
+#include "limits.hpp"
 namespace solver {
 using namespace std;
 ScheduleResult scan_release1(const InputData& x, const ScheduleResult& anchor,
@@ -84,9 +85,15 @@ ScheduleResult scan_release1(const InputData& x, const ScheduleResult& anchor,
             }
             vector<event_sched::Op> ops;
             i128 tm;
-            if (event_sched::schedule(x.mb, x.L, anchor.G, anchor.group, dur, ng, caps, buf, w, ops,
-                                      tm, 0, 0, 0, 0, false, 1) &&
-                tm < trial.time) {
+            scheduling::ProblemView problem{x.mb, x.L, anchor.G, anchor.group, dur, ng};
+            scheduling::Scheduler<scheduling::EventScheduleStrategy> scheduler(problem);
+            scheduling::EventConfig config;
+            config.activation_capacity = &caps;
+            config.communication_buffers = &buf;
+            config.window = w;
+            config.window_release = 1;
+            scheduling::ScheduleOutput output{ops, tm};
+            if (scheduler.run(config, output) && tm < trial.time) {
                 trial.time = tm;
                 trial.ops.swap(ops);
             }

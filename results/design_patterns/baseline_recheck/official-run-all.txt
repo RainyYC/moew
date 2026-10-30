@@ -1,0 +1,14 @@
+solver: ./build/solver_before_design_patterns
+cases:  results/design_patterns/baseline_recheck/cases (4 files)
+limit:  10.0 s per case (solver only; grader time excluded)
+
+case                                          status       TIME    CPU(s)   wall(s)
+------------------------------------------------------------------------------------
+r24_p3_flat.txt                                   OK   22138998     9.185     9.187
+x09_lr_skew_p6.txt                                OK   17164896     9.197     9.198
+x10_lr_tight_p8.txt                               OK   18911563     9.202     9.204
+x12_lr_close_p10.txt                              OK   28031385     9.186     9.188
+
+summary: OK=4
+TIME: valid=4/4  mean=21561710.5  min=17164896  max=28031385
+CPU(s): mean=9.193  max=9.202

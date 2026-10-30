@@ -2,11 +2,11 @@
 // Evaluate group layouts under the event scheduler.
 #include "../placement/expert_mapping.hpp"
 #include "../scheduling/event_scheduler.hpp"
+#include "../scheduling/schedule_api.hpp"
 namespace solver {
 using namespace std;
-ScheduleResult evaluate_layouts(
-    const InputData& x, const Candidate& c, bool rich, bool deep,
-    chrono::steady_clock::time_point deadline) {
+ScheduleResult evaluate_layouts(const InputData& x, const Candidate& c, bool rich, bool deep,
+                                chrono::steady_clock::time_point deadline) {
     ScheduleResult best;
     best.c = c;
     auto dur = compute_durations(x, c);
@@ -71,9 +71,15 @@ ScheduleResult evaluate_layouts(
                     }
                     vector<event_sched::Op> ops;
                     i128 tm;
-                    if (event_sched::schedule(x.mb, x.L, G, lg, dur, ng, caps, buf, w, ops, tm,
-                                              mode) &&
-                        tm < best.time) {
+                    scheduling::ProblemView problem{x.mb, x.L, G, lg, dur, ng};
+                    scheduling::Scheduler<scheduling::EventScheduleStrategy> scheduler(problem);
+                    scheduling::EventConfig config;
+                    config.activation_capacity = &caps;
+                    config.communication_buffers = &buf;
+                    config.window = w;
+                    config.mode = mode;
+                    scheduling::ScheduleOutput output{ops, tm};
+                    if (scheduler.run(config, output) && tm < best.time) {
                         best.time = tm;
                         best.G = G;
                         best.K = K;

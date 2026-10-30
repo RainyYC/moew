@@ -1,66 +1,65 @@
 #include "options.hpp"
-// Command-line options and validation.
-#include "../common.hpp"
-#include "../search/limits.hpp"
-namespace solver {
-using namespace std;
 
+#include <charconv>
+
+#include "../common.hpp"
+
+namespace solver {
+namespace {
+int parse_nonnegative(const std::string& value, const std::string& option_name) {
+    int parsed = 0;
+    const char* begin = value.data();
+    const char* end = begin + value.size();
+    auto result = std::from_chars(begin, end, parsed);
+    if (value.empty() || result.ec != std::errc() || result.ptr != end || parsed < 0) {
+        throw std::runtime_error(option_name + " must be a nonnegative integer");
+    }
+    return parsed;
+}
+}  // namespace
 
 Options parse_options(int argc, char** argv) {
     Options options;
     for (int i = 1; i < argc; i++) {
-        string a = argv[i];
-        if (a == "-") {
+        std::string arg = argv[i];
+        if (arg == "--help" || arg == "-h") {
+            options.help = true;
+            return options;
+        }
+        if (arg == "-") {
             if (!options.input_path.empty()) {
-                throw runtime_error("multiple input paths");
+                throw std::runtime_error("multiple input paths");
             }
-            options.input_path = a;
-        } else if (!a.empty() && a[0] != '-') {
-            if (!options.input_path.empty()) {
-                throw runtime_error("multiple input paths");
+            options.input_path = arg;
+        } else if (arg.rfind("--mode=", 0) == 0) {
+            std::string value = arg.substr(7);
+            if (value == "full") {
+                options.mode = SearchMode::kFull;
+            } else if (value == "list") {
+                options.mode = SearchMode::kList;
+            } else if (value == "event") {
+                options.mode = SearchMode::kEvent;
+            } else if (value == "serial") {
+                options.mode = SearchMode::kSerial;
+            } else {
+                throw std::runtime_error("--mode must be full, list, event, or serial");
             }
-            options.input_path = a;
-        } else if (a == "--baseline") {
-            options.serial = true;
-        } else if (a == "--list") {
-            options.do_list = true;
-        } else if (a == "--list-deep") {
-            options.do_list = true;
-            options.list_deep = true;
-        } else if (a == "--list-deep-topos") {
-            options.do_list = true;
-            options.list_deep = true;
-            options.list_deep_topos = true;
-        } else if (a == "--wave") {
-            options.force_wave = true;
-        } else if (a.rfind("--scale=", 0) == 0) {
-            options.scale = a.substr(8);
-        } else if (a.rfind("--force-p=", 0) == 0) {
-            options.force_p = stoi(a.substr(10));
-        } else if (a.rfind("--borrow=", 0) == 0) {
-            options.borrow = a.substr(9);
-        } else if (a.rfind("--diff=", 0) == 0) {
-            options.diff = a.substr(7);
-        } else if (a.rfind("--budget-ms=", 0) == 0) {
-            size_t used = 0;
-            int value = stoi(a.substr(12), &used);
-            if (used != a.size() - 12 || value < search_limits::kMinimumBudgetMs ||
-                value > search_limits::kMaximumBudgetMs) {
-                throw runtime_error("--budget-ms must be an integer from 9000 to 9500");
-            }
-            options.budget_ms = value;
-        } else if (a.rfind("--retime-mode=", 0) == 0) {
-            options.retime_mode = a.substr(14);
+        } else if (arg.rfind("--force-p=", 0) == 0) {
+            options.force_p = parse_nonnegative(arg.substr(10), "--force-p");
+        } else if (arg.rfind("--retime-mode=", 0) == 0) {
+            options.retime_mode = arg.substr(14);
             if (options.retime_mode != "auto" && options.retime_mode != "wide") {
-                throw runtime_error("--retime-mode must be auto or wide");
+                throw std::runtime_error("--retime-mode must be auto or wide");
             }
-        } else if (a.rfind("--polish-pass-limit=", 0) == 0) {
-            size_t used = 0;
-            int value = stoi(a.substr(20), &used);
-            if (used != a.size() - 20 || value < 0) {
-                throw runtime_error("--polish-pass-limit must be a nonnegative integer");
+        } else if (arg.rfind("--polish-pass-limit=", 0) == 0) {
+            options.polish_pass_limit = parse_nonnegative(arg.substr(20), "--polish-pass-limit");
+        } else if (!arg.empty() && arg[0] != '-') {
+            if (!options.input_path.empty()) {
+                throw std::runtime_error("multiple input paths");
             }
-            options.polish_pass_limit = value;
+            options.input_path = arg;
+        } else {
+            throw std::runtime_error("unknown option: " + arg + " (use --help)");
         }
     }
     return options;

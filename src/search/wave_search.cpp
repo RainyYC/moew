@@ -1,12 +1,13 @@
 #include "wave_search.hpp"
 // Scale-v8 wave strategy and validation.
-#include "candidate_search.hpp"
-#include "limits.hpp"
-#include "layout_search.hpp"
-#include "../placement/expert_mapping.hpp"
 #include "../io/numeric.hpp"
+#include "../placement/expert_mapping.hpp"
 #include "../scheduling/event_scheduler.hpp"
 #include "../scheduling/list_scheduler.hpp"
+#include "../scheduling/schedule_api.hpp"
+#include "candidate_search.hpp"
+#include "layout_search.hpp"
+#include "limits.hpp"
 #include "list_search.hpp"
 namespace solver {
 using namespace std;
@@ -159,17 +160,25 @@ void run_scale_v8_search(const InputData& x, const vector<PartitionCandidate>& p
                     chrono::milliseconds(search_limits::kWaveDeadlineMs)) {
                     return;
                 }
-                vector<list_sched::Op> lo;
-                i128 tm;
-                if (!list_sched::schedule(x.mb, x.L, anchor.G, anchor.group, dur, ng, W, 0, false,
-                                          0, 0, 0, 0, 0, false, lo, tm, nullptr, nullptr, false,
-                                          true, mode, A, B, phase, pn, pd, head, desc, dw)) {
-                    return;
-                }
                 vector<event_sched::Op> ops;
-                ops.reserve(lo.size());
-                for (auto& o : lo) {
-                    ops.push_back({o.start, o.mb, o.l, o.op});
+                i128 tm;
+                scheduling::ProblemView problem{x.mb, x.L, anchor.G, anchor.group, dur, ng};
+                scheduling::Scheduler<scheduling::ListScheduleStrategy> scheduler(problem);
+                scheduling::ListConfig config;
+                config.window = W;
+                config.rank_mode = mode;
+                config.rank_a = A;
+                config.rank_b = B;
+                config.phase = phase;
+                config.pitch_numerator = pn;
+                config.pitch_denominator = pd;
+                config.duration_head = head;
+                config.microbatch_descending = desc;
+                config.weight_gradient_order = dw;
+                config.fill_gaps = true;
+                scheduling::ScheduleOutput output{ops, tm};
+                if (!scheduler.run(config, output)) {
+                    return;
                 }
                 i128 checked;
                 if (!safe_wave(ops, checked)) {

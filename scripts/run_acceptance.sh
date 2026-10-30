@@ -1,15 +1,17 @@
 #!/usr/bin/env bash
 set -uo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-mode="${1:-run_latest}"
-borrow="${2:-ac}"
-diff="${3:-auto}"
-case_filter="${4:-}"
-scale="${5:-auto}"
+result_dir="${1:-run_latest}"
+search_mode="${2:-full}"
+case_filter="${3:-}"
+case "$search_mode" in
+  full|list|event|serial) ;;
+  *) echo "error: search_mode must be full, list, event, or serial" >&2; exit 2 ;;
+esac
 solver="$ROOT/build/solver"
 cases="$ROOT/data/official/Problem/cases"
 grader="$ROOT/data/official/Problem/grader.py"
-outdir="$ROOT/results/$mode"
+outdir="$ROOT/results/$result_dir"
 mkdir -p "$outdir"
 summary="$outdir/summary.tsv"
 printf 'case\texit\twall_seconds\tchecker_time\n' > "$summary"
@@ -22,11 +24,7 @@ for input in "$cases"/*.txt; do
   output="$outdir/$name.out"
   err="$outdir/$name.stderr"
   start=$(date +%s%N)
-  if [ "$mode" = baseline ]; then
-    timeout 10 "$solver" --baseline --borrow="$borrow" --diff="$diff" --scale="$scale" "$input" > "$output" 2> "$err"
-  else
-    timeout 10 "$solver" --borrow="$borrow" --diff="$diff" --scale="$scale" "$input" > "$output" 2> "$err"
-  fi
+  timeout 10 "$solver" "--mode=$search_mode" "$input" > "$output" 2> "$err"
   rc=$?
   end=$(date +%s%N)
   sec=$(awk -v a="$start" -v b="$end" 'BEGIN{printf "%.3f",(b-a)/1000000000}')
@@ -41,7 +39,7 @@ for input in "$cases"/*.txt; do
 done
 cat "$summary"
 if [ "$matched" -eq 0 ]; then
-  echo "error: case_filter matched no official cases: $case_filter" >&2
+  echo "error: case_regex matched no official cases: $case_filter" >&2
   exit 2
 fi
 exit "$failed"

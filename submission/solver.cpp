@@ -1,22 +1,9 @@
 // BEGIN TRANSLATION UNIT: src/solver.cpp
 // BEGIN MODULE: src/solver.cpp
 // BEGIN MODULE: src/app/solver.hpp
-namespace solver {
-int run(int argc, char** argv);
-}
-// END MODULE: src/app/solver.hpp
+#include <chrono>
 
-int main(int argc, char** argv) {
-    return solver::run(argc, argv);
-}
-// END MODULE: src/solver.cpp
-// END TRANSLATION UNIT: src/solver.cpp
-// BEGIN TRANSLATION UNIT: src/app/solver.cpp
-// BEGIN MODULE: src/app/solver.cpp
-// Top-level phase orchestration; global main stays in solver.cpp.
-// BEGIN MODULE: src/io/input.hpp
-// BEGIN MODULE: src/model/problem.hpp
-// Shared problem and result value types.
+// BEGIN MODULE: src/io/options.hpp
 // BEGIN MODULE: src/common.hpp
 
 // Shared standard-library dependencies and operation identifiers.
@@ -68,6 +55,22 @@ inline constexpr std::array<int, 4> kCommunicationOperations = {
     kDispatchForward, kCombineForward, kCombineBackward, kDispatchBackward};
 }  // namespace operation
 // END MODULE: src/common.hpp
+namespace solver {
+enum class SearchMode { kFull, kList, kEvent, kSerial };
+
+struct Options {
+    int force_p = 0;
+    SearchMode mode = SearchMode::kFull;
+    int polish_pass_limit = 0;
+    std::string retime_mode = "auto";
+    std::string input_path;
+    bool help = false;
+};
+Options parse_options(int argc, char** argv);
+}  // namespace solver
+// END MODULE: src/io/options.hpp
+// BEGIN MODULE: src/model/problem.hpp
+// Shared problem and result value types.
 // BEGIN MODULE: src/search/limits.hpp
 
 namespace solver::search_limits {
@@ -101,7 +104,7 @@ inline constexpr __int128_t kInfiniteTime = static_cast<__int128_t>(1) << 126;
 // END MODULE: src/search/limits.hpp
 // BEGIN MODULE: src/model/scheduled_operation.hpp
 
-namespace event_sched {
+namespace solver {
 using i128 = __int128_t;
 
 struct Op {
@@ -110,6 +113,11 @@ struct Op {
     int l;
     int op;
 };
+using ScheduledOperation = Op;
+}  // namespace solver
+
+namespace event_sched {
+using Op = solver::ScheduledOperation;
 }  // namespace event_sched
 // END MODULE: src/model/scheduled_operation.hpp
 namespace solver {
@@ -141,24 +149,29 @@ struct ScheduleResult {
 }  // namespace solver
 // END MODULE: src/model/problem.hpp
 namespace solver {
+int run(int argc, char** argv);
+
+class Solver {
+public:
+    bool solve(const InputData& input, const Options& options,
+               std::chrono::steady_clock::time_point main_start, ScheduleResult& result) const;
+};
+}  // namespace solver
+// END MODULE: src/app/solver.hpp
+
+int main(int argc, char** argv) {
+    return solver::run(argc, argv);
+}
+// END MODULE: src/solver.cpp
+// END TRANSLATION UNIT: src/solver.cpp
+// BEGIN TRANSLATION UNIT: src/app/solver.cpp
+// BEGIN MODULE: src/app/solver.cpp
+// Top-level phase orchestration; global main stays in solver.cpp.
+// BEGIN MODULE: src/io/input.hpp
+namespace solver {
 InputData read_input(std::istream& in);
 }
 // END MODULE: src/io/input.hpp
-// BEGIN MODULE: src/io/options.hpp
-namespace solver {
-struct Options {
-    int force_p = 0;
-    bool serial = false, do_list = false, list_deep = false, list_deep_topos = false;
-    bool force_wave = false;
-    int budget_ms = search_limits::kDefaultBudgetMs;
-    int polish_pass_limit = 0;
-    std::string retime_mode = "auto";
-    std::string borrow = "ac", diff = "auto", scale = "auto";
-    std::string input_path;
-};
-Options parse_options(int argc, char** argv);
-}  // namespace solver
-// END MODULE: src/io/options.hpp
 // BEGIN MODULE: src/io/output.hpp
 namespace solver {
 void write_output(const InputData& x, const ScheduleResult& best, bool serial);
@@ -226,12 +239,51 @@ ScheduleResult run_window_borrow(const InputData& x, ScheduleResult best,
 // END MODULE: src/search/window_borrow.hpp
 namespace solver {
 using namespace std;
+bool Solver::solve(const InputData& x, const Options& options,
+                   chrono::steady_clock::time_point main_start, ScheduleResult& result) const {
+    const bool serial = options.mode == SearchMode::kSerial;
+    const bool do_list = options.mode == SearchMode::kFull || options.mode == SearchMode::kList;
+    const bool list_deep = false, list_deep_topos = false;
+    const bool diff_enabled = do_list && !serial;
+    const bool do_wave = options.mode == SearchMode::kFull;
+    const string borrow = "ac";
+    vector<PartitionCandidate> pcs = generate_candidates(x, options.force_p);
+    if (pcs.empty()) {
+        return false;
+    }
+    InitialResults initial = refine_initial_candidates(x, pcs, serial);
+    ScheduleResult best = move(initial.best);
+    ScheduleResult probe_base = move(initial.probe_base);
+    ScheduleResult v5_base = move(initial.v5_base);
+    best = run_window_borrow(x, move(best), probe_base, v5_base, serial, borrow);
+    best = run_boost_borrow(x, move(best), v5_base, serial, borrow);
+    best = run_alt_placement(x, move(best), v5_base, serial, borrow);
+    best = run_v7_list_search(x, move(best), serial, do_list, list_deep, list_deep_topos,
+                              diff_enabled, main_start, borrow);
+    ScheduleResult v7_incumbent = best;
+    run_scale_v8_search(x, pcs, v7_incumbent, best, serial, do_wave, main_start);
+    polish_final_schedule(x, best, serial, do_wave, main_start, search_limits::kDefaultBudgetMs,
+                          options.retime_mode, options.polish_pass_limit);
+    result = move(best);
+    return true;
+}
+
 int run(int argc, char** argv) {
     try {
         auto main_start = chrono::steady_clock::now();
         ios::sync_with_stdio(false);
         cin.tie(nullptr);
         Options options = parse_options(argc, argv);
+        if (options.help) {
+            cout << "Usage: solver [options] [input-file|-]\n"
+                    "Options:\n"
+                    "  --mode=full|list|event|serial  Search profile (default: full)\n"
+                    "  --force-p=N                   Restrict P; 0 means unrestricted\n"
+                    "  --retime-mode=auto|wide       Select retiming arithmetic\n"
+                    "  --polish-pass-limit=N         Limit polish passes; 0 means unlimited\n"
+                    "  --help, -h                    Show this help\n";
+            return 0;
+        }
         ifstream input_file;
         istream* input = &cin;
         if (!options.input_path.empty() && options.input_path != "-") {
@@ -242,41 +294,12 @@ int run(int argc, char** argv) {
             input = &input_file;
         }
         InputData x = read_input(*input);
-        int force_p = options.force_p;
-        bool serial = options.serial, do_list = options.do_list, list_deep = options.list_deep,
-             list_deep_topos = options.list_deep_topos, force_wave = options.force_wave;
-        string borrow = options.borrow, diff = options.diff, scale = options.scale;
-        bool diff_enabled = !serial && (diff == "on" || (diff == "auto" && borrow == "ac"));
-        if (diff_enabled) {
-            do_list = true;
-        }
-        if (diff == "off") {
-            do_list = false;
-        }
-        bool do_wave = !serial && (force_wave || scale == "on" ||
-                                   (scale == "auto" && borrow == "ac" && diff == "auto"));
-        if (borrow == "none" || diff == "off" || scale == "off") {
-            do_wave = false;
-        }
-        vector<PartitionCandidate> pcs = generate_candidates(x, force_p);
-        if (pcs.empty()) {
+        ScheduleResult result;
+        if (!Solver{}.solve(x, options, main_start, result)) {
             cerr << "no feasible config\n";
             return 2;
         }
-        InitialResults initial = refine_initial_candidates(x, pcs, serial);
-        ScheduleResult best = move(initial.best);
-        ScheduleResult probe_base = move(initial.probe_base);
-        ScheduleResult v5_base = move(initial.v5_base);
-        best = run_window_borrow(x, move(best), probe_base, v5_base, serial, borrow);
-        best = run_boost_borrow(x, move(best), v5_base, serial, borrow);
-        best = run_alt_placement(x, move(best), v5_base, serial, borrow);
-        best = run_v7_list_search(x, move(best), serial, do_list, list_deep, list_deep_topos,
-                                  diff_enabled, main_start, borrow);
-        ScheduleResult v7_incumbent = best;
-        run_scale_v8_search(x, pcs, v7_incumbent, best, serial, do_wave, main_start);
-        polish_final_schedule(x, best, serial, do_wave, main_start, options.budget_ms,
-                              options.retime_mode, options.polish_pass_limit);
-        write_output(x, best, serial);
+        write_output(x, result, options.mode == SearchMode::kSerial);
     } catch (const exception& e) {
         cerr << "input/options error: " << e.what() << "\n";
         return 2;
@@ -380,66 +403,66 @@ InputData read_input(istream& in) {
 // END TRANSLATION UNIT: src/io/input.cpp
 // BEGIN TRANSLATION UNIT: src/io/options.cpp
 // BEGIN MODULE: src/io/options.cpp
-// Command-line options and validation.
-namespace solver {
-using namespace std;
 
+#include <charconv>
+
+
+namespace solver {
+namespace {
+int parse_nonnegative(const std::string& value, const std::string& option_name) {
+    int parsed = 0;
+    const char* begin = value.data();
+    const char* end = begin + value.size();
+    auto result = std::from_chars(begin, end, parsed);
+    if (value.empty() || result.ec != std::errc() || result.ptr != end || parsed < 0) {
+        throw std::runtime_error(option_name + " must be a nonnegative integer");
+    }
+    return parsed;
+}
+}  // namespace
 
 Options parse_options(int argc, char** argv) {
     Options options;
     for (int i = 1; i < argc; i++) {
-        string a = argv[i];
-        if (a == "-") {
+        std::string arg = argv[i];
+        if (arg == "--help" || arg == "-h") {
+            options.help = true;
+            return options;
+        }
+        if (arg == "-") {
             if (!options.input_path.empty()) {
-                throw runtime_error("multiple input paths");
+                throw std::runtime_error("multiple input paths");
             }
-            options.input_path = a;
-        } else if (!a.empty() && a[0] != '-') {
-            if (!options.input_path.empty()) {
-                throw runtime_error("multiple input paths");
+            options.input_path = arg;
+        } else if (arg.rfind("--mode=", 0) == 0) {
+            std::string value = arg.substr(7);
+            if (value == "full") {
+                options.mode = SearchMode::kFull;
+            } else if (value == "list") {
+                options.mode = SearchMode::kList;
+            } else if (value == "event") {
+                options.mode = SearchMode::kEvent;
+            } else if (value == "serial") {
+                options.mode = SearchMode::kSerial;
+            } else {
+                throw std::runtime_error("--mode must be full, list, event, or serial");
             }
-            options.input_path = a;
-        } else if (a == "--baseline") {
-            options.serial = true;
-        } else if (a == "--list") {
-            options.do_list = true;
-        } else if (a == "--list-deep") {
-            options.do_list = true;
-            options.list_deep = true;
-        } else if (a == "--list-deep-topos") {
-            options.do_list = true;
-            options.list_deep = true;
-            options.list_deep_topos = true;
-        } else if (a == "--wave") {
-            options.force_wave = true;
-        } else if (a.rfind("--scale=", 0) == 0) {
-            options.scale = a.substr(8);
-        } else if (a.rfind("--force-p=", 0) == 0) {
-            options.force_p = stoi(a.substr(10));
-        } else if (a.rfind("--borrow=", 0) == 0) {
-            options.borrow = a.substr(9);
-        } else if (a.rfind("--diff=", 0) == 0) {
-            options.diff = a.substr(7);
-        } else if (a.rfind("--budget-ms=", 0) == 0) {
-            size_t used = 0;
-            int value = stoi(a.substr(12), &used);
-            if (used != a.size() - 12 || value < search_limits::kMinimumBudgetMs ||
-                value > search_limits::kMaximumBudgetMs) {
-                throw runtime_error("--budget-ms must be an integer from 9000 to 9500");
-            }
-            options.budget_ms = value;
-        } else if (a.rfind("--retime-mode=", 0) == 0) {
-            options.retime_mode = a.substr(14);
+        } else if (arg.rfind("--force-p=", 0) == 0) {
+            options.force_p = parse_nonnegative(arg.substr(10), "--force-p");
+        } else if (arg.rfind("--retime-mode=", 0) == 0) {
+            options.retime_mode = arg.substr(14);
             if (options.retime_mode != "auto" && options.retime_mode != "wide") {
-                throw runtime_error("--retime-mode must be auto or wide");
+                throw std::runtime_error("--retime-mode must be auto or wide");
             }
-        } else if (a.rfind("--polish-pass-limit=", 0) == 0) {
-            size_t used = 0;
-            int value = stoi(a.substr(20), &used);
-            if (used != a.size() - 20 || value < 0) {
-                throw runtime_error("--polish-pass-limit must be a nonnegative integer");
+        } else if (arg.rfind("--polish-pass-limit=", 0) == 0) {
+            options.polish_pass_limit = parse_nonnegative(arg.substr(20), "--polish-pass-limit");
+        } else if (!arg.empty() && arg[0] != '-') {
+            if (!options.input_path.empty()) {
+                throw std::runtime_error("multiple input paths");
             }
-            options.polish_pass_limit = value;
+            options.input_path = arg;
+        } else {
+            throw std::runtime_error("unknown option: " + arg + " (use --help)");
         }
     }
     return options;
@@ -936,6 +959,7 @@ bool schedule(int mb, int L, int G, const std::vector<int>& layer_group,
               int reward_tenths = 0, bool flat_reward = false, int window_release = 0);
 }  // namespace event_sched
 // END MODULE: src/scheduling/event_scheduler.hpp
+
 // BEGIN MODULE: src/core/operation_graph.hpp
 
 // The shared ten-operation DAG. Keep edge emission order stable: adjacency
@@ -989,6 +1013,93 @@ inline void append_layer_edges(int microbatch, int layer, int layer_count, Id id
 }
 }  // namespace operation_graph
 // END MODULE: src/core/operation_graph.hpp
+// BEGIN MODULE: src/scheduling/schedule_api.hpp
+
+namespace scheduling {
+using i128 = __int128_t;
+using Durations = std::vector<std::array<i128, operation::kCount>>;
+
+// Non-owning view shared by the scheduler strategies. All referenced data must
+// outlive the schedule call; constructing the view copies no problem data.
+struct ProblemView {
+    int mb;
+    int layers;
+    int groups;
+    const std::vector<int>& layer_group;
+    const Durations& durations;
+    const std::vector<int>& group_layers;
+};
+
+struct ScheduleOutput {
+    std::vector<solver::ScheduledOperation>& operations;
+    i128& makespan;
+    std::vector<i128>* starts = nullptr;
+    std::vector<i128>* ends = nullptr;
+};
+
+struct EventConfig {
+    const std::vector<int>* activation_capacity = nullptr;
+    const std::vector<int>* communication_buffers = nullptr;
+    int window = 0;
+    int mode = 0;
+    int fill_groups = 0;
+    int fill_microbatches = 0;
+    int reward_tenths = 0;
+    bool flat_reward = false;
+    int window_release = 0;
+};
+
+struct ListConfig {
+    int window = 1;
+    int variant = 0;
+    bool early = false;
+    int gap = 0;
+    int fill_groups = 0;
+    int fill_microbatches = 0;
+    i128 busy = 0;
+    int ratio_tenths = 0;
+    bool ramp = false;
+    bool wave_rank = false;
+    bool fill_gaps = false;
+    int rank_mode = 0;
+    int rank_a = 1;
+    int rank_b = 1;
+    int phase = 0;
+    int pitch_numerator = 1;
+    int pitch_denominator = 1;
+    int duration_head = 0;
+    bool microbatch_descending = false;
+    int weight_gradient_order = 0;
+};
+
+struct EventScheduleStrategy {
+    using Config = EventConfig;
+    static bool schedule(const ProblemView& problem, const EventConfig& config,
+                         ScheduleOutput& output);
+};
+
+struct ListScheduleStrategy {
+    using Config = ListConfig;
+    static bool schedule(const ProblemView& problem, const ListConfig& config,
+                         ScheduleOutput& output);
+};
+
+// Compile-time strategy context: policy selection is resolved by the compiler,
+// with no virtual calls or per-operation dispatch in the scheduler kernels.
+template <class Strategy>
+class Scheduler {
+public:
+    explicit Scheduler(ProblemView problem) : problem_(problem) {}
+
+    bool run(const typename Strategy::Config& config, ScheduleOutput& output) const {
+        return Strategy::schedule(problem_, config, output);
+    }
+
+private:
+    ProblemView problem_;
+};
+}  // namespace scheduling
+// END MODULE: src/scheduling/schedule_api.hpp
 
 // ===== event_scheduler =====
 
@@ -1138,12 +1249,11 @@ inline ReadyItem priority_item(const Node& n, int id, int mode, i128 tail) {
 // `dur[l][op]` are nonnegative compute_durations. `group_layers[g]` is n_g.
 // Returns false only for malformed/impossible inputs or a deadlocked state.
 bool schedule(int mb, int L, int G, const std::vector<int>& layer_group,
-                     const std::vector<std::array<i128, operation::kCount>>& dur,
-                     const std::vector<int>& group_layers,
-                     const std::vector<int>& activation_capacity,
-                     const std::vector<int>& comm_buffers, int window, std::vector<Op>& out,
-                     i128& makespan, int mode, int fill_groups, int fill_mbs,
-                     int reward_tenths, bool flat_reward, int window_release) {
+              const std::vector<std::array<i128, operation::kCount>>& dur,
+              const std::vector<int>& group_layers, const std::vector<int>& activation_capacity,
+              const std::vector<int>& comm_buffers, int window, std::vector<Op>& out,
+              i128& makespan, int mode, int fill_groups, int fill_mbs, int reward_tenths,
+              bool flat_reward, int window_release) {
     using namespace detail;
     out.clear();
     makespan = 0;
@@ -1612,6 +1722,20 @@ bool schedule(int mb, int L, int G, const std::vector<int>& layer_group,
     return (int)out.size() == N;
 }
 }  // namespace event_sched
+
+namespace scheduling {
+bool EventScheduleStrategy::schedule(const ProblemView& problem, const EventConfig& config,
+                                     ScheduleOutput& output) {
+    if (!config.activation_capacity || !config.communication_buffers) {
+        return false;
+    }
+    return event_sched::schedule(
+        problem.mb, problem.layers, problem.groups, problem.layer_group, problem.durations,
+        problem.group_layers, *config.activation_capacity, *config.communication_buffers,
+        config.window, output.operations, output.makespan, config.mode, config.fill_groups,
+        config.fill_microbatches, config.reward_tenths, config.flat_reward, config.window_release);
+}
+}  // namespace scheduling
 // END MODULE: src/scheduling/event_scheduler.cpp
 // END TRANSLATION UNIT: src/scheduling/event_scheduler.cpp
 // BEGIN TRANSLATION UNIT: src/scheduling/list_scheduler.cpp
@@ -1622,10 +1746,7 @@ namespace limits {
 inline constexpr int kVariantCount = 8;
 }
 using i128 = __int128_t;
-struct Op {
-    i128 start;
-    int mb, l, op;
-};
+using Op = solver::ScheduledOperation;
 using Dur = std::vector<std::array<i128, operation::kCount>>;
 inline bool comm(int o) {
     return o == operation::kDispatchForward || o == operation::kCombineForward ||
@@ -1640,6 +1761,7 @@ bool schedule(int mb, int L, int G, const std::vector<int>& grp, const Dur& d,
               bool mb_desc = false, int dw_order = 0);
 }  // namespace list_sched
 // END MODULE: src/scheduling/list_scheduler.hpp
+
 
 // ===== list_scheduler =====
 namespace list_sched {
@@ -1674,12 +1796,11 @@ struct Later {
     }
 };
 bool schedule(int mb, int L, int G, const std::vector<int>& grp, const Dur& d,
-                     const std::vector<int>& ng, int W, int vi, bool early, int gap, int fs, int fm,
-                     i128 busy, int ratio10, bool ramp, std::vector<Op>& out, i128& tm,
-                     std::vector<i128>* starts, std::vector<i128>* ends,
-                     bool wave_rank, bool fill_gaps, int rank_mode, int A,
-                     int B, int phase, int pitch_num, int pitch_den,
-                     int duration_head, bool mb_desc, int dw_order) {
+              const std::vector<int>& ng, int W, int vi, bool early, int gap, int fs, int fm,
+              i128 busy, int ratio10, bool ramp, std::vector<Op>& out, i128& tm,
+              std::vector<i128>* starts, std::vector<i128>* ends, bool wave_rank, bool fill_gaps,
+              int rank_mode, int A, int B, int phase, int pitch_num, int pitch_den,
+              int duration_head, bool mb_desc, int dw_order) {
     (void)mb_desc;  // Kept in the stable scheduler call signature; currently not used.
     if (mb < 1 || L < 1 || G < 1 || vi < 0 || vi >= limits::kVariantCount) {
         return false;
@@ -1953,6 +2074,20 @@ bool schedule(int mb, int L, int G, const std::vector<int>& grp, const Dur& d,
     return true;
 }
 }  // namespace list_sched
+
+namespace scheduling {
+bool ListScheduleStrategy::schedule(const ProblemView& problem, const ListConfig& config,
+                                    ScheduleOutput& output) {
+    return list_sched::schedule(
+        problem.mb, problem.layers, problem.groups, problem.layer_group, problem.durations,
+        problem.group_layers, config.window, config.variant, config.early, config.gap,
+        config.fill_groups, config.fill_microbatches, config.busy, config.ratio_tenths, config.ramp,
+        output.operations, output.makespan, output.starts, output.ends, config.wave_rank,
+        config.fill_gaps, config.rank_mode, config.rank_a, config.rank_b, config.phase,
+        config.pitch_numerator, config.pitch_denominator, config.duration_head,
+        config.microbatch_descending, config.weight_gradient_order);
+}
+}  // namespace scheduling
 // END MODULE: src/scheduling/list_scheduler.cpp
 // END TRANSLATION UNIT: src/scheduling/list_scheduler.cpp
 // BEGIN TRANSLATION UNIT: src/search/candidate_search.cpp
@@ -2060,9 +2195,8 @@ ScheduleResult evaluate_layouts(
 // Evaluate group layouts under the event scheduler.
 namespace solver {
 using namespace std;
-ScheduleResult evaluate_layouts(
-    const InputData& x, const Candidate& c, bool rich, bool deep,
-    chrono::steady_clock::time_point deadline) {
+ScheduleResult evaluate_layouts(const InputData& x, const Candidate& c, bool rich, bool deep,
+                                chrono::steady_clock::time_point deadline) {
     ScheduleResult best;
     best.c = c;
     auto dur = compute_durations(x, c);
@@ -2127,9 +2261,15 @@ ScheduleResult evaluate_layouts(
                     }
                     vector<event_sched::Op> ops;
                     i128 tm;
-                    if (event_sched::schedule(x.mb, x.L, G, lg, dur, ng, caps, buf, w, ops, tm,
-                                              mode) &&
-                        tm < best.time) {
+                    scheduling::ProblemView problem{x.mb, x.L, G, lg, dur, ng};
+                    scheduling::Scheduler<scheduling::EventScheduleStrategy> scheduler(problem);
+                    scheduling::EventConfig config;
+                    config.activation_capacity = &caps;
+                    config.communication_buffers = &buf;
+                    config.window = w;
+                    config.mode = mode;
+                    scheduling::ScheduleOutput output{ops, tm};
+                    if (scheduler.run(config, output) && tm < best.time) {
                         best.time = tm;
                         best.G = G;
                         best.K = K;
@@ -2329,9 +2469,15 @@ ScheduleResult scan_release1(const InputData& x, const ScheduleResult& anchor,
             }
             vector<event_sched::Op> ops;
             i128 tm;
-            if (event_sched::schedule(x.mb, x.L, anchor.G, anchor.group, dur, ng, caps, buf, w, ops,
-                                      tm, 0, 0, 0, 0, false, 1) &&
-                tm < trial.time) {
+            scheduling::ProblemView problem{x.mb, x.L, anchor.G, anchor.group, dur, ng};
+            scheduling::Scheduler<scheduling::EventScheduleStrategy> scheduler(problem);
+            scheduling::EventConfig config;
+            config.activation_capacity = &caps;
+            config.communication_buffers = &buf;
+            config.window = w;
+            config.window_release = 1;
+            scheduling::ScheduleOutput output{ops, tm};
+            if (scheduler.run(config, output) && tm < trial.time) {
                 trial.time = tm;
                 trial.ops.swap(ops);
             }
@@ -2471,9 +2617,14 @@ ScheduleResult run_window_borrow(const InputData& x, ScheduleResult best,
                     for (int w : wins) {
                         vector<event_sched::Op> ops;
                         i128 tm;
-                        if (event_sched::schedule(x.mb, x.L, anchor.G, anchor.group, dur, ng, caps,
-                                                  buf, w, ops, tm, 0) &&
-                            tm < trial.time) {
+                        scheduling::ProblemView problem{x.mb, x.L, anchor.G, anchor.group, dur, ng};
+                        scheduling::Scheduler<scheduling::EventScheduleStrategy> scheduler(problem);
+                        scheduling::EventConfig config;
+                        config.activation_capacity = &caps;
+                        config.communication_buffers = &buf;
+                        config.window = w;
+                        scheduling::ScheduleOutput output{ops, tm};
+                        if (scheduler.run(config, output) && tm < trial.time) {
                             trial.time = tm;
                             trial.ops.swap(ops);
                         }
@@ -2573,8 +2724,18 @@ ScheduleResult run_boost_borrow(const InputData& x, ScheduleResult best,
                 (void)unused;
                 vector<event_sched::Op> ops;
                 i128 tm;
-                if (event_sched::schedule(x.mb, x.L, v5_base.G, v5_base.group, dur, ng, caps, buf,
-                                          0, ops, tm, 3, fg, fm0, ratio, flat)) {
+                scheduling::ProblemView problem{x.mb, x.L, v5_base.G, v5_base.group, dur, ng};
+                scheduling::Scheduler<scheduling::EventScheduleStrategy> scheduler(problem);
+                scheduling::EventConfig config;
+                config.activation_capacity = &caps;
+                config.communication_buffers = &buf;
+                config.mode = 3;
+                config.fill_groups = fg;
+                config.fill_microbatches = fm0;
+                config.reward_tenths = ratio;
+                config.flat_reward = flat;
+                scheduling::ScheduleOutput output{ops, tm};
+                if (scheduler.run(config, output)) {
                     if (tm < boost_best_time) {
                         boost_best_time = tm;
                         best_fg = fg;
@@ -2723,9 +2884,13 @@ ScheduleResult run_alt_placement(const InputData& x, ScheduleResult best,
                 }
                 vector<event_sched::Op> ops;
                 i128 tm;
-                if (event_sched::schedule(x.mb, x.L, trial.G, trial.group, dur, ng, caps, buf, 0,
-                                          ops, tm, 0) &&
-                    tm < trial.time) {
+                scheduling::ProblemView problem{x.mb, x.L, trial.G, trial.group, dur, ng};
+                scheduling::Scheduler<scheduling::EventScheduleStrategy> scheduler(problem);
+                scheduling::EventConfig config;
+                config.activation_capacity = &caps;
+                config.communication_buffers = &buf;
+                scheduling::ScheduleOutput output{ops, tm};
+                if (scheduler.run(config, output) && tm < trial.time) {
                     trial.time = tm;
                     trial.ops.swap(ops);
                 }
@@ -2782,9 +2947,14 @@ ScheduleResult run_alt_placement(const InputData& x, ScheduleResult best,
                     for (int w : wins) {
                         vector<event_sched::Op> ops;
                         i128 tm;
-                        if (event_sched::schedule(x.mb, x.L, trial.G, trial.group, dur, ng, caps,
-                                                  buf, w, ops, tm, 0) &&
-                            tm < trial.time) {
+                        scheduling::ProblemView problem{x.mb, x.L, trial.G, trial.group, dur, ng};
+                        scheduling::Scheduler<scheduling::EventScheduleStrategy> scheduler(problem);
+                        scheduling::EventConfig config;
+                        config.activation_capacity = &caps;
+                        config.communication_buffers = &buf;
+                        config.window = w;
+                        scheduling::ScheduleOutput output{ops, tm};
+                        if (scheduler.run(config, output) && tm < trial.time) {
                             trial.time = tm;
                             trial.ops.swap(ops);
                         }
@@ -2909,19 +3079,26 @@ ScheduleResult run_v7_list_search(const InputData& x, ScheduleResult best, bool 
                 list_cutoff = true;
                 return;
             }
-            vector<list_sched::Op> lo;
+            vector<event_sched::Op> ops;
             i128 tm;
-            if (!list_sched::schedule(x.mb, x.L, anchor.G, anchor.group, dur, ng, W, vi, early, gap,
-                                      fs, fm, busy, ratio10, ramp, lo, tm)) {
+            scheduling::ProblemView problem{x.mb, x.L, anchor.G, anchor.group, dur, ng};
+            scheduling::Scheduler<scheduling::ListScheduleStrategy> scheduler(problem);
+            scheduling::ListConfig config;
+            config.window = W;
+            config.variant = vi;
+            config.early = early;
+            config.gap = gap;
+            config.fill_groups = fs;
+            config.fill_microbatches = fm;
+            config.busy = busy;
+            config.ratio_tenths = ratio10;
+            config.ramp = ramp;
+            scheduling::ScheduleOutput output{ops, tm};
+            if (!scheduler.run(config, output)) {
                 return;
             }
             if (tm >= best.time && (ratio10 > 0 || tm >= plain_time)) {
                 return;
-            }
-            vector<event_sched::Op> ops;
-            ops.reserve(lo.size());
-            for (auto& o : lo) {
-                ops.push_back({o.start, o.mb, o.l, o.op});
             }
             i128 checked;
             if (!safe(ops, checked)) {
@@ -2954,16 +3131,16 @@ ScheduleResult run_v7_list_search(const InputData& x, ScheduleResult best, bool 
         if (node_count >= 5000 && node_count <= 150000 &&
             chrono::steady_clock::now() - main_start <
                 chrono::milliseconds(search_limits::kQuickGapFillLatestStartMs)) {
-            vector<list_sched::Op> lo;
+            vector<event_sched::Op> ops;
             i128 tm;
-            if (list_sched::schedule(x.mb, x.L, anchor.G, anchor.group, dur, ng, x.mb, 0, false, 0,
-                                     0, 0, 0, 0, false, lo, tm, nullptr, nullptr, true, true) &&
-                tm < best.time) {
-                vector<event_sched::Op> ops;
-                ops.reserve(lo.size());
-                for (auto& o : lo) {
-                    ops.push_back({o.start, o.mb, o.l, o.op});
-                }
+            scheduling::ProblemView problem{x.mb, x.L, anchor.G, anchor.group, dur, ng};
+            scheduling::Scheduler<scheduling::ListScheduleStrategy> scheduler(problem);
+            scheduling::ListConfig config;
+            config.window = x.mb;
+            config.wave_rank = true;
+            config.fill_gaps = true;
+            scheduling::ScheduleOutput output{ops, tm};
+            if (scheduler.run(config, output) && tm < best.time) {
                 i128 checked;
                 if (safe(ops, checked) && checked < best.time) {
                     sort(ops.begin(), ops.end(), [](auto& a, auto& b) {
@@ -3321,17 +3498,25 @@ void run_scale_v8_search(const InputData& x, const vector<PartitionCandidate>& p
                     chrono::milliseconds(search_limits::kWaveDeadlineMs)) {
                     return;
                 }
-                vector<list_sched::Op> lo;
-                i128 tm;
-                if (!list_sched::schedule(x.mb, x.L, anchor.G, anchor.group, dur, ng, W, 0, false,
-                                          0, 0, 0, 0, 0, false, lo, tm, nullptr, nullptr, false,
-                                          true, mode, A, B, phase, pn, pd, head, desc, dw)) {
-                    return;
-                }
                 vector<event_sched::Op> ops;
-                ops.reserve(lo.size());
-                for (auto& o : lo) {
-                    ops.push_back({o.start, o.mb, o.l, o.op});
+                i128 tm;
+                scheduling::ProblemView problem{x.mb, x.L, anchor.G, anchor.group, dur, ng};
+                scheduling::Scheduler<scheduling::ListScheduleStrategy> scheduler(problem);
+                scheduling::ListConfig config;
+                config.window = W;
+                config.rank_mode = mode;
+                config.rank_a = A;
+                config.rank_b = B;
+                config.phase = phase;
+                config.pitch_numerator = pn;
+                config.pitch_denominator = pd;
+                config.duration_head = head;
+                config.microbatch_descending = desc;
+                config.weight_gradient_order = dw;
+                config.fill_gaps = true;
+                scheduling::ScheduleOutput output{ops, tm};
+                if (!scheduler.run(config, output)) {
+                    return;
                 }
                 i128 checked;
                 if (!safe_wave(ops, checked)) {

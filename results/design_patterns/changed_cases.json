@@ -1,0 +1,54 @@
+[
+  {
+    "case": "r24_p3_flat",
+    "exit": 0,
+    "status": "OK",
+    "wall_seconds": "9.204",
+    "cpu_seconds": "9.202",
+    "checker_time": 22138186,
+    "baseline_time": 22031278,
+    "absolute_improvement": -106908,
+    "improvement_pct": -0.4852555534908143,
+    "official_time": 43880506,
+    "official_reduction_pct": 49.54892726168654
+  },
+  {
+    "case": "x09_lr_skew_p6",
+    "exit": 0,
+    "status": "OK",
+    "wall_seconds": "9.204",
+    "cpu_seconds": "9.202",
+    "checker_time": 17164896,
+    "baseline_time": 17147936,
+    "absolute_improvement": -16960,
+    "improvement_pct": -0.09890403136564074,
+    "official_time": 35217446,
+    "official_reduction_pct": 51.260247548899486
+  },
+  {
+    "case": "x10_lr_tight_p8",
+    "exit": 0,
+    "status": "OK",
+    "wall_seconds": "9.183",
+    "cpu_seconds": "9.181",
+    "checker_time": 18911563,
+    "baseline_time": 18903491,
+    "absolute_improvement": -8072,
+    "improvement_pct": -0.042701107430368285,
+    "official_time": 27761489,
+    "official_reduction_pct": 31.87842698206858
+  },
+  {
+    "case": "x12_lr_close_p10",
+    "exit": 0,
+    "status": "OK",
+    "wall_seconds": "9.204",
+    "cpu_seconds": "9.202",
+    "checker_time": 28029807,
+    "baseline_time": 27942558,
+    "absolute_improvement": -87249,
+    "improvement_pct": -0.3122441402823607,
+    "official_time": 43576815,
+    "official_reduction_pct": 35.67724717834472
+  }
+]

@@ -1,10 +1,11 @@
 #include "placement_search.hpp"
 // Alternative expert placement search and rescheduling.
-#include "../placement/grouped_placement.hpp"
-#include "layout_search.hpp"
-#include "../placement/expert_mapping.hpp"
 #include "../io/numeric.hpp"
+#include "../placement/expert_mapping.hpp"
+#include "../placement/grouped_placement.hpp"
 #include "../scheduling/event_scheduler.hpp"
+#include "../scheduling/schedule_api.hpp"
+#include "layout_search.hpp"
 #include "limits.hpp"
 namespace solver {
 using namespace std;
@@ -120,9 +121,13 @@ ScheduleResult run_alt_placement(const InputData& x, ScheduleResult best,
                 }
                 vector<event_sched::Op> ops;
                 i128 tm;
-                if (event_sched::schedule(x.mb, x.L, trial.G, trial.group, dur, ng, caps, buf, 0,
-                                          ops, tm, 0) &&
-                    tm < trial.time) {
+                scheduling::ProblemView problem{x.mb, x.L, trial.G, trial.group, dur, ng};
+                scheduling::Scheduler<scheduling::EventScheduleStrategy> scheduler(problem);
+                scheduling::EventConfig config;
+                config.activation_capacity = &caps;
+                config.communication_buffers = &buf;
+                scheduling::ScheduleOutput output{ops, tm};
+                if (scheduler.run(config, output) && tm < trial.time) {
                     trial.time = tm;
                     trial.ops.swap(ops);
                 }
@@ -179,9 +184,14 @@ ScheduleResult run_alt_placement(const InputData& x, ScheduleResult best,
                     for (int w : wins) {
                         vector<event_sched::Op> ops;
                         i128 tm;
-                        if (event_sched::schedule(x.mb, x.L, trial.G, trial.group, dur, ng, caps,
-                                                  buf, w, ops, tm, 0) &&
-                            tm < trial.time) {
+                        scheduling::ProblemView problem{x.mb, x.L, trial.G, trial.group, dur, ng};
+                        scheduling::Scheduler<scheduling::EventScheduleStrategy> scheduler(problem);
+                        scheduling::EventConfig config;
+                        config.activation_capacity = &caps;
+                        config.communication_buffers = &buf;
+                        config.window = w;
+                        scheduling::ScheduleOutput output{ops, tm};
+                        if (scheduler.run(config, output) && tm < trial.time) {
                             trial.time = tm;
                             trial.ops.swap(ops);
                         }

@@ -1,14 +1,12 @@
 #pragma once
 #include "../common.hpp"
+#include "../model/scheduled_operation.hpp"
 namespace list_sched {
 namespace limits {
 inline constexpr int kVariantCount = 8;
 }
 using i128 = __int128_t;
-struct Op {
-    i128 start;
-    int mb, l, op;
-};
+using Op = solver::ScheduledOperation;
 using Dur = std::vector<std::array<i128, operation::kCount>>;
 inline bool comm(int o) {
     return o == operation::kDispatchForward || o == operation::kCombineForward ||

@@ -1,0 +1,1 @@
+../../../../data/official/Problem/cases/x09_lr_skew_p6.txt

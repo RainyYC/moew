@@ -1,0 +1,34 @@
+{
+  "valid": 4,
+  "comparison": [
+    {
+      "case": "r24_p3_flat",
+      "frozen_baseline": 22031278,
+      "current_full50": 22138186,
+      "baseline_same_machine_recheck": 22138998,
+      "current_minus_same_machine_baseline": -812
+    },
+    {
+      "case": "x09_lr_skew_p6",
+      "frozen_baseline": 17147936,
+      "current_full50": 17164896,
+      "baseline_same_machine_recheck": 17164896,
+      "current_minus_same_machine_baseline": 0
+    },
+    {
+      "case": "x10_lr_tight_p8",
+      "frozen_baseline": 18903491,
+      "current_full50": 18911563,
+      "baseline_same_machine_recheck": 18911563,
+      "current_minus_same_machine_baseline": 0
+    },
+    {
+      "case": "x12_lr_close_p10",
+      "frozen_baseline": 27942558,
+      "current_full50": 28029807,
+      "baseline_same_machine_recheck": 28031385,
+      "current_minus_same_machine_baseline": -1578
+    }
+  ],
+  "note": "A separate diagnostic run; no current full50 result was replaced."
+}

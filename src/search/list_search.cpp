@@ -1,12 +1,12 @@
 #include "list_search.hpp"
 // List-scheduler strategy and its local parameter sweeps.
-#include "../scheduling/list_scheduler.hpp"
-#include "layout_search.hpp"
-#include "limits.hpp"
-#include "../placement/expert_mapping.hpp"
 #include "../io/numeric.hpp"
+#include "../placement/expert_mapping.hpp"
 #include "../scheduling/event_scheduler.hpp"
 #include "../scheduling/list_scheduler.hpp"
+#include "../scheduling/schedule_api.hpp"
+#include "layout_search.hpp"
+#include "limits.hpp"
 #include "window_search.hpp"
 namespace solver {
 using namespace std;
@@ -110,19 +110,26 @@ ScheduleResult run_v7_list_search(const InputData& x, ScheduleResult best, bool 
                 list_cutoff = true;
                 return;
             }
-            vector<list_sched::Op> lo;
+            vector<event_sched::Op> ops;
             i128 tm;
-            if (!list_sched::schedule(x.mb, x.L, anchor.G, anchor.group, dur, ng, W, vi, early, gap,
-                                      fs, fm, busy, ratio10, ramp, lo, tm)) {
+            scheduling::ProblemView problem{x.mb, x.L, anchor.G, anchor.group, dur, ng};
+            scheduling::Scheduler<scheduling::ListScheduleStrategy> scheduler(problem);
+            scheduling::ListConfig config;
+            config.window = W;
+            config.variant = vi;
+            config.early = early;
+            config.gap = gap;
+            config.fill_groups = fs;
+            config.fill_microbatches = fm;
+            config.busy = busy;
+            config.ratio_tenths = ratio10;
+            config.ramp = ramp;
+            scheduling::ScheduleOutput output{ops, tm};
+            if (!scheduler.run(config, output)) {
                 return;
             }
             if (tm >= best.time && (ratio10 > 0 || tm >= plain_time)) {
                 return;
-            }
-            vector<event_sched::Op> ops;
-            ops.reserve(lo.size());
-            for (auto& o : lo) {
-                ops.push_back({o.start, o.mb, o.l, o.op});
             }
             i128 checked;
             if (!safe(ops, checked)) {
@@ -155,16 +162,16 @@ ScheduleResult run_v7_list_search(const InputData& x, ScheduleResult best, bool 
         if (node_count >= 5000 && node_count <= 150000 &&
             chrono::steady_clock::now() - main_start <
                 chrono::milliseconds(search_limits::kQuickGapFillLatestStartMs)) {
-            vector<list_sched::Op> lo;
+            vector<event_sched::Op> ops;
             i128 tm;
-            if (list_sched::schedule(x.mb, x.L, anchor.G, anchor.group, dur, ng, x.mb, 0, false, 0,
-                                     0, 0, 0, 0, false, lo, tm, nullptr, nullptr, true, true) &&
-                tm < best.time) {
-                vector<event_sched::Op> ops;
-                ops.reserve(lo.size());
-                for (auto& o : lo) {
-                    ops.push_back({o.start, o.mb, o.l, o.op});
-                }
+            scheduling::ProblemView problem{x.mb, x.L, anchor.G, anchor.group, dur, ng};
+            scheduling::Scheduler<scheduling::ListScheduleStrategy> scheduler(problem);
+            scheduling::ListConfig config;
+            config.window = x.mb;
+            config.wave_rank = true;
+            config.fill_gaps = true;
+            scheduling::ScheduleOutput output{ops, tm};
+            if (scheduler.run(config, output) && tm < best.time) {
                 i128 checked;
                 if (safe(ops, checked) && checked < best.time) {
                     sort(ops.begin(), ops.end(), [](auto& a, auto& b) {

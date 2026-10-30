@@ -1,7 +1,9 @@
 #include "event_scheduler.hpp"
+
 #include "../common.hpp"
 #include "../core/operation_graph.hpp"
 #include "../model/scheduled_operation.hpp"
+#include "schedule_api.hpp"
 
 // ===== event_scheduler =====
 
@@ -151,12 +153,11 @@ inline ReadyItem priority_item(const Node& n, int id, int mode, i128 tail) {
 // `dur[l][op]` are nonnegative compute_durations. `group_layers[g]` is n_g.
 // Returns false only for malformed/impossible inputs or a deadlocked state.
 bool schedule(int mb, int L, int G, const std::vector<int>& layer_group,
-                     const std::vector<std::array<i128, operation::kCount>>& dur,
-                     const std::vector<int>& group_layers,
-                     const std::vector<int>& activation_capacity,
-                     const std::vector<int>& comm_buffers, int window, std::vector<Op>& out,
-                     i128& makespan, int mode, int fill_groups, int fill_mbs,
-                     int reward_tenths, bool flat_reward, int window_release) {
+              const std::vector<std::array<i128, operation::kCount>>& dur,
+              const std::vector<int>& group_layers, const std::vector<int>& activation_capacity,
+              const std::vector<int>& comm_buffers, int window, std::vector<Op>& out,
+              i128& makespan, int mode, int fill_groups, int fill_mbs, int reward_tenths,
+              bool flat_reward, int window_release) {
     using namespace detail;
     out.clear();
     makespan = 0;
@@ -625,3 +626,17 @@ bool schedule(int mb, int L, int G, const std::vector<int>& layer_group,
     return (int)out.size() == N;
 }
 }  // namespace event_sched
+
+namespace scheduling {
+bool EventScheduleStrategy::schedule(const ProblemView& problem, const EventConfig& config,
+                                     ScheduleOutput& output) {
+    if (!config.activation_capacity || !config.communication_buffers) {
+        return false;
+    }
+    return event_sched::schedule(
+        problem.mb, problem.layers, problem.groups, problem.layer_group, problem.durations,
+        problem.group_layers, *config.activation_capacity, *config.communication_buffers,
+        config.window, output.operations, output.makespan, config.mode, config.fill_groups,
+        config.fill_microbatches, config.reward_tenths, config.flat_reward, config.window_release);
+}
+}  // namespace scheduling

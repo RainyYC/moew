@@ -1,9 +1,10 @@
 #include "boost_search.hpp"
 // Forward-fill priority search.
-#include "layout_search.hpp"
-#include "../placement/expert_mapping.hpp"
 #include "../io/numeric.hpp"
+#include "../placement/expert_mapping.hpp"
 #include "../scheduling/event_scheduler.hpp"
+#include "../scheduling/schedule_api.hpp"
+#include "layout_search.hpp"
 namespace solver {
 using namespace std;
 ScheduleResult run_boost_borrow(const InputData& x, ScheduleResult best,
@@ -80,8 +81,18 @@ ScheduleResult run_boost_borrow(const InputData& x, ScheduleResult best,
                 (void)unused;
                 vector<event_sched::Op> ops;
                 i128 tm;
-                if (event_sched::schedule(x.mb, x.L, v5_base.G, v5_base.group, dur, ng, caps, buf,
-                                          0, ops, tm, 3, fg, fm0, ratio, flat)) {
+                scheduling::ProblemView problem{x.mb, x.L, v5_base.G, v5_base.group, dur, ng};
+                scheduling::Scheduler<scheduling::EventScheduleStrategy> scheduler(problem);
+                scheduling::EventConfig config;
+                config.activation_capacity = &caps;
+                config.communication_buffers = &buf;
+                config.mode = 3;
+                config.fill_groups = fg;
+                config.fill_microbatches = fm0;
+                config.reward_tenths = ratio;
+                config.flat_reward = flat;
+                scheduling::ScheduleOutput output{ops, tm};
+                if (scheduler.run(config, output)) {
                     if (tm < boost_best_time) {
                         boost_best_time = tm;
                         best_fg = fg;

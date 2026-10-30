@@ -1,0 +1,344 @@
+{
+  "all_valid": true,
+  "mode_output_equivalent": true,
+  "runs": [
+    {
+      "case": "x18_vl_tight_small",
+      "mode": "full",
+      "tag": "baseline",
+      "argv": [
+        "/home/rainy/hackathon/build/solver_before_design_patterns",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x18_vl_tight_small.txt"
+      ],
+      "time": 1724136,
+      "stdout_sha256": "fdc94a1e3ece389f99cd0303033642478e15ad06b63e10f9f963689fb7a037f2",
+      "wall_seconds": 0.26421579299994846
+    },
+    {
+      "case": "x18_vl_tight_small",
+      "mode": "full",
+      "tag": "candidate",
+      "argv": [
+        "/home/rainy/hackathon/experiments/design_patterns_20261031/build/solver",
+        "--mode=full",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x18_vl_tight_small.txt"
+      ],
+      "time": 1724136,
+      "stdout_sha256": "fdc94a1e3ece389f99cd0303033642478e15ad06b63e10f9f963689fb7a037f2",
+      "wall_seconds": 0.25494095900012326
+    },
+    {
+      "case": "x18_vl_tight_small",
+      "mode": "full",
+      "tag": "submission",
+      "argv": [
+        "/home/rainy/hackathon/experiments/design_patterns_20261031/build/solver-single",
+        "--mode=full",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x18_vl_tight_small.txt"
+      ],
+      "time": 1724136,
+      "stdout_sha256": "fdc94a1e3ece389f99cd0303033642478e15ad06b63e10f9f963689fb7a037f2",
+      "wall_seconds": 0.2559668320000128
+    },
+    {
+      "case": "x18_vl_tight_small",
+      "mode": "list",
+      "tag": "baseline",
+      "argv": [
+        "/home/rainy/hackathon/build/solver_before_design_patterns",
+        "--scale=off",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x18_vl_tight_small.txt"
+      ],
+      "time": 1724136,
+      "stdout_sha256": "2fdbc8cad4ca2e914d7a336ced6e18aa11080046d5ec95b0a865ac6b819afddb",
+      "wall_seconds": 0.15084029400009058
+    },
+    {
+      "case": "x18_vl_tight_small",
+      "mode": "list",
+      "tag": "candidate",
+      "argv": [
+        "/home/rainy/hackathon/experiments/design_patterns_20261031/build/solver",
+        "--mode=list",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x18_vl_tight_small.txt"
+      ],
+      "time": 1724136,
+      "stdout_sha256": "2fdbc8cad4ca2e914d7a336ced6e18aa11080046d5ec95b0a865ac6b819afddb",
+      "wall_seconds": 0.14735383399988677
+    },
+    {
+      "case": "x18_vl_tight_small",
+      "mode": "list",
+      "tag": "submission",
+      "argv": [
+        "/home/rainy/hackathon/experiments/design_patterns_20261031/build/solver-single",
+        "--mode=list",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x18_vl_tight_small.txt"
+      ],
+      "time": 1724136,
+      "stdout_sha256": "2fdbc8cad4ca2e914d7a336ced6e18aa11080046d5ec95b0a865ac6b819afddb",
+      "wall_seconds": 0.15136192199997822
+    },
+    {
+      "case": "x18_vl_tight_small",
+      "mode": "event",
+      "tag": "baseline",
+      "argv": [
+        "/home/rainy/hackathon/build/solver_before_design_patterns",
+        "--diff=off",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x18_vl_tight_small.txt"
+      ],
+      "time": 1792964,
+      "stdout_sha256": "80aa3f77c9c4b94926bfe54d3b3b2bf980e054198dbab0dba4c18e1e527c6258",
+      "wall_seconds": 0.04349530100012089
+    },
+    {
+      "case": "x18_vl_tight_small",
+      "mode": "event",
+      "tag": "candidate",
+      "argv": [
+        "/home/rainy/hackathon/experiments/design_patterns_20261031/build/solver",
+        "--mode=event",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x18_vl_tight_small.txt"
+      ],
+      "time": 1792964,
+      "stdout_sha256": "80aa3f77c9c4b94926bfe54d3b3b2bf980e054198dbab0dba4c18e1e527c6258",
+      "wall_seconds": 0.04225620800002616
+    },
+    {
+      "case": "x18_vl_tight_small",
+      "mode": "event",
+      "tag": "submission",
+      "argv": [
+        "/home/rainy/hackathon/experiments/design_patterns_20261031/build/solver-single",
+        "--mode=event",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x18_vl_tight_small.txt"
+      ],
+      "time": 1792964,
+      "stdout_sha256": "80aa3f77c9c4b94926bfe54d3b3b2bf980e054198dbab0dba4c18e1e527c6258",
+      "wall_seconds": 0.04414648500005569
+    },
+    {
+      "case": "x18_vl_tight_small",
+      "mode": "serial",
+      "tag": "baseline",
+      "argv": [
+        "/home/rainy/hackathon/build/solver_before_design_patterns",
+        "--baseline",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x18_vl_tight_small.txt"
+      ],
+      "time": 9746559,
+      "stdout_sha256": "5e10f51b809fc6e8d48fd1fe7fb520d6251b7d2476acc9e29340341c9a941706",
+      "wall_seconds": 0.028777595000065048
+    },
+    {
+      "case": "x18_vl_tight_small",
+      "mode": "serial",
+      "tag": "candidate",
+      "argv": [
+        "/home/rainy/hackathon/experiments/design_patterns_20261031/build/solver",
+        "--mode=serial",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x18_vl_tight_small.txt"
+      ],
+      "time": 9746559,
+      "stdout_sha256": "5e10f51b809fc6e8d48fd1fe7fb520d6251b7d2476acc9e29340341c9a941706",
+      "wall_seconds": 0.031058693999966636
+    },
+    {
+      "case": "x18_vl_tight_small",
+      "mode": "serial",
+      "tag": "submission",
+      "argv": [
+        "/home/rainy/hackathon/experiments/design_patterns_20261031/build/solver-single",
+        "--mode=serial",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x18_vl_tight_small.txt"
+      ],
+      "time": 9746559,
+      "stdout_sha256": "5e10f51b809fc6e8d48fd1fe7fb520d6251b7d2476acc9e29340341c9a941706",
+      "wall_seconds": 0.028112443000054554
+    },
+    {
+      "case": "x01_lr_block_p2",
+      "mode": "full",
+      "tag": "baseline",
+      "argv": [
+        "/home/rainy/hackathon/build/solver_before_design_patterns",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x01_lr_block_p2.txt"
+      ],
+      "time": 2416400,
+      "stdout_sha256": "8e156311aae2e38c9c928a0a62403b0dcc9713ef88663bda5c9c3ec86b6ab611",
+      "wall_seconds": 1.3624390800000583
+    },
+    {
+      "case": "x01_lr_block_p2",
+      "mode": "full",
+      "tag": "candidate",
+      "argv": [
+        "/home/rainy/hackathon/experiments/design_patterns_20261031/build/solver",
+        "--mode=full",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x01_lr_block_p2.txt"
+      ],
+      "time": 2416400,
+      "stdout_sha256": "8e156311aae2e38c9c928a0a62403b0dcc9713ef88663bda5c9c3ec86b6ab611",
+      "wall_seconds": 1.3598663650000162
+    },
+    {
+      "case": "x01_lr_block_p2",
+      "mode": "full",
+      "tag": "submission",
+      "argv": [
+        "/home/rainy/hackathon/experiments/design_patterns_20261031/build/solver-single",
+        "--mode=full",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x01_lr_block_p2.txt"
+      ],
+      "time": 2416400,
+      "stdout_sha256": "8e156311aae2e38c9c928a0a62403b0dcc9713ef88663bda5c9c3ec86b6ab611",
+      "wall_seconds": 1.3819715879999421
+    },
+    {
+      "case": "x01_lr_block_p2",
+      "mode": "list",
+      "tag": "baseline",
+      "argv": [
+        "/home/rainy/hackathon/build/solver_before_design_patterns",
+        "--scale=off",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x01_lr_block_p2.txt"
+      ],
+      "time": 2570180,
+      "stdout_sha256": "68d9a2e2f3f7a74a299ab0c4d9429eae014f058098abd0580552072711dc8675",
+      "wall_seconds": 0.8478631279999718
+    },
+    {
+      "case": "x01_lr_block_p2",
+      "mode": "list",
+      "tag": "candidate",
+      "argv": [
+        "/home/rainy/hackathon/experiments/design_patterns_20261031/build/solver",
+        "--mode=list",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x01_lr_block_p2.txt"
+      ],
+      "time": 2570180,
+      "stdout_sha256": "68d9a2e2f3f7a74a299ab0c4d9429eae014f058098abd0580552072711dc8675",
+      "wall_seconds": 0.8430761720001101
+    },
+    {
+      "case": "x01_lr_block_p2",
+      "mode": "list",
+      "tag": "submission",
+      "argv": [
+        "/home/rainy/hackathon/experiments/design_patterns_20261031/build/solver-single",
+        "--mode=list",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x01_lr_block_p2.txt"
+      ],
+      "time": 2570180,
+      "stdout_sha256": "68d9a2e2f3f7a74a299ab0c4d9429eae014f058098abd0580552072711dc8675",
+      "wall_seconds": 0.846885347000125
+    },
+    {
+      "case": "x01_lr_block_p2",
+      "mode": "event",
+      "tag": "baseline",
+      "argv": [
+        "/home/rainy/hackathon/build/solver_before_design_patterns",
+        "--diff=off",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x01_lr_block_p2.txt"
+      ],
+      "time": 2570180,
+      "stdout_sha256": "68d9a2e2f3f7a74a299ab0c4d9429eae014f058098abd0580552072711dc8675",
+      "wall_seconds": 0.23273893000009593
+    },
+    {
+      "case": "x01_lr_block_p2",
+      "mode": "event",
+      "tag": "candidate",
+      "argv": [
+        "/home/rainy/hackathon/experiments/design_patterns_20261031/build/solver",
+        "--mode=event",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x01_lr_block_p2.txt"
+      ],
+      "time": 2570180,
+      "stdout_sha256": "68d9a2e2f3f7a74a299ab0c4d9429eae014f058098abd0580552072711dc8675",
+      "wall_seconds": 0.22725100899992867
+    },
+    {
+      "case": "x01_lr_block_p2",
+      "mode": "event",
+      "tag": "submission",
+      "argv": [
+        "/home/rainy/hackathon/experiments/design_patterns_20261031/build/solver-single",
+        "--mode=event",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x01_lr_block_p2.txt"
+      ],
+      "time": 2570180,
+      "stdout_sha256": "68d9a2e2f3f7a74a299ab0c4d9429eae014f058098abd0580552072711dc8675",
+      "wall_seconds": 0.2330640330001188
+    },
+    {
+      "case": "x01_lr_block_p2",
+      "mode": "serial",
+      "tag": "baseline",
+      "argv": [
+        "/home/rainy/hackathon/build/solver_before_design_patterns",
+        "--baseline",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x01_lr_block_p2.txt"
+      ],
+      "time": 14795999,
+      "stdout_sha256": "f24a39c856c8d0582a6b10bb98115df9f6c581a1ae759521411d1108d3b9e4ba",
+      "wall_seconds": 0.03557507200002874
+    },
+    {
+      "case": "x01_lr_block_p2",
+      "mode": "serial",
+      "tag": "candidate",
+      "argv": [
+        "/home/rainy/hackathon/experiments/design_patterns_20261031/build/solver",
+        "--mode=serial",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x01_lr_block_p2.txt"
+      ],
+      "time": 14795999,
+      "stdout_sha256": "f24a39c856c8d0582a6b10bb98115df9f6c581a1ae759521411d1108d3b9e4ba",
+      "wall_seconds": 0.03522426900008213
+    },
+    {
+      "case": "x01_lr_block_p2",
+      "mode": "serial",
+      "tag": "submission",
+      "argv": [
+        "/home/rainy/hackathon/experiments/design_patterns_20261031/build/solver-single",
+        "--mode=serial",
+        "--polish-pass-limit=2",
+        "/home/rainy/hackathon/data/official/Problem/cases/x01_lr_block_p2.txt"
+      ],
+      "time": 14795999,
+      "stdout_sha256": "f24a39c856c8d0582a6b10bb98115df9f6c581a1ae759521411d1108d3b9e4ba",
+      "wall_seconds": 0.03604858500011687
+    }
+  ],
+  "input_forms_equivalent": true,
+  "help_does_not_read_stdin": true,
+  "option_count": 5,
+  "removed_and_invalid_options_rejected": true
+}
