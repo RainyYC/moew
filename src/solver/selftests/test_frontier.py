@@ -22,7 +22,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
-from solver import casein, formula, frontier, sched
+from solver import casein, formula, frontier, sched, solve
 
 ROOT = Path(__file__).resolve().parents[3]
 SAMPLES = ("ex1", "ex2", "ex3", "ex4", "ex5", "ex6", "mini")
@@ -279,6 +279,47 @@ class TestLifecycleGating(unittest.TestCase):
             assert_schedule_valid(self, case, plan, result)
         best = frontier.search(case, plan, strategy="B")
         assert_schedule_valid(self, case, plan, best)
+
+
+class TestFrontierIntegration(unittest.TestCase):
+    """生产接入的标签/统计回归（防止 A 分支 meta=None 崩溃、run 恒为 0）。"""
+
+    def test_mode_a_strict_improvement_labels_stats(self):
+        import time as _time
+
+        case, plan, config = load_sample("ex5")
+        variant = (True, False, False, False)
+        base = sched.schedule(case, plan, case.nmb, variant, "early")
+        self.assertIsNotNone(base)
+        ok, groups = sched.memory_usage(case, plan, base.start, base.end)
+        self.assertTrue(ok)
+        best = solve._Best(
+            time=base.time,
+            lb=plan.lb,
+            plan=plan,
+            rows=config["map_rows"],
+            config=solve.Config(
+                P=config["P"], V=config["V"], D=1,
+                psi=tuple(config["psi"]), lb=plan.lb,
+            ),
+            result=base,
+            groups=groups,
+            mode="baseline",
+        )
+        improved, info = solve._try_frontier(
+            case, best, _time.monotonic() + 5.0, "A", None, reserve_s=0.4,
+        )
+        self.assertLess(improved.time, best.time, "A 组在 ex5 上应严格改进")
+        self.assertEqual(info["run"], 1)
+        self.assertEqual(info["planned"], 1)
+        self.assertGreaterEqual(info["hits"], 1)
+        self.assertEqual(info["stop"], "complete")
+        self.assertEqual(info["accepted"], {"variant": "A", "policy": "search"})
+        self.assertEqual([], sched.check_schedule(case, plan, improved.result))
+        ok2, _groups2 = sched.memory_usage(
+            case, plan, improved.result.start, improved.result.end
+        )
+        self.assertTrue(ok2)
 
 
 class TestDeterminismAndLookahead(unittest.TestCase):

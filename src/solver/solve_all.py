@@ -120,6 +120,7 @@ def solve_one(
                 }
                 for group in solution.groups
             ],
+            "frontier": solution.frontier_stats,
         }
     )
     if check:
@@ -228,6 +229,17 @@ def run_single(
         f"Time={solution.time} (lb={solution.lb}) solve={elapsed:.2f}s",
         file=sys.stderr,
     )
+    stats = solution.frontier_stats
+    if stats is not None:
+        # 显式记录“新路线确实启用/命中/为何停止”，避免把旧默认路径误当候选。
+        print(
+            f"[frontier] enabled={1 if stats.get('enabled') else 0} "
+            f"mode={stats.get('mode')} reserve={stats.get('reserve_s')}s "
+            f"planned={stats.get('planned')} run={stats.get('run')} "
+            f"hits={stats.get('hits')} before={stats.get('before')} "
+            f"after={stats.get('after')} stop={stats.get('stop')}",
+            file=sys.stderr,
+        )
     return 0
 
 
@@ -323,7 +335,7 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"--frontier-mode 缺少取值。\n{_SINGLE_USAGE}", file=sys.stderr)
                 return 2
             frontier_mode = raw[position + 1]
-            if frontier_mode not in ("A", "B", "C", "auto"):
+            if frontier_mode not in ("A", "B", "C", "auto", "noop"):
                 print(f"--frontier-mode 需要 A/B/C/auto。\n{_SINGLE_USAGE}", file=sys.stderr)
                 return 2
             del raw[position : position + 2]
@@ -359,8 +371,8 @@ def main(argv: list[str] | None = None) -> int:
         help="追加事件驱动就绪前沿内核（默认关闭；只接受更优且内存合法的解）",
     )
     parser.add_argument(
-        "--frontier-mode", choices=("A", "B", "C", "auto"), default="B",
-        help="frontier 消融组（默认 B=生命周期内存门控）",
+        "--frontier-mode", choices=("A", "B", "C", "auto", "noop"), default="B",
+        help="frontier 消融组（默认 B；noop=只预留预算不运行，作对照）",
     )
     parser.add_argument("--check", action="store_true", help="用 python3 -m judge eval 复核 + 跑退化形态")
     parser.add_argument("--skip-selftests", action="store_true", help="--check 时跳过退化形态")

@@ -85,6 +85,7 @@ class Solution:
     elapsed: float
     groups: list[sched.GroupMemory]
     exact_stats: Optional[dict] = None
+    frontier_stats: Optional[dict] = None
 
     @property
     def grid(self) -> tuple[int, int, int]:
@@ -742,7 +743,8 @@ def _try_frontier(
     mode: str,
     log: Log,
     seed: int = 20261020,
-) -> _Best:
+    reserve_s: float = 0.0,
+) -> tuple[_Best, dict]:
     """在**同一配置**（best.plan）上用 frontier 内核再试一次；默认关闭，仅显式开关启用。
 
     只接受：``Time`` 严格更小 **且** 过 ``sched.memory_usage`` 的完整解；否则原样返回
@@ -750,21 +752,51 @@ def _try_frontier(
     """
     from . import frontier as frontier_mod
 
+    info: dict = {
+        "enabled": True,
+        "mode": mode,
+        "reserve_s": round(reserve_s, 3),
+        "planned": 0,
+        "run": 0,
+        "hits": 0,
+        "before": best.time,
+        "after": best.time,
+        "stop": "complete",
+        "candidates": [],
+    }
     if time.monotonic() >= deadline:
-        return best
+        info["stop"] = "no-window"
+        return best, info
     plan = best.plan
     stats = frontier_mod.Stats()
     # 同配置下的小候选集：只保留在 t2 探索里真正赢过基线列表调度的拓扑/预留组合，
     # 并按实测单次耗时做预算保护，避免把一次 35k op 的调度排到 deadline 之后。
     variant_indices = (0, 2, 4, 5, 7) if case.n_ops <= 20_000 else (0, 4)
     policies = ("auto", "comm1") if case.n_ops <= 20_000 else ("auto",)
+    if mode == "A":
+        variant_indices = ()
+        policies = ()
+        info["planned"] = 1
+    else:
+        info["planned"] = len(variant_indices) * len(policies) + (
+            1 if mode in ("C", "auto") else 0
+        )
     candidates: list = []
     try:
         if mode == "A":
+            began = time.monotonic()
             candidate = frontier_mod.search(
                 case, plan, strategy="A", deadline=deadline, seed=seed, stats=stats,
             )
-            candidates.append((candidate, None))
+            spent = time.monotonic() - began
+            info["run"] = 1
+            info["candidates"].append({
+                "variant": "A",
+                "policy": "search",
+                "time": None if candidate is None else candidate.time,
+                "wall": round(spent, 4),
+            })
+            candidates.append((candidate, ("A", "search")))
         else:
             estimate = 0.0
             for variant_index in variant_indices:
@@ -780,6 +812,13 @@ def _try_frontier(
                         deadline=deadline, seed=seed, stats=stats,
                     )
                     spent = time.monotonic() - began
+                    info["run"] += 1
+                    info["candidates"].append({
+                        "variant": variant_index,
+                        "policy": policy,
+                        "time": None if candidate is None else candidate.time,
+                        "wall": round(spent, 4),
+                    })
                     if spent > estimate:
                         estimate = spent
                     if candidate is not None:
@@ -787,19 +826,28 @@ def _try_frontier(
             if mode in ("C", "auto") and candidates:
                 now = time.monotonic()
                 if now + max(0.02, estimate) <= deadline:
+                    began = time.monotonic()
                     candidate = frontier_mod.schedule(
                         case, plan, window=None, gating=True, zero_free=True,
                         policy=policies[0], mode="lookahead", lookahead=4,
                         deadline=deadline, seed=seed, stats=stats,
                     )
+                    spent = time.monotonic() - began
+                    info["run"] += 1
+                    info["candidates"].append({"variant": "lookahead",
+                                               "policy": policies[0],
+                                               "time": None if candidate is None else candidate.time,
+                                               "wall": round(spent, 4)})
                     if candidate is not None:
                         candidates.append((candidate, ("lookahead", policies[0])))
     except _FrontierBudget:
-        pass
+        info["stop"] = "deadline"
     except Exception as exc:  # pragma: no cover - 新内核失败时绝不影响既有结果
+        info["stop"] = "exception"
+        info["error"] = repr(exc)
         if log:
             log(f"    [frontier] 异常，保留原解：{exc!r}")
-        return best
+        return best, info
     improved = best
     for candidate, meta in candidates:
         if candidate is None or candidate.time >= improved.time:
@@ -817,12 +865,18 @@ def _try_frontier(
             groups=groups,
             mode=f"frontier-{mode}",
         )
+        info["hits"] += 1
+        info["after"] = candidate.time
+        if meta is None:
+            info["accepted"] = {"variant": None, "policy": None}
+        else:
+            info["accepted"] = {"variant": meta[0], "policy": meta[1]}
         if log:
             log(
                 f"    [frontier-{mode}] {meta} Time={candidate.time} (原 {best.time}) "
                 f"peak=({[(g.peak_comm, g.peak_act) for g in groups]})"
             )
-    return improved
+    return improved, info
 
 
 def solve_case(
@@ -923,16 +977,37 @@ def solve_case(
                 break
 
     exact_stats: Optional[dict] = None
+    frontier_info: Optional[dict] = None
     if best is not None:
         # 局部搜索用剩余预算的一半（上限 4 s），并给最终渲染留出 reserve
         improve_deadline = min(search_deadline, time.monotonic() + max(0.0, min(4.0, budget * 0.5)))
         best = _improve_best(case, best, improve_deadline, log)
-        if frontier and best.time > best.lb:
-            frontier_deadline = min(
-                deadline - reserve,
-                time.monotonic() + max(0.1, frontier_reserve),
-            )
-            best = _try_frontier(case, best, frontier_deadline, frontier_mode, log)
+        if frontier:
+            if frontier_mode == "noop":
+                # no-op 控制臂：保留同样的预算预留，但不运行 frontier，用于度量
+                # “给新路线让预算”本身的代价（对照不能只报 min(旧,新)）。
+                frontier_info = {
+                    "enabled": True, "mode": "noop",
+                    "reserve_s": round(frontier_reserve, 3),
+                    "planned": 0, "run": 0, "hits": 0,
+                    "before": best.time, "after": best.time,
+                    "stop": "noop-control", "candidates": [],
+                }
+            elif best.time <= best.lb:
+                frontier_info = {"enabled": True, "mode": frontier_mode,
+                                 "reserve_s": round(frontier_reserve, 3),
+                                 "planned": 0, "run": 0, "hits": 0,
+                                 "before": best.time, "after": best.time,
+                                 "stop": "skipped-lb", "candidates": []}
+            else:
+                frontier_deadline = min(
+                    deadline - reserve,
+                    time.monotonic() + max(0.1, frontier_reserve),
+                )
+                best, frontier_info = _try_frontier(
+                    case, best, frontier_deadline, frontier_mode, log,
+                    reserve_s=frontier_reserve,
+                )
         if exact and exact_mod.applicable(case, best.plan):
             # 精确搜索走独立时间片：用「总 deadline - 渲染预留」，最多再吃掉 80% 预算
             exact_deadline = min(deadline - reserve, time.monotonic() + max(0.5, budget * 0.8))
@@ -972,6 +1047,7 @@ def solve_case(
             elapsed=time.monotonic() - started,
             groups=best.groups,
             exact_stats=exact_stats,
+            frontier_stats=frontier_info,
         )
         return solution
     return None
