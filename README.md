@@ -18,7 +18,9 @@
 
 配套：
 [`docs/reports/report-placement-fillboost.md`](docs/reports/report-placement-fillboost.md)（放置与 fill_boost 的细节）、
-[`docs/reviews/eval-opt-placement-partition-20261030.md`](docs/reviews/eval-opt-placement-partition-20261030.md)（分支合入评估）。
+[`docs/reviews/eval-opt-placement-partition-20261030.md`](docs/reviews/eval-opt-placement-partition-20261030.md)（分支合入评估）、
+[`docs/reports/reference-v5-and-python-port.md`](docs/reports/reference-v5-and-python-port.md)（C++ 参考实现
+[`algorithm_v5/`](algorithm_v5/) 与它的 [Python 移植](py5/) 的对照实验）。
 旧版报告已归档至 [`docs/reports/archive/`](docs/reports/archive/)。
 
 ## 目录
