@@ -731,17 +731,116 @@ def _improve_best(case: Case, best: _Best, deadline: float, log: Log) -> _Best:
     return improved
 
 
+class _FrontierBudget(Exception):
+    """frontier 候选扫描的预算用尽（内部使用）。"""
+
+
+def _try_frontier(
+    case: Case,
+    best: _Best,
+    deadline: float,
+    mode: str,
+    log: Log,
+    seed: int = 20261020,
+) -> _Best:
+    """在**同一配置**（best.plan）上用 frontier 内核再试一次；默认关闭，仅显式开关启用。
+
+    只接受：``Time`` 严格更小 **且** 过 ``sched.memory_usage`` 的完整解；否则原样返回
+    incumbent。这保证接入新内核不会让结果变差（只可能更好或不变）。
+    """
+    from . import frontier as frontier_mod
+
+    if time.monotonic() >= deadline:
+        return best
+    plan = best.plan
+    stats = frontier_mod.Stats()
+    # 同配置下的小候选集：只保留在 t2 探索里真正赢过基线列表调度的拓扑/预留组合，
+    # 并按实测单次耗时做预算保护，避免把一次 35k op 的调度排到 deadline 之后。
+    variant_indices = (0, 2, 4, 5, 7) if case.n_ops <= 20_000 else (0, 4)
+    policies = ("auto", "comm1") if case.n_ops <= 20_000 else ("auto",)
+    candidates: list = []
+    try:
+        if mode == "A":
+            candidate = frontier_mod.search(
+                case, plan, strategy="A", deadline=deadline, seed=seed, stats=stats,
+            )
+            candidates.append((candidate, None))
+        else:
+            estimate = 0.0
+            for variant_index in variant_indices:
+                for policy in policies:
+                    now = time.monotonic()
+                    if now + max(0.02, estimate) > deadline:
+                        raise _FrontierBudget()
+                    began = time.monotonic()
+                    candidate = frontier_mod.schedule(
+                        case, plan, window=None,
+                        variant=sched.VARIANTS[variant_index], gating=True,
+                        zero_free=True, policy=policy, mode="event",
+                        deadline=deadline, seed=seed, stats=stats,
+                    )
+                    spent = time.monotonic() - began
+                    if spent > estimate:
+                        estimate = spent
+                    if candidate is not None:
+                        candidates.append((candidate, (variant_index, policy)))
+            if mode in ("C", "auto") and candidates:
+                now = time.monotonic()
+                if now + max(0.02, estimate) <= deadline:
+                    candidate = frontier_mod.schedule(
+                        case, plan, window=None, gating=True, zero_free=True,
+                        policy=policies[0], mode="lookahead", lookahead=4,
+                        deadline=deadline, seed=seed, stats=stats,
+                    )
+                    if candidate is not None:
+                        candidates.append((candidate, ("lookahead", policies[0])))
+    except _FrontierBudget:
+        pass
+    except Exception as exc:  # pragma: no cover - 新内核失败时绝不影响既有结果
+        if log:
+            log(f"    [frontier] 异常，保留原解：{exc!r}")
+        return best
+    improved = best
+    for candidate, meta in candidates:
+        if candidate is None or candidate.time >= improved.time:
+            continue
+        ok, groups = sched.memory_usage(case, plan, candidate.start, candidate.end)
+        if not ok:
+            continue
+        improved = _Best(
+            time=candidate.time,
+            lb=best.lb,
+            plan=plan,
+            rows=best.rows,
+            config=best.config,
+            result=candidate,
+            groups=groups,
+            mode=f"frontier-{mode}",
+        )
+        if log:
+            log(
+                f"    [frontier-{mode}] {meta} Time={candidate.time} (原 {best.time}) "
+                f"peak=({[(g.peak_comm, g.peak_act) for g in groups]})"
+            )
+    return improved
+
+
 def solve_case(
     case: Case,
     budget: float = 8.5,
     log: Log = None,
     exact: bool = False,
+    frontier: bool = False,
+    frontier_mode: str = "B",
 ) -> Optional[Solution]:
     """求解一个测试点，返回最优合法映射；``None`` 表示没找到（理论上不会）。
 
     ``exact=True`` 时，在常规搜索（网格枚举 + 贪心 + 序列退火）之后，对 ``nmb=2`` 且每
     stage 单层的形状再跑一次**精确搜索**（`solver/exact.py`：通信交错穷举 + 计算顺序线性
     扩展）。它只可能改进、不会更差；找不到更优解时把搜索统计带回给调用方（NOTES 需要）。
+
+    ``frontier=True`` 时，在最优配置上再用 `solver/frontier.py` 的事件内核试一次
+    （``frontier_mode`` = ``A``/``B``/``C``）；只接受更优且内存合法的解，默认关闭。
     """
     started = time.monotonic()
     deadline = started + budget
@@ -750,7 +849,12 @@ def solve_case(
     # 注意 `budget` 是**求解器内部**的时钟（调用方按「题面 10 s − 进程启动 − 渲染落盘」
     # 自己折算，见 `solve_all.auto_budget`），所以这里不再按 op 数加倍预留。
     reserve = 0.6
-    search_deadline = min(deadline, started + max(0.05, budget - reserve))
+    # 显式 `--frontier` 时从同一份 B 里**预留**一小段时间给新内核（不能额外加预算）。
+    # 这是"共享同一份 B"的唯一合法形式；若因此挤掉原搜索预算，报告里必须单独说明。
+    frontier_reserve = min(0.9, max(0.4, budget * 0.12)) if frontier else 0.0
+    search_deadline = min(
+        deadline, started + max(0.05, budget - reserve - frontier_reserve)
+    )
     configs, pmaps = enumerate_configs(case)
     if log:
         head = configs[0].lb if configs else "-"
@@ -823,6 +927,12 @@ def solve_case(
         # 局部搜索用剩余预算的一半（上限 4 s），并给最终渲染留出 reserve
         improve_deadline = min(search_deadline, time.monotonic() + max(0.0, min(4.0, budget * 0.5)))
         best = _improve_best(case, best, improve_deadline, log)
+        if frontier and best.time > best.lb:
+            frontier_deadline = min(
+                deadline - reserve,
+                time.monotonic() + max(0.1, frontier_reserve),
+            )
+            best = _try_frontier(case, best, frontier_deadline, frontier_mode, log)
         if exact and exact_mod.applicable(case, best.plan):
             # 精确搜索走独立时间片：用「总 deadline - 渲染预留」，最多再吃掉 80% 预算
             exact_deadline = min(deadline - reserve, time.monotonic() + max(0.5, budget * 0.8))

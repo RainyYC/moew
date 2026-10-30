@@ -76,6 +76,8 @@ def solve_one(
     check: bool,
     verbose: bool,
     exact: bool = False,
+    frontier: bool = False,
+    frontier_mode: str = "B",
 ) -> dict:
     """求解 + 落盘（+ 可选 judge 复核），返回一条汇总记录。"""
     in_path = cases_dir / f"{name}.in"
@@ -85,7 +87,9 @@ def solve_one(
         return record
     case = casein.parse_case(in_path)
     started = time.monotonic()
-    solution = solve.solve_case(case, budget=budget, exact=exact)
+    solution = solve.solve_case(
+        case, budget=budget, exact=exact, frontier=frontier, frontier_mode=frontier_mode
+    )
     solve_s = time.monotonic() - started
     record["solve_s"] = round(solve_s, 3)
     if solution is None:
@@ -174,7 +178,12 @@ def solve_one(
 
 
 def run_single(
-    case_in: str, case_out: str | None, budget: float, exact: bool = False
+    case_in: str,
+    case_out: str | None,
+    budget: float,
+    exact: bool = False,
+    frontier: bool = False,
+    frontier_mode: str = "B",
 ) -> int:
     """单例模式：``solve_all.py <case.in> [case.out]``（服务端逐用例调用的固定形态）。
 
@@ -196,7 +205,10 @@ def run_single(
     if os.environ.get("SOLVER_DEBUG_LOG"):
         def debug(line: str) -> None:  # noqa: E306 - 内联小函数
             print(line, file=sys.stderr)
-    solution = solve.solve_case(case, budget=budget, exact=exact, log=debug)
+    solution = solve.solve_case(
+        case, budget=budget, exact=exact, log=debug,
+        frontier=frontier, frontier_mode=frontier_mode,
+    )
     elapsed = time.monotonic() - started
     if solution is None:
         print(f"[solve] {case.name}: 没有找到合法映射", file=sys.stderr)
@@ -243,6 +255,8 @@ _SINGLE_USAGE = (
     "              **按输入规模自动下调**：op 数 > 20000 时默认 6.5，> 200000 时 5.0，\n"
     "              显式给 --budget 则以其为准（上限仍 9.5）\n"
     "  --exact     追加精确搜索（nmb=2 且每 stage 单层；默认关闭）\n"
+    "  --frontier  追加事件驱动就绪前沿内核（默认关闭；只接受更优且内存合法的解）\n"
+    "  --frontier-mode A|B|C  frontier 消融组（默认 B）\n"
     "批量模式见 --help"
 )
 
@@ -302,6 +316,20 @@ def main(argv: list[str] | None = None) -> int:
         exact = "--exact" in raw
         if exact:
             raw = [item for item in raw if item != "--exact"]
+        frontier_mode = "B"
+        if "--frontier-mode" in raw:
+            position = raw.index("--frontier-mode")
+            if position + 1 >= len(raw):
+                print(f"--frontier-mode 缺少取值。\n{_SINGLE_USAGE}", file=sys.stderr)
+                return 2
+            frontier_mode = raw[position + 1]
+            if frontier_mode not in ("A", "B", "C", "auto"):
+                print(f"--frontier-mode 需要 A/B/C/auto。\n{_SINGLE_USAGE}", file=sys.stderr)
+                return 2
+            del raw[position : position + 2]
+        frontier = "--frontier" in raw
+        if frontier:
+            raw = [item for item in raw if item != "--frontier"]
         if len(raw) > 2:
             print(_SINGLE_USAGE, file=sys.stderr)
             return 2
@@ -311,7 +339,10 @@ def main(argv: list[str] | None = None) -> int:
                 budget = auto_budget(case.n_ops)
             except Exception:  # 输入读不了就交给 run_single 报错
                 budget = 8.5
-        return run_single(raw[0], raw[1] if len(raw) > 1 else None, budget, exact)
+        return run_single(
+            raw[0], raw[1] if len(raw) > 1 else None, budget, exact,
+            frontier=frontier, frontier_mode=frontier_mode,
+        )
 
     parser = argparse.ArgumentParser(description="MoE 映射求解器（报告 §2 复原）+ judge 复核")
     parser.add_argument("--cases", nargs="+", default=list(TARGETS), help="用例名（不含扩展名）")
@@ -322,6 +353,14 @@ def main(argv: list[str] | None = None) -> int:
         "--exact",
         action="store_true",
         help="对 nmb=2 且每 stage 单层的形状追加精确搜索（通信交错穷举 + 计算顺序枚举）",
+    )
+    parser.add_argument(
+        "--frontier", action="store_true",
+        help="追加事件驱动就绪前沿内核（默认关闭；只接受更优且内存合法的解）",
+    )
+    parser.add_argument(
+        "--frontier-mode", choices=("A", "B", "C", "auto"), default="B",
+        help="frontier 消融组（默认 B=生命周期内存门控）",
     )
     parser.add_argument("--check", action="store_true", help="用 python3 -m judge eval 复核 + 跑退化形态")
     parser.add_argument("--skip-selftests", action="store_true", help="--check 时跳过退化形态")
@@ -338,7 +377,10 @@ def main(argv: list[str] | None = None) -> int:
             f"输出目录 {out_dir}，judge 复核={'开' if args.check else '关'}"
         )
     records = [
-        solve_one(name, cases_dir, out_dir, args.budget, args.check, verbose, args.exact)
+        solve_one(
+            name, cases_dir, out_dir, args.budget, args.check, verbose, args.exact,
+            frontier=args.frontier, frontier_mode=args.frontier_mode,
+        )
         for name in args.cases
     ]
 
