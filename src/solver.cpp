@@ -7,6 +7,7 @@
 #include <fstream>
 #include <functional>
 #include <iostream>
+#include <limits>
 #include <map>
 #include <numeric>
 #include <queue>
@@ -15,6 +16,7 @@
 #include <stdexcept>
 #include <string>
 #include <tuple>
+#include <type_traits>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -1253,7 +1255,7 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
                    const std::vector<event_sched::Op>& input, i128 M, i128 U, i128 Ua,
                    i128 resident_per_layer, std::vector<event_sched::Op>& output, i128& best_time,
                    Stats& stats, std::chrono::steady_clock::time_point deadline,
-                   long long max_evaluations = 12000, int variant = 0) {
+                   long long max_evaluations = 12000, int variant = 0, bool retime_auto = true) {
     if (std::chrono::steady_clock::now() >= deadline) {
         output = input;
         return true;
@@ -1262,6 +1264,39 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
     const int n = mb * L * 10;
     if ((int)input.size() != n) {
         return false;
+    }
+    std::vector<i128> node_duration(n);
+    std::vector<long long> node_duration64(n);
+    const i128 max_i64 = std::numeric_limits<long long>::max();
+    i128 positive_duration_sum = 0;
+    bool duration_sum_fits = true;
+    for (int m = 0; m < mb; m++) {
+        for (int l = 0; l < L; l++) {
+            for (int o = 0; o < 10; o++) {
+                int u = id(m, l, o, L);
+                node_duration[u] = dur[l][o];
+                if (dur[l][o] > 0) {
+                    if (dur[l][o] > max_i64 - positive_duration_sum) {
+                        duration_sum_fits = false;
+                    } else if (duration_sum_fits) {
+                        positive_duration_sum += dur[l][o];
+                    }
+                }
+            }
+        }
+    }
+    const i128 path_bound = positive_duration_sum + n;
+    const bool sum_end_fits = path_bound <= max_i64 && (i128)n <= max_i64 / path_bound;
+    bool int64_safe = retime_auto && duration_sum_fits && path_bound <= max_i64 && sum_end_fits &&
+                      best_time >= 0 && best_time <= max_i64;
+    if (int64_safe) {
+        for (int u = 0; u < n; u++) {
+            if (node_duration[u] < 0 || node_duration[u] > max_i64) {
+                int64_safe = false;
+                break;
+            }
+            node_duration64[u] = (long long)node_duration[u];
+        }
     }
     std::vector<std::pair<int, int>> base_edges;
     auto edge = [&](int a, int b) { base_edges.push_back({a, b}); };
@@ -1344,7 +1379,7 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
         stats.memory_fast_groups += memory_always_ok[g];
     }
     bool memory_all_fast = stats.memory_fast_groups == G;
-    auto memory_ok = [&](const std::vector<i128>& st, const std::vector<i128>& en) {
+    auto memory_ok = [&](const auto& st, const auto& en) {
         // Closed intervals overlap when one reservation ends exactly as another begins.
         auto peak_closed = [](std::vector<std::pair<i128, i128>>& a) {
             std::sort(a.begin(), a.end());
@@ -1396,9 +1431,9 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
         }
         return true;
     };
-    auto run = [&](const std::map<Key, std::vector<int>>& s, int gap,
-                   std::vector<event_sched::Op>& cand, i128& tm, i128& sum_end,
-                   i128 best_secondary) -> bool {
+    auto run_typed = [&](const std::map<Key, std::vector<int>>& s, int gap,
+                         std::vector<event_sched::Op>& cand, auto& tm, auto& sum_end,
+                         auto best_secondary, const auto& duration) -> bool {
         std::vector<int> indeg = base_indegree, next(n, -1);
         std::vector<unsigned char> next_gap(n, 0);
         for (auto& kv : s) {
@@ -1417,7 +1452,9 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
                 q.push_back(i);
             }
         }
-        std::vector<i128> st(n, 0), en(n, 0);
+        using Time = std::decay_t<decltype(tm)>;
+        const Time time_limit = static_cast<Time>(best_time);
+        std::vector<Time> st(n, 0), en(n, 0);
         int done = 0;
         tm = 0;
         sum_end = 0;
@@ -1427,10 +1464,9 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
             }
             int u = q[qi];
             done++;
-            int l = (u / 10) % L, o = u % 10;
-            en[u] = st[u] + dur[l][o];
+            en[u] = st[u] + duration[u];
             tm = std::max(tm, en[u]);
-            if (tm > best_time) {
+            if (tm > time_limit) {
                 return false;
             }
             sum_end += en[u];
@@ -1452,7 +1488,7 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
             return false;
         }
         // Local polish alone permits equal Time when the secondary sum of end times falls.
-        if (tm > best_time || (tm == best_time && sum_end >= best_secondary)) {
+        if (tm > time_limit || (tm == time_limit && sum_end >= best_secondary)) {
             return false;
         }
         if (!memory_ok(st, en)) {
@@ -1471,6 +1507,19 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
             return std::tie(a.start, a.mb, a.l, a.op) < std::tie(b.start, b.mb, b.l, b.op);
         });
         return true;
+    };
+    auto run = [&](const std::map<Key, std::vector<int>>& s, int gap,
+                   std::vector<event_sched::Op>& cand, i128& tm, i128& sum_end,
+                   i128 best_secondary) -> bool {
+        if (int64_safe && best_secondary >= 0 && best_secondary <= max_i64) {
+            long long t64 = 0, sum64 = 0;
+            bool ok =
+                run_typed(s, gap, cand, t64, sum64, (long long)best_secondary, node_duration64);
+            tm = t64;
+            sum_end = sum64;
+            return ok;
+        }
+        return run_typed(s, gap, cand, tm, sum_end, best_secondary, node_duration);
     };
 
     // Retiming current ordering for each candidate gap; only use it if legal and
@@ -2305,6 +2354,8 @@ struct Options {
     bool serial = false, do_list = false, list_deep = false, list_deep_topos = false;
     bool force_wave = false;
     int budget_ms = 9200;
+    int polish_pass_limit = 0;
+    string retime_mode = "auto";
     string borrow = "ac", diff = "auto", scale = "auto";
     string input_path;
 };
@@ -2351,6 +2402,18 @@ Options parse_options(int argc, char** argv) {
                 throw runtime_error("--budget-ms must be an integer from 9000 to 9500");
             }
             options.budget_ms = value;
+        } else if (a.rfind("--retime-mode=", 0) == 0) {
+            options.retime_mode = a.substr(14);
+            if (options.retime_mode != "auto" && options.retime_mode != "wide") {
+                throw runtime_error("--retime-mode must be auto or wide");
+            }
+        } else if (a.rfind("--polish-pass-limit=", 0) == 0) {
+            size_t used = 0;
+            int value = stoi(a.substr(20), &used);
+            if (used != a.size() - 20 || value < 0) {
+                throw runtime_error("--polish-pass-limit must be a nonnegative integer");
+            }
+            options.polish_pass_limit = value;
         }
     }
     return options;
@@ -3423,7 +3486,8 @@ void run_scale_v8_search(const InputData& x, const vector<PartitionCandidate>& p
 }
 
 void polish_final_schedule(const InputData& x, ScheduleResult& best, bool serial, bool do_wave,
-                           chrono::steady_clock::time_point main_start, int budget_ms) {
+                           chrono::steady_clock::time_point main_start, int budget_ms,
+                           const string& retime_mode, int polish_pass_limit) {
     if (!serial && do_wave && !best.ops.empty()) {
         auto dur = compute_durations(x, best.c);
         local_engine_polish::Stats total;
@@ -3443,7 +3507,7 @@ void polish_final_schedule(const InputData& x, ScheduleResult& best, bool serial
                 local_engine_polish::Stats part;
                 local_engine_polish::polish(x.mb, x.L, best.G, best.group, dur, best.ops, x.M, x.U,
                                             x.Ua, resident, polished, pol_time, part,
-                                            prefix_deadline, 3000);
+                                            prefix_deadline, 3000, 0, retime_mode == "auto");
                 total.evaluated += part.evaluated;
                 total.accepted += part.accepted;
                 total.strict_improve += part.strict_improve;
@@ -3466,14 +3530,15 @@ void polish_final_schedule(const InputData& x, ScheduleResult& best, bool serial
         auto extension_start = chrono::steady_clock::now();
         long long ext_evaluated = 0, ext_accepted = 0, ext_improved = 0;
         int ext_fast_groups = 0;
-        while (chrono::steady_clock::now() + chrono::milliseconds(30) < deadline &&
+        while ((polish_pass_limit == 0 || pass <= polish_pass_limit) &&
+               chrono::steady_clock::now() + chrono::milliseconds(30) < deadline &&
                !(best.time == 0)) {
             vector<event_sched::Op> polished;
             i128 pol_time = best.time;
             local_engine_polish::Stats part;
             local_engine_polish::polish(x.mb, x.L, best.G, best.group, dur, best.ops, x.M, x.U,
                                         x.Ua, resident, polished, pol_time, part, deadline, 700,
-                                        pass);
+                                        pass, retime_mode == "auto");
             ext_evaluated += part.evaluated;
             ext_accepted += part.accepted;
             ext_improved += part.strict_improve;
@@ -3595,7 +3660,8 @@ int main(int argc, char** argv) {
                                   diff_enabled, main_start, borrow);
         ScheduleResult v7_incumbent = best;
         run_scale_v8_search(x, pcs, v7_incumbent, best, serial, do_wave, main_start);
-        polish_final_schedule(x, best, serial, do_wave, main_start, options.budget_ms);
+        polish_final_schedule(x, best, serial, do_wave, main_start, options.budget_ms,
+                              options.retime_mode, options.polish_pass_limit);
         write_output(x, best, serial);
     } catch (const exception& e) {
         cerr << "input/options error: " << e.what() << "\n";

@@ -1,0 +1,23 @@
+{
+  "candidate": "/home/rainy/hackathon/build/solver_retiming_speed",
+  "output_dir": "/home/rainy/hackathon/results/retiming_speed/full50",
+  "baseline": "/home/rainy/hackathon/results/budget_search/full50/summary.tsv",
+  "timeout_seconds": 10.0,
+  "case_regex": null,
+  "solver_args": [],
+  "cases": 50,
+  "successful_valid": 50,
+  "failed_or_invalid": 0,
+  "timeouts": 0,
+  "compared_cases": 50,
+  "improved": 3,
+  "tied": 47,
+  "regressed": 0,
+  "mean_checker_time": 20366017.76,
+  "mean_baseline_time": 20368250.6,
+  "mean_absolute_improvement": 2232.84,
+  "mean_point_relative_improvement_pct": 0.009883987600628539,
+  "mean_wall_seconds": 9.223026787120617,
+  "max_wall_seconds": 9.234449231997132,
+  "max_wall_case": "r64_v8_c16b"
+}

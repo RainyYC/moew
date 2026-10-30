@@ -1,0 +1,11 @@
+{
+  "source_sha256": "7c58b4cfdcc65f9fbb917aa8bcfc142ae6409dc4337a2a210a9d60144fdd1a49",
+  "binary_sha256": "61ce0ceedb62f18cd277b5f8b34c3dd771542049aa0fb649c78acfde305656d6",
+  "pass_limit": 24,
+  "byte_identical": {
+    "r128_v4_c4a.out": true,
+    "x01_lr_block_p2.out": true,
+    "x10_lr_tight_p8.out": true,
+    "x12_lr_close_p10.out": true
+  }
+}

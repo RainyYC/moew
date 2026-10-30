@@ -1,0 +1,9 @@
+{
+  "revision": "5e23972",
+  "acceptance": "results/budget_search/full50/summary.tsv",
+  "files": {
+    "src/solver.cpp": "045840c3c001949c3052f60a12d0ae7aace935734414de493e026ca85efc0ba1",
+    "README.md": "9b5f8e9bc9fb266060cd73e8835914122f24b89cca190552b03c694f8013602b",
+    "docs/reports/current-solver-report.md": "d550091d120f52ac80b1d112cf1befb08c0c7f4251dffba2400c2bab2b583b14"
+  }
+}

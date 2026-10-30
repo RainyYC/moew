@@ -1,0 +1,24 @@
+{
+  "compile_command": "g++ -std=c++17 -O2 -pipe -Wall -Wextra backup/retiming_speed_experiment/solver.cpp -o build/solver_retiming_speed",
+  "run_argv": [
+    "/usr/bin/python3",
+    "scripts/compare_solver_search.py",
+    "build/solver_retiming_speed",
+    "results/retiming_speed/full50"
+  ],
+  "baseline": "results/budget_search/full50/summary.tsv",
+  "sha256": {
+    "backup/retiming_speed_experiment/solver.cpp": "7c58b4cfdcc65f9fbb917aa8bcfc142ae6409dc4337a2a210a9d60144fdd1a49",
+    "build/solver_retiming_speed": "61ce0ceedb62f18cd277b5f8b34c3dd771542049aa0fb649c78acfde305656d6",
+    "data/official/Problem/grader.py": "c42d5f0675e33cbfc1d40bdcafbb8aa40b6d0a4e26377e69405cdbb2b167cfbc",
+    "scripts/compare_solver_search.py": "eece4d414f57714f30cdfb458f64263979c9cc03b21ace0353d666c0b8bb65e7",
+    "src/solver.cpp": "7c58b4cfdcc65f9fbb917aa8bcfc142ae6409dc4337a2a210a9d60144fdd1a49",
+    "build/solver": "61ce0ceedb62f18cd277b5f8b34c3dd771542049aa0fb649c78acfde305656d6"
+  },
+  "baseline_source_sha256": "045840c3c001949c3052f60a12d0ae7aace935734414de493e026ca85efc0ba1",
+  "baseline_source": "backup/before-retiming-speed/src/solver.cpp",
+  "candidate_source": "backup/retiming_speed_experiment/solver.cpp",
+  "promoted_source": "src/solver.cpp",
+  "promoted_binary": "build/solver",
+  "official_smoke_command": "python3 -u data/official/Problem/run_all.py --cmd /home/rainy/hackathon/build/solver --timeout 10 --cases /tmp/retiming-official-smoke-cases"
+}

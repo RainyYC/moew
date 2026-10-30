@@ -1,0 +1,25 @@
+{
+  "candidate": "/home/rainy/hackathon/build/solver_escape",
+  "output_dir": "/home/rainy/hackathon/results/search_neighborhood/escape_pilot",
+  "baseline": "/home/rainy/hackathon/results/budget_search/full50/summary.tsv",
+  "timeout_seconds": 10.0,
+  "case_regex": "^(x01_lr_block_p2|x10_lr_tight_p8|x12_lr_close_p10|r16_p4_trap)$",
+  "solver_args": [
+    "--escape-mode=on"
+  ],
+  "cases": 4,
+  "successful_valid": 4,
+  "failed_or_invalid": 0,
+  "timeouts": 0,
+  "compared_cases": 4,
+  "improved": 1,
+  "tied": 3,
+  "regressed": 0,
+  "mean_checker_time": 16645091.25,
+  "mean_baseline_time": 16648276.75,
+  "mean_absolute_improvement": 3185.5,
+  "mean_point_relative_improvement_pct": 0.016851384752160328,
+  "mean_wall_seconds": 9.209472775248287,
+  "max_wall_seconds": 9.232566701997712,
+  "max_wall_case": "x01_lr_block_p2"
+}

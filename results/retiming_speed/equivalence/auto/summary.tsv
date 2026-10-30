@@ -1,0 +1,5 @@
+case	exit	wall_seconds	checker_time	baseline_time	absolute_improvement	improvement_pct
+r128_v4_c4a	0	4.221	22702165	22702165	0	0.000000
+x01_lr_block_p2	0	1.466	2390000	2390000	0	0.000000
+x10_lr_tight_p8	0	3.570	18954545	18903491	-51054	-0.270077
+x12_lr_close_p10	0	5.273	28215222	27980136	-235086	-0.840189

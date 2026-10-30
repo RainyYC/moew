@@ -1,0 +1,5 @@
+case	exit	wall_seconds	checker_time	baseline_time	absolute_improvement	improvement_pct
+r16_p4_trap	0	9.194	17319480	17319480	0	0.000000
+x01_lr_block_p2	0	9.233	2390000	2390000	0	0.000000
+x10_lr_tight_p8	0	9.180	18890749	18903491	12742	0.067406
+x12_lr_close_p10	0	9.231	27980136	27980136	0	0.000000
