@@ -1,41 +1,42 @@
-# 模块结构与单文件提交
+# 模块结构与构建方式
 
-维护代码按职责拆分到 `src/`。`src/solver.cpp` 是唯一编译入口，包含顶层编排并定义全局 `main`；各功能头文件由这一个翻译单元包含，编译仍使用 C++17、`-O2`，不增加链接阶段或运行期分派。
+维护代码按职责拆分为多个 `.hpp` 接口/值类型和 `.cpp` 实现文件。日常构建按多个翻译单元编译并链接；全局 `main` 仅在 `src/solver.cpp`，流程编排实现在 `src/app/solver.cpp` 的 `solver::run`。`make submission` 仍可选地导出自包含的单文件裁判提交件，但它不是日常构建入口。
 
 ## 文件职责与依赖
 
 ```text
-common.hpp
-├── core/operation_graph.hpp
-│   ├── scheduling/event_scheduler.hpp
-│   └── scheduling/list_scheduler.hpp
-├── model/problem.hpp / model/scheduled_operation.hpp
-├── io/numeric.hpp → io/input.hpp / io/output.hpp
-├── placement/expert_mapping.hpp / placement/grouped_placement.hpp
-└── search/limits.hpp → search 阶段模块 → app/solver.hpp → solver.cpp
+solver.cpp → app/solver.hpp
+app/solver.cpp → io/input|options|output.hpp + search 阶段接口头
+io/*.cpp → 对应 io/*.hpp + model/problem.hpp（按功能）
+placement/*.cpp → placement/*.hpp + model/io/search 接口头（按功能）
+scheduling/*.cpp → 自身接口头 + common.hpp + core/operation_graph.hpp
+search/*.cpp → 自身接口头 + 所需的 placement/scheduling/io/search 接口头
+model/*.hpp → 独立的数据值类型
 ```
+
+这里表示实际实现文件对接口/模型头文件的依赖类别，不表示所有同目录文件互相依赖。实现逻辑位于 `.cpp`；模型值对象不包含调度或搜索内核实现，`app/solver.hpp` 只声明顶层 `solver::run`。
 
 | 文件 | 职责 |
 |---|---|
-| `src/common.hpp` | 显式列出标准库头文件；定义统一 operation 编号、通信引擎编号和通信 operation 集合。 |
-| `src/core/operation_graph.hpp` | 统一节点编码/解码和每层 DAG 边插入顺序。 |
-| `src/model/problem.hpp` | 输入、候选分区、分区候选及调度结果值对象。 |
-| `src/model/scheduled_operation.hpp` | Event scheduler 输出的 operation 值对象。 |
-| `src/io/numeric.hpp`, `input.hpp`, `options.hpp`, `output.hpp` | 128 位整数格式化/解析、输入、命令行参数和结果输出。 |
-| `src/placement/expert_mapping.hpp` | 专家到 rank 的映射以及按 operation 计算 duration 的 cost model。 |
-| `src/placement/grouped_placement.hpp` | 按相同 slot weight 分组的有界 placement 搜索及方案展开。 |
-| `src/scheduling/event_scheduler.hpp` | event driven DAG scheduler、ready priority 与资源/激活区间约束。 |
-| `src/scheduling/list_scheduler.hpp` | list scheduler、稳定的 variant 顺序和 wave/gap 参数。 |
+| `src/common.hpp`, `src/core/operation_graph.hpp` | 标准依赖、operation 协议定义，以及 inline 节点编码和共享 DAG 边模板。 |
+| `src/model/problem.hpp`, `src/model/scheduled_operation.hpp` | 仅含数据模型与 operation 值类型；不依赖调度内核实现。 |
+| `src/io/*.hpp/.cpp` | 数值格式化/解析、输入、命令行选项与输出，各由同名 `.cpp` 提供实现。 |
+| `src/placement/expert_mapping.hpp/.cpp` | 专家到 rank 的映射和按 operation 计算 duration 的 cost model。 |
+| `src/placement/grouped_placement.hpp/.cpp` | 按 slot weight 分组的有界 placement 搜索及方案展开。 |
+| `src/scheduling/event_scheduler.hpp/.cpp` | event driven DAG scheduler、ready priority 与资源/激活区间约束。 |
+| `src/scheduling/list_scheduler.hpp/.cpp` | list scheduler、稳定 variant 顺序及 wave/gap 参数。 |
 | `src/search/limits.hpp` | 搜索预算、deadline、数值分母和无穷大哨兵。 |
-| `src/search/candidate_search.hpp`, `layout_search.hpp`, `initial_search.hpp` | 初始分区候选、布局评估和 incumbent 选择。 |
-| `src/search/window_search.hpp`, `window_borrow.hpp`, `boost_search.hpp`, `placement_search.hpp` | release-one、窗口借用、forward-fill 和替代 placement 搜索。 |
-| `src/search/list_search.hpp`, `wave_search.hpp` | list 与 wave 阶段策略。 |
-| `src/search/local_engine_polish.hpp`, `polish_driver.hpp` | 局部 polish 内核及其预算/阶段编排。 |
-| `src/app/solver.hpp` | 输入选项到搜索阶段再到输出的顶层编排。 |
+| `src/search/candidate_search`, `layout_search`, `initial_search` (`.hpp/.cpp`) | 初始分区候选、布局评估和 incumbent 选择。 |
+| `src/search/window_search`, `window_borrow`, `boost_search`, `placement_search` (`.hpp/.cpp`) | 窗口、借用、forward-fill 与替代 placement 搜索。 |
+| `src/search/list_search`, `wave_search` (`.hpp/.cpp`) | list 与 wave 阶段策略。 |
+| `src/search/local_engine_polish`, `polish_driver` (`.hpp/.cpp`) | 局部 polish 内核及其预算/阶段编排。 |
+| `src/app/solver.hpp/.cpp` | 输入选项到搜索阶段再到输出的顶层编排；`solver.cpp` 暴露 `solver::run`。 |
+| `src/solver.cpp` | 只定义全局 `main` 并调用 `solver::run`。 |
+| `src/sources.mk` | 构建和 amalgamate 共用的唯一 `.cpp` 源文件清单及编译顺序。 |
 
-各头文件保留自己实际使用的本地依赖。共享数据仍用简单 `struct` 表达，例如 `InputData`、`Candidate`、`ScheduleResult` 和 scheduler 的 `Op`。有持久状态和递归搜索过程的 grouped placement 搜索封装在 `grouped_placement::detail::Search`：状态为私有成员，外部通过 `solve()` 和 `take_solution()` 取得结果。无状态算法保持具名函数，避免多余对象层级。
+各头文件保留自己实际使用的本地依赖。共享数据仍用简单 `struct` 表达，例如 `InputData`、`Candidate`、`ScheduleResult` 和 scheduler 的 `Op`。每个 `.cpp` 单独编译为对象文件，头文件主要提供声明、模板、常量和少量 inline 实现。`make` 使用 C++17、`-O2` 与 `-flto`，让链接器优化跨翻译单元调用；不引入 virtual 调用或运行期多态。有持久状态和递归搜索过程的 grouped placement 搜索封装在 `grouped_placement::detail::Search`：状态为私有成员，外部通过 `solve()` 和 `take_solution()` 取得结果。无状态算法保持具名函数，避免多余对象层级。
 
-模块化不等于拆成多个目标文件：模块入口只有 `src/solver.cpp` 一个翻译单元，搜索函数、模板和 inline DAG helper 都在同一编译单元可见，编译器仍可跨模块边界内联。没有 virtual 调用、动态多态或额外的分配/复制层。
+`make -j2 build` 按 `src/sources.mk` 编译对象文件并生成依赖文件，支持增量重编译。该清单同时供单文件导出器使用，避免构建与导出遗漏或顺序不一致。当前构建共含 21 个 `.cpp` 和 25 个 `.hpp`；固定工作量、导出一致性及 full50 均已验收，记录见[多翻译单元验收说明](../results/multi_tu/README.md)。
 
 ## Operation 编号
 
@@ -81,7 +82,7 @@ duration 数组按这些名字逐槽赋值；序列化名字表则按同一协�
 
 以下字面值仍保留是因为它们直接表达局部数学或枚举，而不是隐含的 operation 编号：
 
-- `io/numeric.hpp` 中十进制数字解析/格式化使用的 `10` 是数制基数。
+- `io/numeric.cpp` 中十进制数字解析/格式化使用的 `10` 是数制基数；`ceil_div` 仍是 `numeric.hpp` 中的小型 inline 数值函数。
 - 成本前缀中的 `4 * com + 2 * g + 2 * s` 及若干 `2 * ceil_div(...)` 表示公式内固定出现次数；比把每个系数抽成独立常量更直接。
 - `0`、`1` 常用于 bool/状态初始化、空容器和循环边界；只有承担固定语义的 event kind、engine 与 operation 值才另起名字。
 - list、wave、boost 和窗口搜索中的候选序列（例如比例 `{5, 10, 20, 50, 100}`、优先级/变体索引、窗口宽度及有理数 pitch 列表）是有顺序的启发式枚举。保留原列表和值可避免改变遍历/tie 顺序；它们不是通用单位或领域状态。
@@ -89,10 +90,10 @@ duration 数组按这些名字逐槽赋值；序列化名字表则按同一协�
 
 ## 导出单文件
 
-日常维护直接编译 `src/solver.cpp`。提交时运行 `make submission`，由 `scripts/amalgamate.py` 从该入口递归展开项目本地 include，标准库 include 保持原样，`#pragma once` 被去除，并为每个源模块加 begin/end 注释。展开范围限制在 `src/` 内；缺失、越界、宏形式或无法解析的 include 会明确报错，避免静默生成不完整文件。规范的本地 include 带行注释或块注释时也会展开并保留注释。
+日常构建使用 `make -j2 build` 编译多翻译单元。若裁判环境要求单源文件，可运行 `make submission`；`scripts/amalgamate.py` 按 `src/sources.mk` 顺序展开实现文件及本地 include，保留标准库 include，为模块添加 begin/end 注释并去除 `#pragma once`。展开范围限制在 `src/` 内；缺失、越界、宏形式或无法解析的 include 会明确报错。该导出件是另一种源文件打包形式，不承诺与多翻译单元构建的二进制逐字节相同。
 
 导出结果是确定性的，不写时间戳。`make submission-check` 会比较现有 `submission/solver.cpp` 与当前展开结果；最终文件可按独立 C++17 源文件编译。
 
-静态模块检查记录位于 `results/module_refactor/`。固定工作量对照保持 stdout 字节和搜索计数一致，固定工作量 CPU 汇总未观察到整体变慢；这不构成加速保证。详细重复次数、CPU 数值和逐例结果见[模块重构验证记录](../results/module_refactor/README.md)。
+多翻译单元构建与无 LTO 单文件导出均通过固定工作量核验：配对用例的 stdout 和非时间搜索计数一致，官方 grader 全部合法。构建与提交文件使用同一模块源码，但二进制不要求逐字节相同；详细记录见[多翻译单元验收说明](../results/multi_tu/README.md)。
 
-当前冻结 full50 记录为 50/50 合法、0 超时，平均 Time 20,367,560.88，平均墙钟 9.21923433584 秒，最长 9.236006493 秒（`x15_lr_twochunk_p10`）；与固定基线相比，47 例相同、3 例较高。针对性复测均合法、0 超时；不同默认运行的新旧版本胜负方向不一致，说明绝对截止预算下可完成的迭代数和最终 Time 会波动，因此默认运行不承诺每次得到相同 Time。默认截止运行的 CPU 时间都接近预算上限，因此不把它作为性能回退证据；未观察到固定工作量整体变慢的判断来自固定评估数/固定 pass 对照。复测详情见 `results/module_refactor/paired_recheck/comparison.json`；full50 原始结果保持冻结，不被复测覆盖。
+当前多翻译单元 full50 为 50/50 合法、0 超时，平均 Time 20,365,419.20，平均墙钟 9.222103875 秒，最长 9.233171470 秒（`r64_v8_c8f`）；相对固定基线 3 例改善、47 例持平、0 例退步。默认截止预算下运行迭代数与 Time 会波动，不保证逐次分数相同。固定工作量与导出验证均保持 stdout 和非时间搜索计数一致；CPU 小幅变化不视为必然加速或性能不变保证。验收明细见[多翻译单元验收说明](../results/multi_tu/README.md)。

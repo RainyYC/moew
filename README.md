@@ -1,14 +1,14 @@
 # MoE 调度求解器（Scale v8）
 
-维护源码按职责拆分在 `src/`，由 [`src/solver.cpp`](src/solver.cpp) 作为唯一 C++17 编译入口；裁判提交件是可独立编译的自包含 [`submission/solver.cpp`](submission/solver.cpp)。模块版本当前 full50 记录为 **50/50 通过、0 超时，平均 Time 20,367,560.88**；相对固定基线 47 例相同、3 例 Time 较高。平均墙钟为 9.21923433584 秒，最长 9.236006493 秒（`x15_lr_twochunk_p10`）。这批 full50 数据保持冻结。针对性复测已完成，表明默认截止预算会使搜索迭代数和最终 Time 波动，因此默认运行不保证每次得到相同 Time；详情见[模块重构验证记录](results/module_refactor/README.md)。算法模型、完整搜索流程、复杂度、使用方式和验收结果见[当前求解器完整报告](docs/reports/current-solver-report.md)，也可运行 `make report` 查看。
+维护源码按职责拆分在 `src/`，日常通过多个 C++17 翻译单元联合构建；[`src/solver.cpp`](src/solver.cpp) 只定义全局 `main`，流程编排在 `src/app/solver.cpp`。裁判需要单源文件时，可选导出自包含的 [`submission/solver.cpp`](submission/solver.cpp)。当前多翻译单元版本 full50 为 **50/50 合法通过、0 超时，平均 Time 20,365,419.20**；相对固定基线 3 例改善、47 例相同、0 例退步。默认绝对截止预算下，搜索迭代数和最终 Time 会随运行波动；完整批次和固定工作量验证见[多翻译单元验收说明](results/multi_tu/README.md)。算法模型、完整搜索流程、复杂度、使用方式和逐例成绩见[当前求解器完整报告](docs/reports/current-solver-report.md)，也可运行 `make report` 查看。
 
 ## 快速开始
 
-从模块化源码编译：
+从多个模块源文件增量构建：
 
 ```sh
-g++ -std=c++17 -O2 -pipe src/solver.cpp -o solver
-./solver data/official/Problem/cases/x01_lr_block_p2.txt > answer.txt
+make -j2 build
+./build/solver data/official/Problem/cases/x01_lr_block_p2.txt > answer.txt
 python3 data/official/Problem/grader.py data/official/Problem/cases/x01_lr_block_p2.txt answer.txt
 ```
 
@@ -26,7 +26,7 @@ make submission-check
 g++ -std=c++17 -O2 -pipe submission/solver.cpp -o solver
 ```
 
-`src/solver.cpp` 只编译为一个翻译单元；`scripts/amalgamate.py` 会递归展开 `src/` 内项目头文件，生成可独立提交的 `submission/solver.cpp`。
+`src/sources.mk` 是多翻译单元构建和单文件导出共用的源清单。`make -j2 build` 生成对象与依赖文件并增量重编译，采用 C++17、`-O2` 和 LTO。`make submission` 是可选的单文件导出工作流；导出版本与联合编译版本使用相同模块源码，但不承诺二进制逐字节相同。
 
 直接使用官方批量验收脚本：
 
@@ -53,11 +53,11 @@ python3 data/official/Problem/run_all.py --cmd "./build/solver" --timeout 10
 
 全 trace 对应 `r64_v4_c4b`：4,480 个操作、6,016 条模型 DAG 依赖边、14 条 group/engine 泳道。颜色表示操作方向与引擎：前向计算为蓝色 C、前向通信为青色 N、反向计算为橙色 C、反向通信为紫色 N；7 个 group 的平均利用率为 C 82.85%、N 82.30%。
 
-本次模块重构及固定/full50 验收记录保存在 [`results/module_refactor/`](results/module_refactor/)。较早的 P/V 扩宽搜索实验作为历史实验归档在[实验报告](backup/wide_search_experiment/REPORT.md)。
+本轮多翻译单元固定工作量、导出一致性和 full50 验收记录保存在 [`results/multi_tu/`](results/multi_tu/)。较早的 P/V 扩宽搜索实验作为历史实验归档在[实验报告](backup/wide_search_experiment/REPORT.md)。
 
 ## 当前源码与归档
 
-- `src/solver.cpp` 是唯一编译入口；其余维护源码按 `common/core/model/io/placement/scheduling/search/app` 职责拆分。裁判单文件为 `submission/solver.cpp`，由 `make submission` 生成，`make submission-check` 检查与模块源码一致。
+- `src/solver.cpp` 定义唯一的 `main`；`src/sources.mk` 列出联合构建源文件，`make -j2 build` 增量编译为多翻译单元程序。裁判单文件 `submission/solver.cpp` 由 `make submission` 可选生成，`make submission-check` 检查导出是否过期。
 - [模块设计说明](docs/module-design.md)列出各文件职责、operation 编号、统一 DAG 边来源和常量命名原则。
 - [C++ 编码规范](docs/coding-style.md)和[格式配置](.clang-format)记录命名、格式与算法约束。
 - `scripts/build.sh` 和 `scripts/run_acceptance.sh` 提供构建与官方验收入口。
@@ -68,6 +68,6 @@ python3 data/official/Problem/run_all.py --cmd "./build/solver" --timeout 10
 
 当前默认运行启用 scale v8 搜索。局部 retiming 默认采用经安全界验证的 64 位评估路径，不能证明安全时回退到 128 位。`--retime-mode=wide` 可强制 128 位；`--polish-pass-limit=N` 可限制 extension pass 数（0 不限），两者用于诊断对照。局部资源顺序搜索在保留小例有限前缀后，还会按绝对时间预算扩展；`--budget-ms=9000..9500` 设置扩展预算，默认 9200 毫秒。`--scale=off` 可关闭扩展布局、波前和局部资源顺序搜索；默认 `--scale=auto` 在 `--borrow=ac`、`--diff=auto` 时启用这些阶段。更多细节、指标和限制见[当前求解器完整报告](docs/reports/current-solver-report.md)。
 
-GitHub 保留模块源码、导出的裁判单文件、报告、图表和验收汇总；构建二进制及逐例原始输出按 `.gitignore` 留在本地，可通过构建和验收脚本生成。全量验收代码身份见 [`results/module_refactor/full50/command.json`](results/module_refactor/full50/command.json) 和 [`results/module_refactor/full50/SOURCE_SHA256SUMS`](results/module_refactor/full50/SOURCE_SHA256SUMS)；前者记录运行版本与二进制身份，后者列出正式源码和提交件校验值。
+GitHub 保留模块源码、导出的裁判单文件、报告、图表和验收汇总；构建二进制及逐例原始输出按 `.gitignore` 留在本地，可通过构建和验收脚本生成。当前构建的代码身份见 [`results/multi_tu/full50/command.json`](results/multi_tu/full50/command.json) 与 [`results/multi_tu/full50/SOURCE_SHA256SUMS`](results/multi_tu/full50/SOURCE_SHA256SUMS)，逐例成绩见 [`results/multi_tu/full50/summary.tsv`](results/multi_tu/full50/summary.tsv)。
 
 整理前保存的 10 个顶层与 2 个嵌套 worktree（含未提交内容）位于 [`backup/worktrees/`](backup/worktrees/)，其路径映射见 [worktree 归档说明](backup/worktrees/README.md) 与 [manifest](backup/worktrees/archive_manifest.json)。普通文件迁移清单及校验记录见 [backup/MIGRATION_MANIFEST.json](backup/MIGRATION_MANIFEST.json)；归档目录导航见 [backup/README.md](backup/README.md)。

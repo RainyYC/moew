@@ -1,0 +1,41 @@
+{
+  "source_revision": "99a74de8fbecc3b880b9e1bd68824851e6cec2e3",
+  "build_command": [
+    "make",
+    "TARGET=build/solver_multi_candidate",
+    "BUILD_DIR=build/obj",
+    "-j2",
+    "build"
+  ],
+  "submission_compile_command": [
+    "g++",
+    "-std=c++17",
+    "-O2",
+    "-pipe",
+    "-Wall",
+    "-Wextra",
+    "submission/solver.cpp",
+    "-o",
+    "build/solver_multi_submission_candidate"
+  ],
+  "compile_flags": "-Isrc -std=c++17 -O2 -pipe -Wall -Wextra -flto -MMD -MP -c",
+  "link_flags": "-std=c++17 -O2 -pipe -Wall -Wextra -flto -flto",
+  "compiler": "g++ (GCC) 15.3.0 20260612 (AOSC OS)",
+  "run_argv": [
+    "python3",
+    "scripts/compare_solver_search.py",
+    "build/solver_multi_candidate",
+    "results/multi_tu/full50",
+    "--baseline",
+    "results/module_refactor/full50/summary.tsv"
+  ],
+  "sha256": {
+    "build/solver_before_multi_tu": "09a283409f48c7c06bb8e9d7f3fc2ac62c7ce7cf3f69628cb083e5f1235475b8",
+    "build/solver_multi_candidate": "a6d22606cb93c2cdeefba5a7572c575ab04396d5c694210c0b8e2fd0da6cf8bc",
+    "build/solver_multi_submission_candidate": "d0fca8b54c062b3e6008a2cbb3394e06570a6ada462e42407403703b97ab7b05",
+    "submission/solver.cpp": "f68aaf70eeaced93e859930a91f30550ba56765b91ca85a8ab414d5542ff4b6a",
+    "src/sources.mk": "8e42faa198c37a6bc396213e16afd02d021a260618daef7fa9b37a72f982d245",
+    "Makefile": "0c8177c8da30139e8a0070d16488fdceb1eadb00f200ce60df36421de51b03c8",
+    "data/official/Problem/grader.py": "c42d5f0675e33cbfc1d40bdcafbb8aa40b6d0a4e26377e69405cdbb2b167cfbc"
+  }
+}

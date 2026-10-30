@@ -1,0 +1,46 @@
+{
+  "binary_sha256": {
+    "baseline": "09a283409f48c7c06bb8e9d7f3fc2ac62c7ce7cf3f69628cb083e5f1235475b8",
+    "candidate": "a6d22606cb93c2cdeefba5a7572c575ab04396d5c694210c0b8e2fd0da6cf8bc",
+    "submission": "d0fca8b54c062b3e6008a2cbb3394e06570a6ada462e42407403703b97ab7b05"
+  },
+  "all_valid": true,
+  "r128_outputs_identical": true,
+  "r128_cpu_totals": {
+    "baseline": 8.338599000000002,
+    "candidate": 8.227918
+  },
+  "r128_cpu_change_pct": -1.3273332846441166,
+  "submission_matches": [
+    {
+      "case": "r128_v4_c4a",
+      "stdout_equal": true,
+      "counts_equal": true
+    },
+    {
+      "case": "r16_p4_trap",
+      "stdout_equal": true,
+      "counts_equal": true
+    },
+    {
+      "case": "x01_lr_block_p2",
+      "stdout_equal": true,
+      "counts_equal": true
+    },
+    {
+      "case": "x10_lr_tight_p8",
+      "stdout_equal": true,
+      "counts_equal": true
+    },
+    {
+      "case": "x12_lr_close_p10",
+      "stdout_equal": true,
+      "counts_equal": true
+    },
+    {
+      "case": "x20_vl_flat_control",
+      "stdout_equal": true,
+      "counts_equal": true
+    }
+  ]
+}

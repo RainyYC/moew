@@ -1,0 +1,6 @@
+Command: make -n -W src/io/input.hpp -W src/app/../io/input.hpp TARGET=build/solver_multi_candidate BUILD_DIR=build/obj build
+mkdir -p build/obj/app/
+g++ -Isrc -std=c++17 -O2 -pipe -Wall -Wextra -flto -MMD -MP -c src/app/solver.cpp -o build/obj/app/solver.o
+mkdir -p build/obj/io/
+g++ -Isrc -std=c++17 -O2 -pipe -Wall -Wextra -flto -MMD -MP -c src/io/input.cpp -o build/obj/io/input.o
+g++ -std=c++17 -O2 -pipe -Wall -Wextra -flto -flto build/obj/solver.o build/obj/app/solver.o build/obj/io/numeric.o build/obj/io/input.o build/obj/io/options.o build/obj/io/output.o build/obj/placement/expert_mapping.o build/obj/placement/grouped_placement.o build/obj/scheduling/event_scheduler.o build/obj/scheduling/list_scheduler.o build/obj/search/candidate_search.o build/obj/search/layout_search.o build/obj/search/window_search.o build/obj/search/initial_search.o build/obj/search/window_borrow.o build/obj/search/boost_search.o build/obj/search/placement_search.o build/obj/search/list_search.o build/obj/search/wave_search.o build/obj/search/local_engine_polish.o build/obj/search/polish_driver.o -o build/solver_multi_candidate

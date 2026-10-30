@@ -6,6 +6,7 @@
 - [`MIGRATION_MANIFEST.json`](MIGRATION_MANIFEST.json)：普通工作区整理前后的路径映射及源码、binary、已验收结果和 grader 校验哈希。
 - [`before-retiming-speed/`](before-retiming-speed/)：精确重定时加速前的正式源码与报告快照，对应 `results/budget_search/full50/`。
 - [`before-module-split/`](before-module-split/)：模块拆分前的单文件、构建配置及报告快照，对应 `results/retiming_speed/full50/`；用于本次等价性和性能对照。
+- [`before-multi-tu/`](before-multi-tu/)：改为多翻译单元之前的完整模块源码、单文件导出、构建配置和文档快照，对应 `results/module_refactor/`。
 - [`retiming_speed_experiment/`](retiming_speed_experiment/)：已通过 50 例验收并纳入正式源码的评估器加速候选、数值边界测试与说明。
 - `multicritical_experiment/`、`joint_resource_experiment/`、`escape_search_experiment/`：未并入正式求解器的搜索实验，四例试跑对照见[实验记录](../results/search_neighborhood/pilot_summary.md)。
 

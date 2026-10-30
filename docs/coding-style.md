@@ -1,6 +1,6 @@
 # C++ 编码规范
 
-维护源码按职责放在 `src/` 下的 C++17 头文件中，`src/solver.cpp` 是唯一编译入口。标准库头文件在 `src/common.hpp` 显式列出；模块使用项目本地 include。`make submission` 将入口及本地头文件确定性展开为自包含的 `submission/solver.cpp`，该文件可独立编译；`make submission-check` 检查导出文件是否与源码一致。统一使用四空格缩进、每行约 100 列、控制语句加花括号、一行一条语句，并遵循仓库 `.clang-format`。
+维护源码按职责拆分在 `src/` 下的 C++17 头文件和实现文件中。`src/solver.cpp` 只定义全局 `main`；`src/sources.mk` 是多翻译单元构建及可选单文件导出共用的唯一 `.cpp` 源清单。日常使用 `make -j2 build` 增量编译对象与依赖文件，再以 `-flto` 链接为 `build/solver`；`make submission` 可确定性地导出自包含 `submission/solver.cpp`，`make submission-check` 检查它是否过期。单文件导出与多翻译单元构建使用相同模块源码，但不要求生成逐字节相同的二进制。标准库头文件在 `src/common.hpp` 显式列出；模块使用项目本地 include。统一使用四空格缩进、每行约 100 列、控制语句加花括号、一行一条语句，并遵循仓库 `.clang-format`。
 
 类型使用 `PascalCase`；函数、方法、局部变量及成员使用 `snake_case`。为便于核对题目公式，`P`、`V`、`L` 等问题域符号可保留原样，并在不直观处就近说明。按功能将代码分成清楚的区域，把输入解析、搜索阶段和输出等职责放进具名函数。注释记录约束、精确语义和比较规则，不复述显然的语法。
 
