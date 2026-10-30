@@ -19,7 +19,7 @@ check: judge solver service lint
 	$(PY) tools/independent_check.py
 
 test:
-	$(PY) -m unittest discover -s src/judge/tests -q
+	PYTHONPATH=src python3 -m unittest discover -s src/judge/tests -q
 	$(PY) -m unittest discover -s src/solver/selftests -t src -q
 
 judge:

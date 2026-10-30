@@ -141,6 +141,10 @@ def schedule(
     priority: Optional[Sequence[int]] = None,
     comm_gap: int = 0,
     fill_gaps: bool = False,
+    fill_boost: float = 0.0,
+    fill_stages: int = 0,
+    fill_mbs: int = 0,
+    fill_ramp: bool = False,
 ) -> Optional[Schedule]:
     """生成一份调度；``mode`` = ``"prio"``（按优先级出堆，报告 §2.4）或 ``"early"``
     （按最早可开始时刻出堆，堆键做惰性修正）。构造上合法，返回 ``None`` 仅表示死锁
@@ -148,6 +152,20 @@ def schedule(
 
     ``priority`` 给出时用它作为堆键（逐节点，长度 = ``nmb·L·10``），用于随机化/局部搜索；
     为 ``None`` 时用 ``variant`` 推出的 ``(方向, mb, ℓ, op)`` 键。
+
+    ``fill_boost`` / ``fill_stages`` / ``fill_mbs`` / ``fill_ramp``：**填充气泡专项**
+    （只在 ``mode="early"`` 下对前向操作生效）。出堆键从 ``rt`` 改成
+
+        rt − bv[v][mb],   bv[v][mb] = fill_boost · (fs−v)/fs · (fm−mb)/fm   （fill_ramp）
+                          bv[v][mb] = fill_boost                           （否则）
+
+    其中 ``v`` 是卡组号。含义："前 ``fill_stages`` 个 stage × 前 ``fill_mbs`` 个 microbatch
+    的前向操作，按位置线性地显得更急"，把前向波主动往前推。
+    实际开始时间仍是 ``max(依赖完成, 引擎空闲)``，依赖与引擎互斥都不受影响——
+    **只改取的顺序，不改取到之后的排法**。
+
+    ``fill_boost`` 的单位是**时间**，量级必须和用例的时长相当（参考实现用
+    ``2e9~1e10``，对应它那种 ``T·F_s ≈ 1e9`` 的规模）；给小了等于没开。
 
     ``comm_gap`` 给通信引擎插入的最小空隙：一次通信结束后至少再空 ``comm_gap`` 时间才有
     下一次通信。题面 §4.6 的 ``Movl`` 是**闭区间**峰值（首尾相接算两块），因此
@@ -178,6 +196,20 @@ def schedule(
     pushed = bytearray(total)
     comp_free = [0] * V
     comm_free = [0] * V
+    # 填充 boost 表：bv[group][mb]，只对前向操作生效
+    bv_table = None
+    if fill_boost and fill_stages and fill_mbs:
+        fs_used = min(fill_stages, V)
+        fm_used = min(fill_mbs, nmb)
+        bv_table = [[0.0] * nmb for _ in range(V)]
+        for v in range(fs_used):
+            for mb in range(fm_used):
+                if fill_ramp:
+                    bv_table[v][mb] = (fill_boost
+                                       * (fs_used - v) / fs_used
+                                       * (fm_used - mb) / fm_used)
+                else:
+                    bv_table[v][mb] = fill_boost
     # 空隙按终点排序；列表调度可将后访问的独立操作插入已留出的空闲段。
     gaps = [[[], []] for _ in range(V)] if fill_gaps else None
     # bw_left[g][mb]：还有多少个反向操作没排；rel[g][mb]：已排反向操作的最大完成时刻
@@ -223,6 +255,21 @@ def schedule(
 
     heap: list[tuple] = []
 
+    def _boost_of(mb: int, layer_index: int, oi: int) -> float:
+        if bv_table is None or oi > 3:  # 只抬前向操作
+            return 0.0
+        return bv_table[group_of[layer_index]][mb]
+
+    def _key_early(idx: int) -> int | float:
+        raw = earliest(idx)
+        if bv_table is None:
+            return raw
+        mb = idx // stride
+        base = idx - mb * stride
+        layer_index = base // 10
+        oi = base - layer_index * 10
+        return raw - _boost_of(mb, layer_index, oi)
+
     def try_push(idx: int) -> None:
         if pushed[idx]:
             return
@@ -243,7 +290,7 @@ def schedule(
         if mode == "prio":
             heappush(heap, (rank, idx))
         else:
-            heappush(heap, (earliest(idx), rank, idx))
+            heappush(heap, (_key_early(idx), rank, idx))
 
     # 2026-10-29 修订后，层 0 上"零前驱"的操作不止 `s`（`disp` 也不再等 `s`），
     # 这些入口操作都要受窗口约束、也都要在释放时一起放开，否则要么空转死锁、
@@ -293,9 +340,9 @@ def schedule(
                     break
         if slot < 0 and free > ready:
             ready = free
-        if mode == "early" and heap and ready > heap[0][0]:
+        if mode == "early" and heap and (ready - _boost_of(mb, layer, oi)) > heap[0][0]:
             # 惰性修正：引擎/依赖只让起点后移，重排一次即可（摊还 O(1)）
-            heappush(heap, (ready, entry[1], idx))
+            heappush(heap, (ready - _boost_of(mb, layer, oi), entry[1], idx))
             continue
 
         start[idx] = ready

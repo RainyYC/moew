@@ -100,6 +100,8 @@ class Config:
     D: int
     psi: tuple[int, ...]
     lb: int
+    # 只用于排序的下界（用 LPT 的 m 算），见 place.best_placement_split 的说明
+    lb_rank: int = 0
 
 
 @dataclass
@@ -114,6 +116,8 @@ class _PMap:
     payload: list[int]
     x: list[int]
     durations: list[tuple[int, ...]]
+    # 只用 LPT 的 m 算出来的时长，仅用于**候选排序**（见 place.best_placement_split）
+    durations_rank: list[tuple[int, ...]] | None = None
 
 
 @dataclass
@@ -158,15 +162,19 @@ def p_candidates(case: Case) -> list[int]:
     return out
 
 
-def _pmap(case: Case, P: int) -> _PMap:
-    rows, m = place.best_placement(case, P)
+def _pmap(case: Case, P: int, budget_box: list[float] | None = None) -> _PMap:
+    rows, m, m_rank = place.best_placement_split(case, P, budget_box)
     pin, pout = formula.peer_counts(case, 1, P)
     payload = [formula.comm_payload(case, layer, P) for layer in range(case.L)]
     x = [formula.comm_time(case, payload[layer], pin, pout) for layer in range(case.L)]
     durations = [
         formula.layer_durations(case, layer, m[layer], x[layer]) for layer in range(case.L)
     ]
-    return _PMap(P=P, pin=pin, pout=pout, rows=rows, m=m, payload=payload, x=x, durations=durations)
+    durations_rank = [
+        formula.layer_durations(case, layer, m_rank[layer], x[layer]) for layer in range(case.L)
+    ]
+    return _PMap(P=P, pin=pin, pout=pout, rows=rows, m=m, payload=payload, x=x,
+                 durations=durations, durations_rank=durations_rank)
 
 
 def v_candidates(case: Case, P: int) -> list[int]:
@@ -232,13 +240,15 @@ def enumerate_configs(case: Case) -> tuple[list[Config], dict[int, _PMap]]:
     """
     pmaps: dict[int, _PMap] = {}
     configs: list[Config] = []
+    # 精确放置的总余量（所有 P 共享）：值得花，但不能把搜索预算吃穿
+    exact_budget = [1.2]
     seen: set[tuple[int, int, tuple[int, ...]]] = set()
     t_fwd = sum(case.T)
     best_floor: Optional[int] = None
     for P in p_candidates(case):
         if case.R % P:
             continue
-        info = _pmap(case, P)
+        info = _pmap(case, P, exact_budget)
         pmaps[P] = info
         per_layer_bytes = (case.E // P) * case.Z + case.Zs
         comp_w = [sum(row[i] for i in COMP_OPS) for row in info.durations]
@@ -261,9 +271,12 @@ def enumerate_configs(case: Case) -> tuple[list[Config], dict[int, _PMap]]:
                 if any(len(group) * per_layer_bytes > case.M for group in layers):
                     continue  # Mexp 静态就放不下（题面 §4.6）
                 lb = formula.lower_bound(case, info.durations, layers)
+                lb_rank = formula.lower_bound(
+                    case, info.durations_rank or info.durations, layers
+                )
                 if best_floor is None or lb < best_floor:
                     best_floor = lb
-                configs.append(Config(P=P, V=V, D=1, psi=cuts, lb=lb))
+                configs.append(Config(P=P, V=V, D=1, psi=cuts, lb=lb, lb_rank=lb_rank))
             # K=2V（DualPipe 镜像配对）：每个卡组两块。2026-10-30 实测：官方 50 例中
             # 20/50 例最终选它，均值 Time 22,883,348 → 21,967,523（−4.0%），单例最大 −18.3%。
             if 2 * V <= case.L:
@@ -277,11 +290,16 @@ def enumerate_configs(case: Case) -> tuple[list[Config], dict[int, _PMap]]:
                     if any(len(group) * per_layer_bytes > case.M for group in layers):
                         continue  # 配对后一个卡组要背两块，Mexp 可能放不下
                     lb = formula.lower_bound(case, info.durations, layers)
-                    configs.append(Config(P=P, V=V, D=1, psi=cuts, lb=lb))
+                    lb_rank = formula.lower_bound(
+                        case, info.durations_rank or info.durations, layers
+                    )
+                    configs.append(Config(P=P, V=V, D=1, psi=cuts, lb=lb, lb_rank=lb_rank))
     # 排序键用 `lb × 填充代价` 而不是裸 lb：2026-10 版 `V=R/P` 后，V 大的配置 lb 小但
     # 流水线深、填充代价大（`(nmb+V-1)/nmb`）。按裸 lb 排序会在"lb 打平"的计算主导实例上
     # 一律先试 V 最大的那个，实测会丢掉 3%（b13：先试 P=16 得 4.86e16，P=32 是 4.70e16）。
-    configs.sort(key=lambda item: (item.lb * max(1, case.nmb + item.V - 1) // case.nmb,
+    # 排序用 `lb_rank`（LPT 的 m）：保持搜索轨迹与"放置只做 LPT 时"逐位相同，
+    # 避免深下降改变候选顺序引入回归；而建 plan 用的是深下降后的时长（单调更短）。
+    configs.sort(key=lambda item: (item.lb_rank * max(1, case.nmb + item.V - 1) // case.nmb,
                                    -item.V, item.P))
     return configs, pmaps
 
@@ -689,6 +707,69 @@ def _scan_windows(
     return best
 
 
+def _fill_boost_pass(
+    case: Case,
+    best: "_Best",
+    info: "_PMap",
+    deadline: float,
+    log: Log,
+) -> "_Best":
+    """填充气泡专项：在同一配置上扫 (stage 数 × mb 数 × boost 量级 × 是否斜坡)。
+
+    出堆键从 ``rt`` 变成 ``rt − bv[v][mb]``（``sched.schedule`` 的 ``fill_boost`` 家族）：
+    让"前几个 stage × 前几个 microbatch 的前向操作"显得更急，把前向波往前推。
+    ``boost`` 的量级必须与用例时长同阶 —— 取 ``plan.lb / nmb`` 的若干倍（参考实现在它
+    自己的时间尺度上用的是 2e9~1e10，正好也是"几个 per-mb 时间"）。
+    """
+    if os.environ.get("MOE_NO_FILL"):
+        return best  # 对照实验开关：关掉填充专项，用于同机 A/B
+    plan = best.plan
+    if plan.V < 2 or case.nmb < 2:
+        return best  # 单 stage 或单 microbatch：没有前向波可推
+    # 只有"填充主导"的用例才值得花这个预算：microbatch 灌不满流水线（nmb ≤ V），
+    # 或者当前解离下界还远（>1.25×lb）。否则前向波本来就铺得开，纯属浪费时间。
+    if case.nmb > plan.V * 6 // 5 and best.time * 4 <= best.lb * 5:
+        return best
+    scale = plan.lb / max(1, case.nmb)
+    if scale <= 0:
+        return best
+    best_local = best
+    # 网格刻意放得比"看起来省"的要宽：实测收紧到 3 档 × 4 变体 × 0.9 s 反而更差
+    # （21,897,645 vs 21,846,362），因为缩小 boost 量级的覆盖会错过最优点。
+    stages = sorted({1, 2, max(1, case.nmb // 4), max(1, case.nmb // 2), plan.V})
+    mbs = sorted({case.nmb, max(1, case.nmb // 2), max(1, case.nmb // 4)})
+    windows = [best.result.window] if best.result is not None else [case.nmb]
+    for window in windows:
+        for fs in stages:
+            if time.monotonic() > deadline:
+                return best_local
+            for fm in mbs:
+                for ratio in (0.5, 1.0, 2.0, 5.0, 10.0):
+                    if time.monotonic() > deadline:
+                        return best_local
+                    for ramp in (True, False):
+                        for variant in sched.VARIANTS:
+                            result = sched.schedule(
+                                case, plan, window, variant, "early",
+                                fill_boost=scale * ratio, fill_stages=fs,
+                                fill_mbs=fm, fill_ramp=ramp,
+                            )
+                            if result is None:
+                                continue
+                            candidate = _accept(
+                                case, best_local, plan, best_local.config,
+                                info.rows, result, "fill",
+                            )
+                            if candidate is not None and candidate.time < best_local.time:
+                                best_local = candidate
+                                if log:
+                                    log(f"    [填充] P={plan.P} V={plan.V} fs={fs} fm={fm} "
+                                        f"×{ratio} ramp={int(ramp)} → Time={best_local.time}")
+                                if best_local.time <= best_local.lb:
+                                    return best_local
+    return best_local
+
+
 def _improve_best(case: Case, best: _Best, deadline: float, log: Log) -> _Best:
     """在最优配置上做引擎序列局部搜索（多种子 + 模拟退火）。"""
     if best.time <= best.lb:
@@ -821,6 +902,9 @@ def solve_case(
     exact_stats: Optional[dict] = None
     if best is not None:
         # 局部搜索用剩余预算的一半（上限 4 s），并给最终渲染留出 reserve
+        # 填充专项先跑：每次只是一次列表调度，比退火便宜，且对 nmb<V 的用例收益最大
+        fill_deadline = min(search_deadline, time.monotonic() + max(0.0, min(1.6, budget * 0.2)))
+        best = _fill_boost_pass(case, best, pmaps[best.plan.P], fill_deadline, log)
         improve_deadline = min(search_deadline, time.monotonic() + max(0.0, min(4.0, budget * 0.5)))
         best = _improve_best(case, best, improve_deadline, log)
         if exact and exact_mod.applicable(case, best.plan):
