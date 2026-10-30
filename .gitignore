@@ -18,3 +18,9 @@ bigcases/fuzz/
 
 # 独立工作副本（已合并回主目录，保留在本地用于对照）
 opt-claude/
+
+# 会话产物与大文件（不入库）：runs/ 是各轮验证的输出，bigcases/ 可用 tools/gen_battery.py 重新生成
+runs/
+bigcases/
+backups/
+*.backup

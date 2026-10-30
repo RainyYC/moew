@@ -1,9 +1,0 @@
-PASS ex1   expected=560 actual=560 ok=True lb=560(期望 560)
-PASS ex2   expected=4880 actual=4880 ok=True lb=3200(期望 3200)
-PASS ex3   expected=7000 actual=7000 ok=True lb=4000(期望 4000)
-PASS ex4   expected=3200 actual=3200 ok=True lb=3200(期望 3200)
-PASS ex5   expected=416 actual=416 ok=True lb=320(期望 320)
-PASS ex6   expected=1696 actual=1696 ok=True lb=1120(期望 1120)
-PASS mini  expected=164 actual=164 ok=True lb=140(期望 140)
-
-验收：7/7 例通过
