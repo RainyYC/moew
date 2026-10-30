@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "workflow",
+  "quality": "showcase",
+  "specification": {
+    "path": "/home/rainy/hackathon/.archify/workflow-moe-v8-20261030-183058/candidate.json",
+    "sha256": "a19371326e259e1ee7586a9e6c097cf6e35b89b2438066731dd53b22753d427f",
+    "bytes": 8525
+  },
+  "artifact": {
+    "path": "/home/rainy/hackathon/.archify/workflow-moe-v8-20261030-183058/moe-v8-workflow.html",
+    "sha256": "c890a51738c1e7b3de56a0179cb2fc04ea4b0b1c683bef0e231431770b30ed06",
+    "bytes": 851202
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/rainy/hackathon/.archify/workflow-moe-v8-20261030-183058/review-2/moe-v8-workflow.finalize.json",
+    "summaryReceipt": "/home/rainy/hackathon/.archify/workflow-moe-v8-20261030-183058/review-2/moe-v8-workflow.finalize-summary.json",
+    "browserCheckReceipt": "/home/rainy/hackathon/.archify/workflow-moe-v8-20261030-183058/review-2/moe-v8-workflow.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-30T10:32:30.103Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 3093,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  }
+}

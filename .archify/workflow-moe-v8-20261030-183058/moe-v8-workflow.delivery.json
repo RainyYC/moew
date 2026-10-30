@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "5cf16739-3f45-42e3-b184-2d439e3080a3",
+  "status": "current",
+  "command": "deliver",
+  "type": "workflow",
+  "input": "/home/rainy/hackathon/.archify/workflow-moe-v8-20261030-183058/candidate.json",
+  "output": "/home/rainy/hackathon/.archify/workflow-moe-v8-20261030-183058/moe-v8-workflow.html",
+  "specification": {
+    "sha256": "a19371326e259e1ee7586a9e6c097cf6e35b89b2438066731dd53b22753d427f",
+    "bytes": 8525
+  },
+  "artifact": {
+    "sha256": "c890a51738c1e7b3de56a0179cb2fc04ea4b0b1c683bef0e231431770b30ed06",
+    "bytes": 851202
+  }
+}

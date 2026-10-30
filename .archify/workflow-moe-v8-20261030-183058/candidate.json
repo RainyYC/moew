@@ -1,0 +1,370 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "MoE v8 求解器：整体算法流水线",
+    "locale": "zh-CN",
+    "output": "moe-v8-workflow.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:RainyYC/moew.git",
+      "revision": "22c674a7e7b60aa81600fb84f767d22725428ab5",
+      "link_mode": "local-only"
+    }
+  },
+  "lanes": [
+    {
+      "id": "intake",
+      "label": "输入与解析"
+    },
+    {
+      "id": "solver",
+      "label": "候选搜索与调度核心"
+    },
+    {
+      "id": "refine",
+      "label": "离线精化与验收边界"
+    },
+    {
+      "id": "polish",
+      "label": "局部关键路径精化"
+    },
+    {
+      "id": "output",
+      "label": "结果与外部验收"
+    }
+  ],
+  "phases": [
+    {
+      "id": "read",
+      "label": "输入与建候选",
+      "fromCol": 0,
+      "toCol": 1
+    },
+    {
+      "id": "seed",
+      "label": "探测与主调度",
+      "fromCol": 2,
+      "toCol": 3,
+      "variant": "emphasis"
+    },
+    {
+      "id": "refinement",
+      "label": "受限搜索与输出",
+      "fromCol": 4,
+      "toCol": 5
+    }
+  ],
+  "groups": [
+    {
+      "id": "seed_search",
+      "label": "P / V 候选与初始调度",
+      "lane": "solver",
+      "fromCol": 1,
+      "toCol": 2,
+      "variant": "emphasis"
+    },
+    {
+      "id": "v7",
+      "label": "v7 主候选的精化阶段",
+      "lane": "refine",
+      "fromCol": 3,
+      "toCol": 4,
+      "variant": "default"
+    },
+    {
+      "id": "small_search",
+      "label": "后续候选与局部精化",
+      "lane": "refine",
+      "fromCol": 4,
+      "toCol": 5,
+      "variant": "dashed"
+    }
+  ],
+  "mainPath": [
+    "stdin",
+    "configs",
+    "probe",
+    "ac_refine",
+    "v7scan",
+    "altp",
+    "wave",
+    "local",
+    "emit"
+  ],
+  "nodes": [
+    {
+      "id": "stdin",
+      "lane": "intake",
+      "col": 0,
+      "type": "external",
+      "label": "标准输入",
+      "sublabel": "实例 + options",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 23,
+          "end_line": 35
+        }
+      ]
+    },
+    {
+      "id": "configs",
+      "lane": "solver",
+      "col": 1,
+      "type": "backend",
+      "label": "合法 P 与分组候选",
+      "sublabel": "LPT / 换位；内存约束 cuts DP",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 41,
+          "end_line": 64
+        },
+        {
+          "path": "src/solver.cpp",
+          "line": 182,
+          "end_line": 196
+        }
+      ]
+    },
+    {
+      "id": "probe",
+      "lane": "solver",
+      "col": 2,
+      "type": "backend",
+      "label": "逐 P 探测与 rich 搜索",
+      "sublabel": "逐 P 探测；前 2 个 rich",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 199,
+          "end_line": 207
+        },
+        {
+          "path": "src/solver.cpp",
+          "line": 76,
+          "end_line": 115
+        }
+      ]
+    },
+    {
+      "id": "ac_refine",
+      "lane": "solver",
+      "col": 3,
+      "type": "backend",
+      "label": "AC 精化",
+      "sublabel": "全窗口扫描；专家分组放置",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 212,
+          "end_line": 219
+        },
+        {
+          "path": "src/solver.cpp",
+          "line": 233,
+          "end_line": 265
+        }
+      ]
+    },
+    {
+      "id": "v7scan",
+      "lane": "refine",
+      "col": 3,
+      "type": "backend",
+      "label": "v7 列表调度与 release-1",
+      "sublabel": "gap-fill + release-1；8s共享预算",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 267,
+          "end_line": 304
+        }
+      ]
+    },
+    {
+      "id": "altp",
+      "lane": "solver",
+      "col": 4,
+      "type": "backend",
+      "label": "alt P seeds",
+      "sublabel": "mb≤16；Nops≤8000；L>G",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 305,
+          "end_line": 309
+        }
+      ]
+    },
+    {
+      "id": "local",
+      "lane": "polish",
+      "col": 5,
+      "type": "backend",
+      "label": "关键路径局部精化",
+      "sublabel": "Nops≤8000；关键路径插入与 4–7 项排列",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 325,
+          "end_line": 333
+        },
+        {
+          "path": "src/local_engine_polish.hpp",
+          "line": 80,
+          "end_line": 98
+        }
+      ]
+    },
+    {
+      "id": "emit",
+      "lane": "output",
+      "col": 5,
+      "type": "backend",
+      "label": "保留最好合法解并输出",
+      "sublabel": "V / P · PSI · MAP · SCHEDULE",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 335,
+          "end_line": 340
+        }
+      ]
+    },
+    {
+      "id": "grader",
+      "lane": "output",
+      "col": 4,
+      "type": "external",
+      "label": "官方验收 runner",
+      "sublabel": "退出后调用 grader.py",
+      "sources": [
+        {
+          "path": "scripts/run_acceptance.sh",
+          "line": 18,
+          "end_line": 41
+        }
+      ]
+    },
+    {
+      "id": "wave",
+      "lane": "refine",
+      "col": 5,
+      "type": "backend",
+      "label": "compact 波前（全规模）",
+      "sublabel": "ES / EFT；full-W + top-2 窗口",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 310,
+          "end_line": 322
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "stdin",
+      "to": "configs",
+      "label": "解析实例与选项",
+      "variant": "default",
+      "role": "main"
+    },
+    {
+      "from": "configs",
+      "to": "probe",
+      "label": "可行 P/V、cuts、MAP",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "from": "probe",
+      "to": "ac_refine",
+      "label": "选中探测最好解 + rich 前 2 个",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "from": "ac_refine",
+      "to": "v7scan",
+      "label": "AC 精化后的最好 incumbent",
+      "variant": "default",
+      "role": "main"
+    },
+    {
+      "from": "local",
+      "to": "emit",
+      "label": "只接纳合法改进；Time 更小，或局部同 Time 且 sumEnd 更小",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "from": "emit",
+      "to": "grader",
+      "label": "solver 退出后由 runner 验收",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "from": "v7scan",
+      "to": "altp",
+      "label": "共享 9s 时钟有余量时尝试",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "from": "altp",
+      "to": "wave",
+      "label": "可选 alt seeds",
+      "variant": "dashed",
+      "role": "main",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "from": "v7scan",
+      "to": "wave",
+      "label": "v7 seed",
+      "variant": "emphasis",
+      "role": "branch"
+    },
+    {
+      "from": "wave",
+      "to": "local",
+      "label": "仅 ≤8000 操作时精化",
+      "variant": "dashed",
+      "role": "main"
+    },
+    {
+      "from": "local",
+      "to": "emit",
+      "label": "合法且按 Time / sumEnd 保留",
+      "variant": "emphasis",
+      "role": "main"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "读图与证据范围",
+      "items": [
+        "源码证据锁定整理前已验收 v8；单文件重构保持流程。证据行号来自冻结提交 22c674a。",
+        "图中 8s / 9s 是自进程启动起共享的阶段截止时钟，不是每阶段各自重新计时。",
+        "默认列表精化 8s；显式 deep 列表选项可扩展其自身预算。",
+        "alt P 只在 mb≤16、Nops≤8000、L>G 且共享时钟允许时最多评估 2 个；wave 可在 alt P 跳过时仍以 v7 为 seed，并适用于各规模。",
+        "local 才受 Nops≤8000 限制；wave 不受此操作数门槛限制。",
+        "默认 search 编排与可选 CLI 开关按所示顺序归纳；list-deep 等调试选项只扩展列表搜索预算。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "可行性与候选保留",
+      "items": [
+        "事件调度使用保守的内存预留；离线列表、波前和局部精化用闭区间峰值内存复核。",
+        "常规阶段仅在 Time 改善时替换整份解；局部精化允许 Time 持平且 sumEnd 更小时换序。"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,322 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "MoE v8 求解器：逻辑架构",
+    "locale": "zh-CN",
+    "output": "moe-v8-architecture.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:RainyYC/moew.git",
+      "revision": "22c674a7e7b60aa81600fb84f767d22725428ab5",
+      "link_mode": "local-only"
+    }
+  },
+  "components": [
+    {
+      "id": "stdin",
+      "type": "external",
+      "label": "标准输入",
+      "sublabel": "Instance + options",
+      "pos": [
+        40,
+        70
+      ],
+      "size": [
+        170,
+        64
+      ],
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 23,
+          "end_line": 35
+        }
+      ]
+    },
+    {
+      "id": "parse",
+      "type": "backend",
+      "label": "输入解析与时钟",
+      "sublabel": "读入负载；i128；进程共享 deadline",
+      "pos": [
+        280,
+        70
+      ],
+      "size": [
+        205,
+        72
+      ],
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 7,
+          "end_line": 35
+        },
+        {
+          "path": "src/solver.cpp",
+          "line": 174,
+          "end_line": 180
+        }
+      ]
+    },
+    {
+      "id": "orchestrator",
+      "type": "backend",
+      "label": "候选搜索与 MAP 优化",
+      "sublabel": "LPT / 换位、cuts DP、分组放置与搜索编排",
+      "pos": [
+        565,
+        70
+      ],
+      "size": [
+        220,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 41,
+          "end_line": 64
+        },
+        {
+          "path": "src/solver.cpp",
+          "line": 174,
+          "end_line": 207
+        },
+        {
+          "path": "src/solver.cpp",
+          "line": 233,
+          "end_line": 265
+        }
+      ]
+    },
+    {
+      "id": "event",
+      "type": "backend",
+      "label": "事件调度核",
+      "sublabel": "10-op DAG；compute / comm engine；事件队列",
+      "pos": [
+        941,
+        70
+      ],
+      "size": [
+        225,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/event_scheduler.hpp",
+          "line": 106,
+          "end_line": 160
+        },
+        {
+          "path": "src/event_scheduler.hpp",
+          "line": 347,
+          "end_line": 436
+        }
+      ]
+    },
+    {
+      "id": "refine",
+      "type": "backend",
+      "label": "离线精化与波前搜索",
+      "sublabel": "v7 列表 / gap-fill / release-1；wave 全规模；local Nops≤8000",
+      "pos": [
+        941,
+        260
+      ],
+      "size": [
+        225,
+        74
+      ],
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 267,
+          "end_line": 333
+        }
+      ]
+    },
+    {
+      "id": "feasibility",
+      "type": "backend",
+      "label": "资源与内存可行性",
+      "sublabel": "事件核预留 activation / comm buffer；离线复核闭区间峰值",
+      "pos": [
+        565,
+        260
+      ],
+      "size": [
+        220,
+        80
+      ],
+      "sources": [
+        {
+          "path": "src/event_scheduler.hpp",
+          "line": 26,
+          "end_line": 35
+        },
+        {
+          "path": "src/solver.cpp",
+          "line": 270,
+          "end_line": 276
+        },
+        {
+          "path": "src/local_engine_polish.hpp",
+          "line": 48,
+          "end_line": 56
+        }
+      ]
+    },
+    {
+      "id": "incumbent",
+      "type": "backend",
+      "label": "最优解保留器",
+      "sublabel": "常规只替换更小 Time；局部同 Time 比 sumEnd",
+      "pos": [
+        280,
+        260
+      ],
+      "size": [
+        205,
+        76
+      ],
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 211,
+          "end_line": 219
+        },
+        {
+          "path": "src/local_engine_polish.hpp",
+          "line": 63,
+          "end_line": 71
+        }
+      ]
+    },
+    {
+      "id": "output",
+      "type": "backend",
+      "label": "结果序列化",
+      "sublabel": "V / P · PSI · MAP · SCHEDULE",
+      "pos": [
+        40,
+        260
+      ],
+      "size": [
+        180,
+        72
+      ],
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 335,
+          "end_line": 340
+        }
+      ]
+    },
+    {
+      "id": "grader",
+      "type": "external",
+      "label": "官方 grader runner",
+      "sublabel": "solver 退出后验收输出；不参与搜索编排",
+      "pos": [
+        565,
+        420
+      ],
+      "size": [
+        220,
+        66
+      ],
+      "sources": [
+        {
+          "path": "scripts/run_acceptance.sh",
+          "line": 18,
+          "end_line": 41
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "from": "stdin",
+      "to": "parse",
+      "label": "输入文本与命令行选项",
+      "variant": "default"
+    },
+    {
+      "from": "parse",
+      "to": "orchestrator",
+      "label": "Instance / options / mainStart",
+      "variant": "default"
+    },
+    {
+      "from": "orchestrator",
+      "to": "event",
+      "label": "P / group / schedule request",
+      "variant": "emphasis"
+    },
+    {
+      "from": "event",
+      "to": "feasibility",
+      "label": "事件阶段保守资源预留",
+      "variant": "default"
+    },
+    {
+      "from": "event",
+      "to": "incumbent",
+      "label": "候选 makespan 与 schedule",
+      "variant": "default"
+    },
+    {
+      "from": "incumbent",
+      "to": "output",
+      "label": "当前最好合法解",
+      "variant": "emphasis"
+    },
+    {
+      "from": "output",
+      "to": "grader",
+      "label": "完成求解后外部验收",
+      "variant": "default"
+    },
+    {
+      "from": "refine",
+      "to": "feasibility",
+      "label": "离线候选送检；精确闭区间内存复核",
+      "variant": "default"
+    },
+    {
+      "from": "event",
+      "to": "refine",
+      "label": "初始合法调度与 incumbent",
+      "variant": "default"
+    },
+    {
+      "from": "feasibility",
+      "to": "incumbent",
+      "label": "通过可行性校验后接纳",
+      "variant": "emphasis"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "边界与执行模型",
+      "items": [
+        "这是单进程求解器的逻辑分层；没有独立服务、数据库或并行线程。",
+        "源码证据锁定整理前已验收 v8；单文件重构保持流程。证据行号来自冻结提交 22c674a。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "阶段预算与裁决",
+      "items": [
+        "8s / 9s 截止基于进程启动时钟共享；wave 可用于各规模，local 才受 Nops≤8000 限制。",
+        "候选解常规按 Time 严格改善保留；local polishing 同 Time 时以较小 sumEnd 作为局部次级裁决。",
+        "官方 grader 在 run_acceptance.sh 中于 solver 成功退出后调用，不是 solver 内组件或逐候选回调。"
+      ]
+    }
+  ]
+}

@@ -44,3 +44,10 @@ results/**/*.out
 results/**/*.stderr
 results/**/*.stdout
 results/**/*.stdin
+
+# Archived experiment artifacts are reproducible from its source and runner
+/backup/wide_search_experiment/solver
+/backup/wide_search_experiment/results/**/*.out
+/backup/wide_search_experiment/results/**/*.stderr
+/backup/wide_search_experiment/results/**/*.stdout
+/backup/wide_search_experiment/results/**/*.stdin

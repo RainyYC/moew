@@ -16,7 +16,7 @@ official-serial: build
 	./scripts/run_acceptance.sh run_latest ac auto '' auto
 
 report:
-	@cat docs/reports/scale-v8.md
+	@cat docs/reports/current-solver-report.md
 
 help:
 	@printf '%s\n' \
@@ -26,5 +26,5 @@ help:
 	  'make check        与 smoke 相同' \
 	  'make official     串行验收官方 50 例' \
 	  'make official-serial 串行验收官方 50 例' \
-	  'make report       显示当前 v8 报告' \
+	  'make report       显示当前求解器完整报告' \
 	  'make help         显示命令帮助'

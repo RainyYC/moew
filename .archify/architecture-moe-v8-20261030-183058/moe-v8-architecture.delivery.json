@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "438c5510-c2b0-4a63-90b8-5d13726e889a",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/home/rainy/hackathon/.archify/architecture-moe-v8-20261030-183058/candidate.json",
+  "output": "/home/rainy/hackathon/.archify/architecture-moe-v8-20261030-183058/moe-v8-architecture.html",
+  "specification": {
+    "sha256": "a9c925f7ec2c6f7a52280b45a92503b4947aff32fa3581c05a8079d62f2a6ce2",
+    "bytes": 7034
+  },
+  "artifact": {
+    "sha256": "2825a4a0ead8b69fa766afa942521885bbcc8af0e86ff16efa8b2a9a37db833e",
+    "bytes": 848118
+  }
+}

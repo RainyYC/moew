@@ -1,0 +1,13 @@
+{
+  "suite": "official 50-case serial acceptance",
+  "cases": 50,
+  "exit_zero": 50,
+  "time_equal_to_scale_v8_default": 50,
+  "output_files_equal_to_scale_v8_default": 50,
+  "mean_time": 20407224.34,
+  "max_wall_seconds": 9.008,
+  "max_wall_case": "r256_v8_c4",
+  "wall_interpretation": "Wall time is checked against the 10-second limit only; it is not presented as an isolated performance comparison.",
+  "overlap_note": "During recovery after interruption, x17_vl_tight_block, x19_vl_trap4_fs4, and x20_vl_flat_control were briefly rerun while the original runner was still finishing. summary.tsv keeps the first runner record for each case. The output and Time equality conclusions are unaffected.",
+  "solver_rerun_for_this_record": false
+}
