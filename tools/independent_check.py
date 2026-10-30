@@ -11,7 +11,7 @@
 退出码：0 = 7 值、Time、lb、groups、engines 与 judge 完全一致；1 = 有任何不一致或非法。
 
 口径（题面 / CONTRACT §1）：
-* 时长：``s=T·Fs``、``gemm=m·Fin``、``X=⌈T·H·(P−1)/P⌉``、``x=max(⌈pin·X/Bin⌉,⌈pout·X/Bout⌉)·Fio``，
+* 时长：``s=T·Fs``、``gemm=m·Fin``、``X=⌈T·H/P⌉``、``x=max(⌈pin·X/Bin⌉,⌈pout·X/Bout⌉)·Fio``，
   反向 α/αβ 单次向上取整；``pin/pout`` 按物理卡号 ``q=v·(P·D)+d·P+p`` 复核；
 * 调度：题面 §4.2 的层内链、``gemm_dw/s_dw`` 只依赖 ``comb_bwd``、``s_bwd ≥ 本层 comb 结束``、
   ``s(l) ≥ comb(l−1)``、``s_bwd(l) ≥ disp_bwd(l+1)``；零时长不占引擎、相等时刻释放；
@@ -119,7 +119,7 @@ def build(case: dict, out: dict) -> dict:
         for expert, amount in enumerate(load):
             per_rank[out["map"][layer][expert]] += amount
         m = max(per_rank)
-        x_in = ceil_div(case["T"][layer] * case["H"] * (p - 1), p) if p > 1 else 0
+        x_in = ceil_div(case["T"][layer] * case["H"], p) if p > 1 else 0
         x = (
             max(
                 ceil_div(pin * x_in, case["Bin"]) if pin else 0,

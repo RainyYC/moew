@@ -1,0 +1,55 @@
+1 4
+PSI
+1
+MAP
+1 0 2 3
+2 1 0 3
+SCHEDULE
+0 0:0:s 0:0:disp
+12 0:0:gemm
+16 0:0:comb
+28 0:1:s 0:1:disp
+40 0:1:gemm
+44 0:1:comb 1:0:s
+56 1:0:disp
+68 1:0:gemm
+72 1:0:comb
+84 1:1:s 1:1:disp
+96 1:1:gemm
+100 1:1:comb 2:0:s
+112 2:0:disp
+124 2:0:gemm
+128 2:0:comb
+140 2:1:s 2:1:disp
+152 2:1:gemm
+156 2:1:comb 3:0:s
+168 3:0:disp
+180 3:0:gemm
+184 3:0:comb
+196 3:1:s 3:1:disp
+208 3:1:gemm
+212 0:1:s_bwd 3:1:comb
+224 0:1:comb_bwd
+225 0:1:gemm_dx
+226 0:1:gemm_dw 0:1:disp_bwd
+227 0:0:s_bwd 0:0:comb_bwd
+228 0:0:gemm_dx
+229 0:0:gemm_dw 0:0:disp_bwd 0:0:s_dw 0:1:s_dw 1:1:s_bwd
+230 1:1:comb_bwd
+231 1:1:gemm_dx
+232 1:1:gemm_dw 1:1:disp_bwd
+233 1:0:s_bwd 1:0:comb_bwd
+234 1:0:gemm_dx
+235 1:0:gemm_dw 1:0:disp_bwd 1:0:s_dw 1:1:s_dw 2:1:s_bwd
+236 2:1:comb_bwd
+237 2:1:gemm_dx
+238 2:1:gemm_dw 2:1:disp_bwd
+239 2:0:s_bwd 2:0:comb_bwd
+240 2:0:gemm_dx
+241 2:0:gemm_dw 2:0:disp_bwd 2:0:s_dw 2:1:s_dw 3:1:s_bwd
+242 3:1:comb_bwd
+243 3:1:gemm_dx
+244 3:1:gemm_dw 3:1:disp_bwd
+245 3:0:s_bwd 3:0:comb_bwd
+246 3:0:gemm_dx
+247 3:0:gemm_dw 3:0:disp_bwd 3:0:s_dw 3:1:s_dw

@@ -206,11 +206,38 @@ class TightWindowTest(unittest.TestCase):
         for group in solution.groups:
             self.assertLessEqual(group.used, case.M)
 
+    def test_fill_gaps_improves_deferred_branches(self) -> None:
+        """延后权重梯度旁支并回填计算空隙，应缩短同一优先级的调度。"""
+        case = casein.parse_case(self.loose_path)
+        configs, pmaps = solve.enumerate_configs(case)
+        cfg = configs[0]
+        plan = solve._plan(case, pmaps[cfg.P], cfg)
+        priority = [
+            (int(op in (7, 9)), mb + (layer if op < 4 else 2 * case.L - layer), op)
+            for mb in range(case.nmb)
+            for layer in range(case.L)
+            for op in range(10)
+        ]
+        plain = sched.schedule(
+            case, plan, case.nmb, sched.VARIANTS[0], "prio",
+            priority=priority, fill_gaps=False,
+        )
+        filled = sched.schedule(
+            case, plan, case.nmb, sched.VARIANTS[0], "prio",
+            priority=priority, fill_gaps=True,
+        )
+        self.assertIsNotNone(plain)
+        self.assertIsNotNone(filled)
+        self.assertLess(filled.time, plain.time)
+        self.assertEqual(sched.check_schedule(case, plan, filled), [])
+        ok, groups = sched.memory_usage(case, plan, filled.start, filled.end)
+        self.assertTrue(ok)
     def test_solution_is_legal(self) -> None:
         solution = solve.solve_case(self.case, budget=3.0)
         self.assertIsNotNone(solution)
         for group in solution.groups:
             self.assertLessEqual(group.used, self.case.M, "内存必须不超上限")
+
 
 
 if __name__ == "__main__":

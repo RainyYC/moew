@@ -1,30 +1,14 @@
-1 2
+2 1
 PSI
-1
+2 1
 MAP
-0 1
-0 1
+0 0
+0 0
 SCHEDULE
-0 0:0:s 0:0:disp 1:0:s
-9 0:0:gemm 1:0:disp
-29 0:0:comb 1:0:gemm
-38 0:1:s 0:1:disp
-49 0:1:gemm 1:0:comb
-58 1:1:s 1:1:disp
-69 0:1:comb 1:1:gemm
-78 0:1:s_bwd 0:1:comb_bwd
-87 0:1:s_dw
-89 0:1:gemm_dx 1:1:comb
-98 1:1:s_bwd 1:1:comb_bwd
-107 1:1:s_dw
-109 0:1:gemm_dw 0:1:disp_bwd
-118 0:0:s_bwd 0:0:comb_bwd
-127 0:0:s_dw
-129 0:0:gemm_dx
-149 0:0:gemm_dw 0:0:disp_bwd
-169 1:1:gemm_dx
-189 1:1:gemm_dw 1:1:disp_bwd
-198 1:0:s_bwd 1:0:comb_bwd
-207 1:0:s_dw
-209 1:0:gemm_dx
-229 1:0:gemm_dw 1:0:disp_bwd
+0 0:0:s 0:0:disp 0:0:gemm 1:0:s 1:0:disp
+40 0:0:comb 0:1:s 0:1:disp 0:1:gemm 1:0:gemm
+80 0:1:comb 0:1:s_bwd 0:1:comb_bwd 0:1:gemm_dx 0:1:s_dw 1:0:comb 1:1:s 1:1:disp
+120 0:0:s_bwd 0:0:comb_bwd 0:0:gemm_dw 0:0:s_dw 0:1:disp_bwd 1:1:gemm
+160 0:0:gemm_dx 1:1:comb 1:1:s_bwd 1:1:comb_bwd 1:1:gemm_dx 1:1:s_dw
+200 0:0:disp_bwd 1:0:s_bwd 1:0:comb_bwd 1:0:gemm_dx 1:0:s_dw 1:1:gemm_dw 1:1:disp_bwd
+240 0:1:gemm_dw 1:0:gemm_dw 1:0:disp_bwd

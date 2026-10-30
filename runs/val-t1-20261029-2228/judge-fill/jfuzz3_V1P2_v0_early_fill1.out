@@ -1,0 +1,29 @@
+1 2
+PSI
+1
+MAP
+1 0 1 0
+SCHEDULE
+0 0:0:s 0:0:disp
+2 2:0:disp
+4 1:0:disp
+18 0:0:gemm
+46 0:0:comb 2:0:gemm
+48 0:0:comb_bwd
+74 1:0:s
+92 0:0:s_dw
+93 0:0:gemm_dw
+94 0:0:gemm_dx
+95 0:0:s_bwd
+96 0:0:disp_bwd 2:0:s
+114 1:0:gemm 2:0:comb
+116 2:0:comb_bwd
+142 1:0:comb 2:0:s_bwd
+143 2:0:s_dw
+144 1:0:comb_bwd 2:0:gemm_dw
+145 2:0:gemm_dx
+146 1:0:s_dw 2:0:disp_bwd
+147 1:0:s_bwd
+148 1:0:gemm_dw
+149 1:0:gemm_dx
+150 1:0:disp_bwd

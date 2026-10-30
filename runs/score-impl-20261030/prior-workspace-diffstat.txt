@@ -1,0 +1,6 @@
+ README.md                             | 43 +++++++++++++++++------------------
+ solver/sched.py                       | 36 +++++++++++++++++++++++++----
+ solver/selftests/test_tight_window.py | 27 ++++++++++++++++++++++
+ solver/solve.py                       | 21 ++++++++++++++++-
+ tools/independent_check.py            |  4 ++--
+ 5 files changed, 101 insertions(+), 30 deletions(-)

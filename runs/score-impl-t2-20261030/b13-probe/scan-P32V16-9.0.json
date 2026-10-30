@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/home/rainy/hackathon/runs/score-impl-t2-20261030/scripts/scan.py", line 68, in <module>
+    raise SystemExit(main())
+                     ~~~~^^
+  File "/home/rainy/hackathon/runs/score-impl-t2-20261030/scripts/scan.py", line 34, in main
+    cfg = cand[0]
+          ~~~~^^^
+IndexError: list index out of range

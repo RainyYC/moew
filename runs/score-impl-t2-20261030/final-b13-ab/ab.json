@@ -1,0 +1,66 @@
+[
+  {
+    "ok": true,
+    "judge_time": 47572895000000000,
+    "solver_time": 47572895000000000,
+    "lb": 40108032000000000,
+    "grid": {
+      "V": 8,
+      "P": 64
+    },
+    "K": 8,
+    "n_errors": 0,
+    "peak_mem_ratio": 0.0513,
+    "wall_s": 6.247,
+    "variant": "prior",
+    "rep": 0
+  },
+  {
+    "ok": true,
+    "judge_time": 47572895000000000,
+    "solver_time": 47572895000000000,
+    "lb": 40108032000000000,
+    "grid": {
+      "V": 8,
+      "P": 64
+    },
+    "K": 8,
+    "n_errors": 0,
+    "peak_mem_ratio": 0.0513,
+    "wall_s": 6.187,
+    "variant": "current",
+    "rep": 0
+  },
+  {
+    "ok": true,
+    "judge_time": 47572895000000000,
+    "solver_time": 47572895000000000,
+    "lb": 40108032000000000,
+    "grid": {
+      "V": 8,
+      "P": 64
+    },
+    "K": 8,
+    "n_errors": 0,
+    "peak_mem_ratio": 0.0513,
+    "wall_s": 5.982,
+    "variant": "prior",
+    "rep": 1
+  },
+  {
+    "ok": true,
+    "judge_time": 47572895000000000,
+    "solver_time": 47572895000000000,
+    "lb": 40108032000000000,
+    "grid": {
+      "V": 8,
+      "P": 64
+    },
+    "K": 8,
+    "n_errors": 0,
+    "peak_mem_ratio": 0.0513,
+    "wall_s": 6.241,
+    "variant": "current",
+    "rep": 1
+  }
+]

@@ -1,0 +1,28 @@
+[
+  {
+    "label": "official-check",
+    "command": [
+      "/usr/bin/python3",
+      "solver/solve_all.py",
+      "--check",
+      "--skip-selftests",
+      "--out",
+      "runs/readonly-baseline-20261029-2159-a2b043/official"
+    ],
+    "exit": 0,
+    "elapsed": 2.9155273260003014
+  },
+  {
+    "label": "degenerate-selftests",
+    "command": "solver.selftests.run.main(), _HERE redirected to runs copied fixtures",
+    "exit": 0,
+    "elapsed": 2.33447282599991
+  },
+  {
+    "label": "solver-unittest",
+    "command": "unittest loader solver.selftests.test_tight_window; Path(/tmp/...) redirected to runs",
+    "exit": 0,
+    "elapsed": 7.103606136999588,
+    "tests": 8
+  }
+]

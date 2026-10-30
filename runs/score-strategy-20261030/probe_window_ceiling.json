@@ -1,0 +1,748 @@
+[
+ {
+  "case": "b01-loose",
+  "P": 1,
+  "V": 64,
+  "nmb": 102,
+  "cap_conservative (solve._window_cap)": 6141,
+  "cap_loose (spare//Uact)": 6141,
+  "spare_bytes": 1610547200,
+  "Uact": 262144,
+  "U": 262144,
+  "best": {
+   "W": 102,
+   "mode": "prio",
+   "time": 6912000000000,
+   "mem_ok": true,
+   "peak_act": 102,
+   "peak_comm": 102,
+   "mexp": 536936448,
+   "limit": 2147483648,
+   "seconds": 0.123
+  },
+  "rows": [
+   {
+    "W": 102,
+    "mode": "prio",
+    "time": 6912000000000,
+    "mem_ok": true,
+    "peak_act": 102,
+    "peak_comm": 102,
+    "mexp": 536936448,
+    "limit": 2147483648,
+    "seconds": 0.123
+   },
+   {
+    "W": 51,
+    "mode": "prio",
+    "time": 7303000000000,
+    "mem_ok": true,
+    "peak_act": 51,
+    "peak_comm": 51,
+    "mexp": 536936448,
+    "limit": 2147483648,
+    "seconds": 0.13
+   },
+   {
+    "W": 25,
+    "mode": "prio",
+    "time": 11804000000000,
+    "mem_ok": true,
+    "peak_act": 25,
+    "peak_comm": 25,
+    "mexp": 536936448,
+    "limit": 2147483648,
+    "seconds": 0.131
+   },
+   {
+    "W": 12,
+    "mode": "early",
+    "time": 19978000000000,
+    "mem_ok": true,
+    "peak_act": 12,
+    "peak_comm": 12,
+    "mexp": 536936448,
+    "limit": 2147483648,
+    "seconds": 0.173
+   },
+   {
+    "W": 1,
+    "mode": "prio",
+    "time": 208003000000000,
+    "mem_ok": true,
+    "peak_act": 1,
+    "peak_comm": 2,
+    "mexp": 536936448,
+    "limit": 2147483648,
+    "seconds": 0.133
+   }
+  ]
+ },
+ {
+  "case": "b02-m512",
+  "P": 2,
+  "V": 64,
+  "nmb": 102,
+  "cap_conservative (solve._window_cap)": 1021,
+  "cap_loose (spare//Uact)": 1021,
+  "spare_bytes": 268369920,
+  "Uact": 262144,
+  "U": 262144,
+  "best": {
+   "W": 102,
+   "mode": "prio",
+   "time": 542157603132750,
+   "mem_ok": true,
+   "peak_act": 102,
+   "peak_comm": 2,
+   "mexp": 268500992,
+   "limit": 536870912,
+   "seconds": 0.158
+  },
+  "rows": [
+   {
+    "W": 102,
+    "mode": "prio",
+    "time": 542157603132750,
+    "mem_ok": true,
+    "peak_act": 102,
+    "peak_comm": 2,
+    "mexp": 268500992,
+    "limit": 536870912,
+    "seconds": 0.158
+   },
+   {
+    "W": 51,
+    "mode": "prio",
+    "time": 665382240208375,
+    "mem_ok": true,
+    "peak_act": 51,
+    "peak_comm": 2,
+    "mexp": 268500992,
+    "limit": 536870912,
+    "seconds": 0.17
+   },
+   {
+    "W": 25,
+    "mode": "prio",
+    "time": 1168474199476925,
+    "mem_ok": true,
+    "peak_act": 25,
+    "peak_comm": 2,
+    "mexp": 268500992,
+    "limit": 536870912,
+    "seconds": 0.172
+   },
+   {
+    "W": 12,
+    "mode": "prio",
+    "time": 2031179659006300,
+    "mem_ok": true,
+    "peak_act": 12,
+    "peak_comm": 2,
+    "mexp": 268500992,
+    "limit": 536870912,
+    "seconds": 0.165
+   },
+   {
+    "W": 1,
+    "mode": "prio",
+    "time": 21284500177529625,
+    "mem_ok": true,
+    "peak_act": 1,
+    "peak_comm": 2,
+    "mexp": 268500992,
+    "limit": 536870912,
+    "seconds": 0.151
+   }
+  ]
+ },
+ {
+  "case": "b03-m256",
+  "P": 4,
+  "V": 64,
+  "nmb": 102,
+  "cap_conservative (solve._window_cap)": 509,
+  "cap_loose (spare//Uact)": 509,
+  "spare_bytes": 134152192,
+  "Uact": 262144,
+  "U": 262144,
+  "best": {
+   "W": 102,
+   "mode": "prio",
+   "time": 811784777827320,
+   "mem_ok": true,
+   "peak_act": 102,
+   "peak_comm": 2,
+   "mexp": 134283264,
+   "limit": 268435456,
+   "seconds": 0.159
+  },
+  "rows": [
+   {
+    "W": 102,
+    "mode": "prio",
+    "time": 811784777827320,
+    "mem_ok": true,
+    "peak_act": 102,
+    "peak_comm": 2,
+    "mexp": 134283264,
+    "limit": 268435456,
+    "seconds": 0.159
+   },
+   {
+    "W": 51,
+    "mode": "prio",
+    "time": 996288318242620,
+    "mem_ok": true,
+    "peak_act": 51,
+    "peak_comm": 2,
+    "mexp": 134283264,
+    "limit": 268435456,
+    "seconds": 0.166
+   },
+   {
+    "W": 25,
+    "mode": "prio",
+    "time": 1749398203137044,
+    "mem_ok": true,
+    "peak_act": 25,
+    "peak_comm": 2,
+    "mexp": 134283264,
+    "limit": 268435456,
+    "seconds": 0.166
+   },
+   {
+    "W": 12,
+    "mode": "prio",
+    "time": 3041055986044144,
+    "mem_ok": true,
+    "peak_act": 12,
+    "peak_comm": 2,
+    "mexp": 134283264,
+    "limit": 268435456,
+    "seconds": 0.169
+   },
+   {
+    "W": 1,
+    "mode": "prio",
+    "time": 31869409414402820,
+    "mem_ok": true,
+    "peak_act": 1,
+    "peak_comm": 2,
+    "mexp": 134283264,
+    "limit": 268435456,
+    "seconds": 0.153
+   }
+  ]
+ },
+ {
+  "case": "b07-mixed",
+  "P": 2,
+  "V": 64,
+  "nmb": 1000,
+  "cap_conservative (solve._window_cap)": 1021,
+  "cap_loose (spare//Uact)": 1021,
+  "spare_bytes": 268369920,
+  "Uact": 262144,
+  "U": 262144,
+  "best": {
+   "W": 1000,
+   "mode": "prio",
+   "time": 3492807937646768,
+   "mem_ok": true,
+   "peak_act": 1000,
+   "peak_comm": 2,
+   "mexp": 268500992,
+   "limit": 536870912,
+   "seconds": 2.395
+  },
+  "rows": [
+   {
+    "W": 1000,
+    "mode": "prio",
+    "time": 3492807937646768,
+    "mem_ok": true,
+    "peak_act": 1000,
+    "peak_comm": 2,
+    "mexp": 268500992,
+    "limit": 536870912,
+    "seconds": 2.395
+   },
+   {
+    "W": 250,
+    "mode": "prio",
+    "time": 3493632223272356,
+    "mem_ok": true,
+    "peak_act": 250,
+    "peak_comm": 2,
+    "mexp": 268500992,
+    "limit": 536870912,
+    "seconds": 2.259
+   },
+   {
+    "W": 500,
+    "mode": "prio",
+    "time": 3493632845226356,
+    "mem_ok": true,
+    "peak_act": 500,
+    "peak_comm": 2,
+    "mexp": 268500992,
+    "limit": 536870912,
+    "seconds": 2.324
+   },
+   {
+    "W": 125,
+    "mode": "prio",
+    "time": 3495274813539264,
+    "mem_ok": true,
+    "peak_act": 125,
+    "peak_comm": 2,
+    "mexp": 268500992,
+    "limit": 536870912,
+    "seconds": 2.057
+   },
+   {
+    "W": 1,
+    "mode": "prio",
+    "time": 208656988218584000,
+    "mem_ok": true,
+    "peak_act": 1,
+    "peak_comm": 2,
+    "mexp": 268500992,
+    "limit": 536870912,
+    "seconds": 1.806
+   }
+  ]
+ },
+ {
+  "case": "b08-narrow",
+  "P": 4,
+  "V": 64,
+  "nmb": 256,
+  "cap_conservative (solve._window_cap)": 509,
+  "cap_loose (spare//Uact)": 509,
+  "spare_bytes": 134152192,
+  "Uact": 262144,
+  "U": 262144,
+  "best": {
+   "W": 256,
+   "mode": "prio",
+   "time": 1569450570466152,
+   "mem_ok": true,
+   "peak_act": 256,
+   "peak_comm": 2,
+   "mexp": 134283264,
+   "limit": 268435456,
+   "seconds": 0.465
+  },
+  "rows": [
+   {
+    "W": 256,
+    "mode": "prio",
+    "time": 1569450570466152,
+    "mem_ok": true,
+    "peak_act": 256,
+    "peak_comm": 2,
+    "mexp": 134283264,
+    "limit": 268435456,
+    "seconds": 0.465
+   },
+   {
+    "W": 128,
+    "mode": "prio",
+    "time": 1569457570466152,
+    "mem_ok": true,
+    "peak_act": 128,
+    "peak_comm": 2,
+    "mexp": 134283264,
+    "limit": 268435456,
+    "seconds": 0.502
+   },
+   {
+    "W": 64,
+    "mode": "prio",
+    "time": 1721974710542800,
+    "mem_ok": true,
+    "peak_act": 64,
+    "peak_comm": 2,
+    "mexp": 134283264,
+    "limit": 268435456,
+    "seconds": 0.473
+   },
+   {
+    "W": 32,
+    "mode": "early",
+    "time": 3179771746261560,
+    "mem_ok": true,
+    "peak_act": 32,
+    "peak_comm": 2,
+    "mexp": 134283264,
+    "limit": 268435456,
+    "seconds": 0.533
+   },
+   {
+    "W": 1,
+    "mode": "prio",
+    "time": 79982265246968652,
+    "mem_ok": true,
+    "peak_act": 1,
+    "peak_comm": 2,
+    "mexp": 134283264,
+    "limit": 268435456,
+    "seconds": 0.402
+   }
+  ]
+ },
+ {
+  "case": "b10-high-k",
+  "P": 4,
+  "V": 64,
+  "nmb": 512,
+  "cap_conservative (solve._window_cap)": 509,
+  "cap_loose (spare//Uact)": 509,
+  "spare_bytes": 134152192,
+  "Uact": 262144,
+  "U": 262144,
+  "best": {
+   "W": 128,
+   "mode": "prio",
+   "time": 179353953034600,
+   "mem_ok": true,
+   "peak_act": 128,
+   "peak_comm": 2,
+   "mexp": 134283264,
+   "limit": 268435456,
+   "seconds": 1.077
+  },
+  "rows": [
+   {
+    "W": 128,
+    "mode": "prio",
+    "time": 179353953034600,
+    "mem_ok": true,
+    "peak_act": 128,
+    "peak_comm": 2,
+    "mexp": 134283264,
+    "limit": 268435456,
+    "seconds": 1.077
+   },
+   {
+    "W": 256,
+    "mode": "prio",
+    "time": 179353953034600,
+    "mem_ok": true,
+    "peak_act": 256,
+    "peak_comm": 2,
+    "mexp": 134283264,
+    "limit": 268435456,
+    "seconds": 1.079
+   },
+   {
+    "W": 509,
+    "mode": "prio",
+    "time": 179353953034600,
+    "mem_ok": true,
+    "peak_act": 509,
+    "peak_comm": 2,
+    "mexp": 134283264,
+    "limit": 268435456,
+    "seconds": 1.045
+   },
+   {
+    "W": 64,
+    "mode": "prio",
+    "time": 189023093111248,
+    "mem_ok": true,
+    "peak_act": 64,
+    "peak_comm": 2,
+    "mexp": 134283264,
+    "limit": 268435456,
+    "seconds": 1.006
+   },
+   {
+    "W": 1,
+    "mode": "prio",
+    "time": 10144477540065100,
+    "mem_ok": true,
+    "peak_act": 1,
+    "peak_comm": 2,
+    "mexp": 134283264,
+    "limit": 268435456,
+    "seconds": 0.875
+   },
+   {
+    "W": 512,
+    "mode": "prio",
+    "time": 179346953034600,
+    "mem_ok": false,
+    "peak_act": 512,
+    "peak_comm": 2,
+    "mexp": 134283264,
+    "limit": 268435456,
+    "seconds": 1.041
+   }
+  ]
+ },
+ {
+  "case": "b12-compute-bound",
+  "P": 8,
+  "V": 64,
+  "nmb": 102,
+  "cap_conservative (solve._window_cap)": 7933,
+  "cap_loose (spare//Uact)": 7933,
+  "spare_bytes": 2080309248,
+  "Uact": 262144,
+  "U": 262144,
+  "best": {
+   "W": 102,
+   "mode": "prio",
+   "time": 98307789776000000,
+   "mem_ok": true,
+   "peak_act": 102,
+   "peak_comm": 2,
+   "mexp": 67174400,
+   "limit": 2147483648,
+   "seconds": 0.139
+  },
+  "rows": [
+   {
+    "W": 102,
+    "mode": "prio",
+    "time": 98307789776000000,
+    "mem_ok": true,
+    "peak_act": 102,
+    "peak_comm": 2,
+    "mexp": 67174400,
+    "limit": 2147483648,
+    "seconds": 0.139
+   },
+   {
+    "W": 51,
+    "mode": "early",
+    "time": 111773216870000000,
+    "mem_ok": true,
+    "peak_act": 51,
+    "peak_comm": 2,
+    "mexp": 67174400,
+    "limit": 2147483648,
+    "seconds": 0.191
+   },
+   {
+    "W": 25,
+    "mode": "early",
+    "time": 172006587536000000,
+    "mem_ok": true,
+    "peak_act": 25,
+    "peak_comm": 2,
+    "mexp": 67174400,
+    "limit": 2147483648,
+    "seconds": 0.174
+   },
+   {
+    "W": 12,
+    "mode": "early",
+    "time": 287752466008000000,
+    "mem_ok": true,
+    "peak_act": 12,
+    "peak_comm": 2,
+    "mexp": 67174400,
+    "limit": 2147483648,
+    "seconds": 0.164
+   },
+   {
+    "W": 1,
+    "mode": "prio",
+    "time": 2974588912708000000,
+    "mem_ok": true,
+    "peak_act": 1,
+    "peak_comm": 2,
+    "mexp": 67174400,
+    "limit": 2147483648,
+    "seconds": 0.139
+   }
+  ]
+ },
+ {
+  "case": "b13-balanced-compute",
+  "P": 64,
+  "V": 8,
+  "nmb": 102,
+  "cap_conservative (solve._window_cap)": 991,
+  "cap_loose (spare//Uact)": 7932,
+  "spare_bytes": 2079850496,
+  "Uact": 262144,
+  "U": 262144,
+  "best": {
+   "W": 25,
+   "mode": "early",
+   "time": 47817517000000000,
+   "mem_ok": true,
+   "peak_act": 200,
+   "peak_comm": 2,
+   "mexp": 67633152,
+   "limit": 2147483648,
+   "seconds": 0.264
+  },
+  "rows": [
+   {
+    "W": 25,
+    "mode": "early",
+    "time": 47817517000000000,
+    "mem_ok": true,
+    "peak_act": 200,
+    "peak_comm": 2,
+    "mexp": 67633152,
+    "limit": 2147483648,
+    "seconds": 0.264
+   },
+   {
+    "W": 51,
+    "mode": "early",
+    "time": 49316183000000000,
+    "mem_ok": true,
+    "peak_act": 408,
+    "peak_comm": 2,
+    "mexp": 67633152,
+    "limit": 2147483648,
+    "seconds": 0.436
+   },
+   {
+    "W": 102,
+    "mode": "early",
+    "time": 51910524000000000,
+    "mem_ok": true,
+    "peak_act": 816,
+    "peak_comm": 2,
+    "mexp": 67633152,
+    "limit": 2147483648,
+    "seconds": 0.724
+   },
+   {
+    "W": 12,
+    "mode": "early",
+    "time": 57892069000000000,
+    "mem_ok": true,
+    "peak_act": 96,
+    "peak_comm": 2,
+    "mexp": 67633152,
+    "limit": 2147483648,
+    "seconds": 0.197
+   },
+   {
+    "W": 8,
+    "mode": "early",
+    "time": 76542389000000000,
+    "mem_ok": true,
+    "peak_act": 64,
+    "peak_comm": 2,
+    "mexp": 67633152,
+    "limit": 2147483648,
+    "seconds": 0.18
+   },
+   {
+    "W": 1,
+    "mode": "prio",
+    "time": 521144329000000000,
+    "mem_ok": true,
+    "peak_act": 8,
+    "peak_comm": 2,
+    "mexp": 67633152,
+    "limit": 2147483648,
+    "seconds": 0.136
+   }
+  ]
+ },
+ {
+  "case": "ex3",
+  "P": 2,
+  "V": 2,
+  "nmb": 2,
+  "cap_conservative (solve._window_cap)": 37,
+  "cap_loose (spare//Uact)": 37,
+  "spare_bytes": 39,
+  "Uact": 1,
+  "U": 1,
+  "best": {
+   "W": 2,
+   "mode": "prio",
+   "time": 6108,
+   "mem_ok": true,
+   "peak_act": 2,
+   "peak_comm": 2,
+   "mexp": 40,
+   "limit": 79,
+   "seconds": 0.0
+  },
+  "rows": [
+   {
+    "W": 2,
+    "mode": "prio",
+    "time": 6108,
+    "mem_ok": true,
+    "peak_act": 2,
+    "peak_comm": 2,
+    "mexp": 40,
+    "limit": 79,
+    "seconds": 0.0
+   },
+   {
+    "W": 1,
+    "mode": "prio",
+    "time": 7126,
+    "mem_ok": true,
+    "peak_act": 1,
+    "peak_comm": 2,
+    "mexp": 40,
+    "limit": 79,
+    "seconds": 0.0
+   }
+  ]
+ },
+ {
+  "case": "ex6",
+  "P": 2,
+  "V": 2,
+  "nmb": 2,
+  "cap_conservative (solve._window_cap)": 17,
+  "cap_loose (spare//Uact)": 17,
+  "spare_bytes": 19,
+  "Uact": 1,
+  "U": 1,
+  "best": {
+   "W": 2,
+   "mode": "prio",
+   "time": 1704,
+   "mem_ok": true,
+   "peak_act": 2,
+   "peak_comm": 2,
+   "mexp": 20,
+   "limit": 39,
+   "seconds": 0.0
+  },
+  "rows": [
+   {
+    "W": 2,
+    "mode": "prio",
+    "time": 1704,
+    "mem_ok": true,
+    "peak_act": 2,
+    "peak_comm": 2,
+    "mexp": 20,
+    "limit": 39,
+    "seconds": 0.0
+   },
+   {
+    "W": 1,
+    "mode": "prio",
+    "time": 2004,
+    "mem_ok": true,
+    "peak_act": 1,
+    "peak_comm": 2,
+    "mexp": 20,
+    "limit": 39,
+    "seconds": 0.0
+   }
+  ]
+ }
+]

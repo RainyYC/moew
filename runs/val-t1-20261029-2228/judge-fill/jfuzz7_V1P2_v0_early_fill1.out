@@ -1,0 +1,130 @@
+1 2
+PSI
+1
+MAP
+0 1 0 1
+1 0 1 0
+0 1 0 1
+1 1 0 0
+SCHEDULE
+0 0:0:s 0:0:disp
+6 3:0:disp
+7 0:0:gemm
+12 1:0:disp
+18 2:0:disp
+35 0:0:comb 1:0:s
+41 0:1:disp
+42 0:1:s
+49 0:1:gemm
+77 0:1:comb 3:0:gemm
+83 0:2:disp
+105 0:2:s
+111 3:0:s
+118 2:0:gemm 3:0:comb
+124 3:1:disp
+146 0:2:gemm
+167 0:2:comb 3:1:gemm
+173 0:3:disp
+195 0:3:s
+207 3:1:s
+214 2:0:s 3:1:comb
+220 3:2:disp
+221 0:3:gemm
+226 2:0:comb
+232 2:1:disp
+263 0:3:comb 1:0:gemm
+269 0:3:comb_bwd
+291 1:0:comb 2:1:s
+297 1:1:disp
+298 1:1:s
+305 1:1:gemm
+333 0:3:s_dw 1:1:comb
+334 0:3:gemm_dw
+335 0:3:gemm_dx
+336 0:3:s_bwd
+337 3:2:gemm
+339 1:2:disp
+345 0:3:disp_bwd
+346 0:2:comb_bwd
+358 1:2:s
+364 0:2:s_dw
+365 0:2:gemm_dw
+366 0:2:gemm_dx
+367 0:2:s_bwd
+368 0:2:disp_bwd 3:2:s
+369 0:1:comb_bwd
+374 1:2:gemm 3:2:comb
+380 3:3:disp
+395 1:2:comb 2:1:gemm
+401 1:3:disp
+423 1:3:s 2:1:comb
+429 2:2:disp
+435 1:3:gemm
+477 0:1:s_dw 1:3:comb
+478 0:1:gemm_dw
+479 0:1:gemm_dx
+480 0:1:s_bwd
+481 3:3:gemm
+483 0:1:disp_bwd
+484 1:3:comb_bwd
+485 0:0:comb_bwd
+523 2:2:s
+529 1:3:s_dw
+530 1:3:gemm_dw
+531 1:3:gemm_dx
+532 1:3:s_bwd
+533 0:0:s_dw 1:3:disp_bwd
+534 1:2:comb_bwd 2:2:gemm
+555 2:2:comb 3:3:s
+561 2:3:disp
+567 2:3:s 3:3:comb
+573 3:3:comb_bwd
+579 2:3:gemm
+621 2:3:comb 3:3:s_dw
+622 3:3:gemm_dw
+623 3:3:gemm_dx
+624 3:3:s_bwd
+625 1:2:s_dw
+626 1:2:gemm_dw
+627 1:2:gemm_dx 2:3:comb_bwd
+628 0:0:s_bwd 3:3:disp_bwd
+629 2:3:s_dw 3:2:comb_bwd
+630 0:0:gemm_dx
+631 0:0:disp_bwd 3:2:s_dw
+632 3:2:gemm_dw
+633 3:2:gemm_dx
+634 3:2:s_bwd
+635 2:3:gemm_dw 3:2:disp_bwd
+636 0:0:gemm_dw 3:1:comb_bwd
+637 1:2:s_bwd
+638 1:2:disp_bwd 3:1:s_dw
+639 1:1:comb_bwd 3:1:gemm_dw
+640 3:1:gemm_dx
+641 3:1:s_bwd
+642 2:3:gemm_dx 3:1:disp_bwd
+643 1:1:s_bwd 3:0:comb_bwd
+644 1:1:gemm_dx
+645 1:1:disp_bwd 3:0:s_dw
+646 1:0:comb_bwd 3:0:gemm_dw
+647 3:0:gemm_dx
+648 3:0:s_bwd
+649 2:3:s_bwd 3:0:disp_bwd
+650 1:0:s_bwd 2:3:disp_bwd
+651 1:0:gemm_dx 2:2:comb_bwd
+652 1:0:gemm_dw 1:0:disp_bwd
+653 2:2:s_dw
+654 2:2:gemm_dw
+655 2:2:gemm_dx
+656 2:2:s_bwd
+657 1:1:s_dw 2:2:disp_bwd
+658 1:0:s_dw 2:1:comb_bwd
+659 1:1:gemm_dw
+660 2:1:s_dw
+661 2:1:gemm_dw
+662 2:1:gemm_dx
+663 2:1:s_bwd
+664 2:1:disp_bwd
+665 2:0:s_bwd 2:0:comb_bwd
+666 2:0:gemm_dx
+667 2:0:disp_bwd 2:0:s_dw
+668 2:0:gemm_dw

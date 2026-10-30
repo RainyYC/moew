@@ -1,0 +1,27 @@
+diff --git a/solver/solve_all.py b/solver/solve_all.py
+index 030d9bd..b43b6e9 100644
+--- a/solver/solve_all.py
++++ b/solver/solve_all.py
+@@ -33,6 +33,7 @@ from __future__ import annotations
+ 
+ import argparse
+ import json
++import os
+ import sys
+ import time
+ from pathlib import Path
+@@ -189,7 +190,13 @@ def run_single(
+         print(f"[solve] 输入解析失败：{exc}", file=sys.stderr)
+         return 2
+     started = time.monotonic()
+-    solution = solve.solve_case(case, budget=budget, exact=exact)
++    # `SOLVER_DEBUG_LOG=1` 打开搜索轨迹（写 stderr；stdout 仍只有映射本身）。
++    # 服务端正常调用不设这个变量，行为与以前完全一致。
++    debug = None
++    if os.environ.get("SOLVER_DEBUG_LOG"):
++        def debug(line: str) -> None:  # noqa: E306 - 内联小函数
++            print(line, file=sys.stderr)
++    solution = solve.solve_case(case, budget=budget, exact=exact, log=debug)
+     elapsed = time.monotonic() - started
+     if solution is None:
+         print(f"[solve] {case.name}: 没有找到合法映射", file=sys.stderr)

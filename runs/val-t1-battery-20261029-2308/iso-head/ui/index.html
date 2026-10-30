@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>MoE Judge · 只读视图</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="mark">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#2f79b8" stroke-width="2.4" aria-hidden="true"><path d="M4 19V6l7 5 7-5v13"/></svg>
+    </span>
+    MoE Judge <span class="ver">viewer</span>
+    <span class="modechip" id="st-mode" data-state="live">实时 API</span>
+  </div>
+  <div class="casebar" id="casebar"></div>
+  <div class="actions">
+    <span class="draftchip" id="draftchip"></span>
+    <button class="btn verbtn" id="btn-versions"><span class="dot"></span>
+      <span id="verlabel">版本</span> ▾</button>
+    <button class="btn" id="btn-edit">编辑映射</button>
+    <button class="btn" id="btn-refresh">刷新</button>
+    <button class="btn" id="btn-base">服务设置</button>
+  </div>
+</header>
+
+<section class="statusbar">
+  <span class="st"><b>服务</b><code id="st-base">—</code></span>
+  <span class="st"><b>账本</b><code id="st-ledger">—</code><span class="u">条</span></span>
+  <span class="st"><b>SSE</b><span class="ssedot" id="st-sse" data-state="off">未连接</span></span>
+  <span class="st"><b>最后 run</b><code id="st-run">—</code><span class="pill" id="st-runstate" data-state="">—</span></span>
+  <span class="st"><b>活动</b><span class="pill" id="st-active" data-state="">—</span></span>
+  <span class="st"><b>刷新</b><code id="st-updated">—</code></span>
+  <span class="st right"><b>数据源</b><span class="src" id="st-source">CONTRACT §2</span></span>
+</section>
+
+<section class="iobar">
+  <div class="file"><span class="dot"></span><span id="file-run">—</span>
+    <small id="file-run-meta"></small></div>
+  <div class="file"><span class="dot"></span><span id="file-case">—</span>
+    <small id="file-case-meta"></small></div>
+  <div class="spacer"></div>
+  <span class="hint" id="iobar-hint">所有数值来自 judge 服务；本页不做任何题面计算</span>
+</section>
+
+<section class="verdict" id="verdict" data-state="empty">
+  <div class="vbadge" id="vbadge">无数据</div>
+  <div class="vcol">
+    <div class="vhead">Time · 服务端判定</div>
+    <div class="vrow"><span class="vtime" id="vtime">—</span>
+      <span class="vunit">单位时间</span></div>
+    <span class="vdiff flat" id="vdiff">—</span>
+  </div>
+  <div class="vstats" id="vstats"></div>
+  <div class="vbars" id="vbars"></div>
+</section>
+
+<main class="grid">
+  <aside class="col" id="col-left">
+    <div class="sect">
+      <h2>校验清单 <span class="tag" id="checks-tag">—</span></h2>
+      <div id="checks"></div>
+    </div>
+    <div class="sect">
+      <h2>内存三块 <span class="tag" id="memory-tag">—</span></h2>
+      <div id="memory"></div>
+    </div>
+    <div class="sect">
+      <h2>卡组 · 引擎 <span class="tag" id="engines-tag">—</span></h2>
+      <div id="engines"></div>
+    </div>
+    <div class="sect">
+      <h2>用例与来源 <span class="tag" id="gridinfo-tag">—</span></h2>
+      <div id="gridinfo"></div>
+    </div>
+    <div class="sect">
+      <h2>错误定位 <span class="tag" id="errors-tag">—</span></h2>
+      <div id="errors"></div>
+    </div>
+  </aside>
+
+  <section class="center">
+    <div class="ctools">
+      <div class="legend">
+        <span><b style="background:var(--comp)"></b>计算·前向</span>
+        <span><b style="background:var(--compb)"></b>计算·反向</span>
+        <span><b style="background:var(--comm)"></b>通信·前向</span>
+        <span><b style="background:var(--commb)"></b>通信·反向</span>
+        <span><b class="z"></b>零时长</span>
+        <span title="区间由 ops 的 comb 结束与 s_bwd 开始画出；内存峰值来自服务端 mact，本页不算"><b class="a"></b>激活存活</span>
+      </div>
+      <span class="abtag" id="abtag"></span>
+      <label class="cmpsel">对比 B
+        <select id="cmpsel"></select></label>
+      <label class="cmpsel" id="cmpscale-wrap">刻度
+        <select id="cmpscale">
+          <option value="abs">同一时间轴</option>
+          <option value="norm">各自归一</option>
+        </select></label>
+      <div class="zoom">缩放 <input type="range" id="zoom" min="100" max="800" value="100" step="20">
+        <span id="zoomv">1.0×</span></div>
+    </div>
+    <div class="gtrunc" id="gtrunc" hidden></div>
+    <div class="ganttwrap" id="ganttwrap"><div class="gantt" id="gantt"></div></div>
+    <div class="oplist">
+      <div class="opl-hd">
+        <h3>操作清单</h3>
+        <div class="ftabs" id="ftabs"></div>
+        <span class="cnt" id="oplcnt"></span>
+      </div>
+      <div class="opl-body" id="oplbody"></div>
+    </div>
+    <div class="bottompane">
+      <div class="bp">
+        <h3>引擎占用</h3>
+        <div id="usepane"></div>
+      </div>
+      <div class="bp">
+        <h3>Time 与下界</h3>
+        <div id="timepane"></div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="col" id="col-right">
+    <div class="head" id="runhead"></div>
+    <div class="sect">
+      <h2>版本账本 · 排名 <span class="tag" id="versions-tag">—</span></h2>
+      <div id="versions"></div>
+    </div>
+    <div class="sect">
+      <h2>A/B 差异 <span class="tag" id="diff-tag">—</span></h2>
+      <div id="diffpane"></div>
+    </div>
+    <div class="sect">
+      <h2>运行记录 <span class="tag" id="runs-tag">—</span></h2>
+      <div id="runs"></div>
+    </div>
+    <div class="sect">
+      <h2>回归趋势 <span class="tag">相对分</span></h2>
+      <div id="trend"></div>
+    </div>
+  </aside>
+</main>
+
+<footer class="footer">
+  <span>只读视图 · 判题权威在 <code>judge/core</code> · 本页不做时长 / 内存 / 调度计算</span>
+  <span class="r" id="footer-state">初始化…</span>
+</footer>
+
+<div class="vpop" id="vpop"></div>
+<div id="tip"></div>
+<div class="mask" id="mask"></div>
+
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+  <div class="sheet-hd">
+    <h2 id="sheet-title">编辑映射</h2>
+    <span class="sub" id="sheet-sub">预览由后端判题 · 本地不计算</span>
+    <button class="cls" id="sheet-close" title="关闭">×</button>
+  </div>
+  <div class="tabs2" id="sheet-tabs">
+    <button data-tab="grid" aria-selected="true">网格与切点</button>
+    <button data-tab="text" aria-selected="false">输出原文</button>
+  </div>
+  <div class="sheet-body">
+    <div id="ws-grid">
+      <div class="frow"><span class="flabel">网格 V P</span>
+        <div class="stepper">
+          <label>V <input id="f-V" inputmode="numeric" value="1"></label>
+          <label>P <input id="f-P" inputmode="numeric" value="1"></label>
+        </div>
+      </div>
+      <div class="frow"><span class="flabel">K / PSI</span>
+        <div class="stepper">
+          <label>K <input id="f-K" inputmode="numeric" value="1"></label>
+          <label>PSI <input id="f-psi" value=""></label>
+        </div>
+      </div>
+      <div class="frow"><span class="flabel">应用到原文</span>
+        <div class="stepper">
+          <button class="btn" id="ed-applygrid">把网格写回原文</button>
+          <button class="btn" id="ed-fromdetail">取当前用例网格</button>
+        </div>
+      </div>
+      <p class="note" id="ed-note">这里只改<strong>文本</strong>；任何时长、内存、调度合法性都由
+        <code>POST /api/evaluate</code> 在服务端判定。视图不实现题面公式。</p>
+    </div>
+    <div id="ws-text" hidden>
+      <textarea id="ed-text" spellcheck="false" placeholder="粘贴 cases/ex1.out 的全文：V P / PSI / MAP / SCHEDULE ……"></textarea>
+      <div class="ed-hint" id="ed-hint">可点「载入已提交输出」从服务端取原文（若服务保留）。</div>
+    </div>
+  </div>
+  <div class="sheet-ft">
+    <div class="pv">
+      <span class="pvtag">预览 · 本地试算 · 未提交</span>
+      <span>Time <b id="pv-time">—</b></span>
+      <span class="sep">|</span>
+      <span>已提交 <b id="pv-committed">—</b></span>
+      <span class="pvstatus" id="pv-status"></span>
+    </div>
+    <div class="pv-hint" id="pv-hint">预览值来自 <code>POST /api/evaluate</code>；正式值来自账本，永不覆盖。</div>
+    <span class="sp"></span>
+    <button class="btn" id="ed-load">载入已提交输出</button>
+    <button class="btn" id="ed-reset">重置</button>
+    <button class="btn primary" id="ed-preview">预览判题</button>
+  </div>
+</section>
+
+<div class="emptystate" id="emptystate" hidden>
+  <div class="es-card">
+    <h1 id="es-title">后端未连接</h1>
+    <p class="es-detail" id="es-detail">—</p>
+    <p class="es-hint">启动服务：<code>python3 -m judge serve --port 3081</code>。
+      连不上时本页只显示空态，<strong>不会回退到本地计算</strong>。</p>
+    <div class="es-row">
+      <label>服务地址 <input id="es-base" spellcheck="false" placeholder="http://127.0.0.1:3081"></label>
+      <button class="btn primary" id="es-retry">重试</button>
+    </div>
+    <button class="linkbtn" id="es-demo">用静态夹具预览界面（演示数据，非实时，不会当正式值）</button>
+    <p class="es-note">只读视图：不提交 run、不写账本；数值一律由 API 提供。</p>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

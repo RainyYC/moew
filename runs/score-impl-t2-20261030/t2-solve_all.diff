@@ -1,0 +1,50 @@
+diff --git a/solver/solve_all.py b/solver/solve_all.py
+index 030d9bd..1e1c2a3 100644
+--- a/solver/solve_all.py
++++ b/solver/solve_all.py
+@@ -33,6 +33,7 @@ from __future__ import annotations
+ 
+ import argparse
+ import json
++import os
+ import sys
+ import time
+ from pathlib import Path
+@@ -189,7 +190,13 @@ def run_single(
+         print(f"[solve] 输入解析失败：{exc}", file=sys.stderr)
+         return 2
+     started = time.monotonic()
+-    solution = solve.solve_case(case, budget=budget, exact=exact)
++    # `SOLVER_DEBUG_LOG=1` 打开搜索轨迹（写 stderr；stdout 仍只有映射本身）。
++    # 服务端正常调用不设这个变量，行为与以前完全一致。
++    debug = None
++    if os.environ.get("SOLVER_DEBUG_LOG"):
++        def debug(line: str) -> None:  # noqa: E306 - 内联小函数
++            print(line, file=sys.stderr)
++    solution = solve.solve_case(case, budget=budget, exact=exact, log=debug)
+     elapsed = time.monotonic() - started
+     if solution is None:
+         print(f"[solve] {case.name}: 没有找到合法映射", file=sys.stderr)
+@@ -240,12 +247,19 @@ _SINGLE_USAGE = (
+ )
+ 
+ 
+-#: 求解墙钟预算：题面硬上限 10 s，按 op 规模递减以留出渲染/落盘/进程启动的余量。
+-BUDGET_BY_OPS: tuple[tuple[int, float], ...] = ((200_000, 4.5), (20_000, 6.5), (0, 8.5))
++#: 求解器内部时钟的预算（秒）。题面硬上限 10 s 是**墙钟**（含进程启动、渲染落盘、
++#: 判题器自身模拟）。实测：`solve_all` 单例进程启动 ≈ 0.1 s、渲染+写文件
++#: ≈ 0.1 s + 0.5 µs/op（640k 条约 0.4 s）；`solve_case` 内部再留 0.6 s 给搜索之后的
++#: 核算/渲染。于是「求解器时钟」上界 ≈ 10 − 0.2 − 0.5 µs/op；再给机器抖动留 0.5 s。
++#: 旧值 (4.5, 6.5, 8.5) 在 640k op 上只用到 10 s 里的 ~52%，白扔了一半搜索时间，而且
++#: 大用例被迫砍掉 `early`（它单次就 2–21 s）；新值按 op 数线性折算。
++# 官方时限 10 s（墙钟，含进程启动与输出）。宁可少搜 15%，也不要任何一例 TO：
++# 本地实测 CPU 会略微超过预算（最后一次调度不可中断 + 渲染），故留 ~2 s 余量。
++BUDGET_BY_OPS: tuple[tuple[int, float], ...] = ((200_000, 6.2), (20_000, 7.2), (0, 7.6))
+ 
+ 
+ def auto_budget(n_ops: int) -> float:
+-    """按 op 数给默认预算：大用例缩短，避免撞 10 s 硬上限。"""
++    """按 op 数给默认预算（求解器内部时钟）：保证「进程墙钟 ≤ 10 s」。"""
+     for threshold, budget in BUDGET_BY_OPS:
+         if n_ops > threshold:
+             return budget

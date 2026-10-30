@@ -1,0 +1,344 @@
+{
+ "case": "b13-balanced-compute",
+ "P": 64,
+ "V": 8,
+ "nmb": 102,
+ "layers_per_group": 8,
+ "comp_per_group": 375000000000000,
+ "comm_per_group": 393216000000000,
+ "seg": 393216000000000,
+ "lb": 40108032000000000,
+ "nmb_x_seg": 40108032000000000,
+ "production_time": 51910524000000000,
+ "best": {
+  "W": 20,
+  "mode": "early",
+  "time": 47572895000000000,
+  "mem_ok": true,
+  "ratio_to_lb": 1.1861189050612106,
+  "peak_act": 160
+ },
+ "best_W_over_nmb": 0.19607843137254902,
+ "rows": [
+  {
+   "W": 1,
+   "mode": "early",
+   "time": 522385417000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 13.024458966224023,
+   "peak_act": 8
+  },
+  {
+   "W": 1,
+   "mode": "prio",
+   "time": 521144329000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 12.993515338773042,
+   "peak_act": 8
+  },
+  {
+   "W": 2,
+   "mode": "early",
+   "time": 270163634000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 6.735898535236035,
+   "peak_act": 16
+  },
+  {
+   "W": 2,
+   "mode": "prio",
+   "time": 513834892000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 12.811271617615144,
+   "peak_act": 16
+  },
+  {
+   "W": 4,
+   "mode": "early",
+   "time": 141714647000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 3.533323375228184,
+   "peak_act": 32
+  },
+  {
+   "W": 4,
+   "mode": "prio",
+   "time": 504910270000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 12.588757034999873,
+   "peak_act": 32
+  },
+  {
+   "W": 6,
+   "mode": "early",
+   "time": 96631229000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 2.4092737584332236,
+   "peak_act": 48
+  },
+  {
+   "W": 6,
+   "mode": "prio",
+   "time": 495985648000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 12.366242452384599,
+   "peak_act": 48
+  },
+  {
+   "W": 8,
+   "mode": "early",
+   "time": 76542389000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 1.9084055034163732,
+   "peak_act": 64
+  },
+  {
+   "W": 8,
+   "mode": "prio",
+   "time": 487061026000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 12.143727869769327,
+   "peak_act": 64
+  },
+  {
+   "W": 10,
+   "mode": "early",
+   "time": 66209868000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 1.6507882510914522,
+   "peak_act": 80
+  },
+  {
+   "W": 10,
+   "mode": "prio",
+   "time": 478136404000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 11.921213287154055,
+   "peak_act": 80
+  },
+  {
+   "W": 12,
+   "mode": "early",
+   "time": 57892069000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 1.443403381148195,
+   "peak_act": 96
+  },
+  {
+   "W": 12,
+   "mode": "prio",
+   "time": 469211782000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 11.698698704538781,
+   "peak_act": 96
+  },
+  {
+   "W": 14,
+   "mode": "early",
+   "time": 52430739000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 1.3072378869150199,
+   "peak_act": 112
+  },
+  {
+   "W": 14,
+   "mode": "prio",
+   "time": 460278209000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 11.475960949667138,
+   "peak_act": 112
+  },
+  {
+   "W": 16,
+   "mode": "early",
+   "time": 48993435000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 1.2215367485495174,
+   "peak_act": 128
+  },
+  {
+   "W": 16,
+   "mode": "prio",
+   "time": 451335685000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 11.253000022539126,
+   "peak_act": 128
+  },
+  {
+   "W": 18,
+   "mode": "early",
+   "time": 48239156000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 1.2027305652892668,
+   "peak_act": 144
+  },
+  {
+   "W": 18,
+   "mode": "prio",
+   "time": 442393161000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 11.030039095411114,
+   "peak_act": 144
+  },
+  {
+   "W": 20,
+   "mode": "early",
+   "time": 47572895000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 1.1861189050612106,
+   "peak_act": 160
+  },
+  {
+   "W": 20,
+   "mode": "prio",
+   "time": 433450637000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 10.807078168283102,
+   "peak_act": 160
+  },
+  {
+   "W": 22,
+   "mode": "early",
+   "time": 47658126000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 1.1882439407647825,
+   "peak_act": 176
+  },
+  {
+   "W": 22,
+   "mode": "prio",
+   "time": 424508113000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 10.584117241155088,
+   "peak_act": 176
+  },
+  {
+   "W": 26,
+   "mode": "early",
+   "time": 47950015000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 1.1955215105044297,
+   "peak_act": 208
+  },
+  {
+   "W": 26,
+   "mode": "prio",
+   "time": 406623065000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 10.138195386899064,
+   "peak_act": 208
+  },
+  {
+   "W": 30,
+   "mode": "early",
+   "time": 48207121000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 1.201931847466363,
+   "peak_act": 240
+  },
+  {
+   "W": 30,
+   "mode": "prio",
+   "time": 388738017000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 9.692273532643037,
+   "peak_act": 240
+  },
+  {
+   "W": 34,
+   "mode": "early",
+   "time": 48357404000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 1.2056788026896956,
+   "peak_act": 272
+  },
+  {
+   "W": 34,
+   "mode": "prio",
+   "time": 370852969000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 9.246351678387013,
+   "peak_act": 272
+  },
+  {
+   "W": 42,
+   "mode": "early",
+   "time": 48789722000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 1.21645764120264,
+   "peak_act": 336
+  },
+  {
+   "W": 42,
+   "mode": "prio",
+   "time": 335082873000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 8.354507969874962,
+   "peak_act": 336
+  },
+  {
+   "W": 51,
+   "mode": "early",
+   "time": 49316183000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 1.229583715301713,
+   "peak_act": 408
+  },
+  {
+   "W": 51,
+   "mode": "prio",
+   "time": 294841515000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 7.351183797798905,
+   "peak_act": 408
+  },
+  {
+   "W": 68,
+   "mode": "early",
+   "time": 50182586000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 1.2511854483411202,
+   "peak_act": 544
+  },
+  {
+   "W": 68,
+   "mode": "prio",
+   "time": 218830061000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 5.456015917210797,
+   "peak_act": 544
+  },
+  {
+   "W": 85,
+   "mode": "early",
+   "time": 51137557000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 1.2749954173767488,
+   "peak_act": 680
+  },
+  {
+   "W": 85,
+   "mode": "prio",
+   "time": 142818607000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 3.5608480366226893,
+   "peak_act": 680
+  },
+  {
+   "W": 102,
+   "mode": "early",
+   "time": 51910524000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 1.294267542221967,
+   "peak_act": 816
+  },
+  {
+   "W": 102,
+   "mode": "prio",
+   "time": 66750424000000000,
+   "mem_ok": true,
+   "ratio_to_lb": 1.6642657510595384,
+   "peak_act": 816
+  }
+ ]
+}

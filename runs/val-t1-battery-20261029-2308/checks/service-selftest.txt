@@ -1,0 +1,27 @@
+judge selftest · 临时目录 /tmp/judge-selftest-b9q7sm74
+服务已起：http://127.0.0.1:42447（账本 /tmp/judge-selftest-b9q7sm74/runs/ledger.jsonl）
+  ✓ health/meta/cases 端点  (0.00s) · health/meta/cases/versions 空账本 OK
+  ✓ POST /api/evaluate 合法解（200 + time）  (0.00s) · ex1 → time=560，200，账本仍为空
+  ✓ POST /api/evaluate 幂等无副作用  (0.00s) · 两次调用结果完全相同，无副作用
+  ✓ POST /api/evaluate 非法解（200 + ok:false）  (0.00s) · 200 + ok:false（1 条 missing）
+  ✓ POST /api/evaluate 错误语义（§2.8）  (0.00s) · 400 case-not-found / 400 bad-json / 422 parse
+  ✓ POST /api/runs（A 式）状态流转与结果  (0.03s) · queued→…→done，2/2 例，560/4880
+  ✓ run 状态 queued→running→done 可观  (1.24s) · 观察到状态 ['done', 'running']
+  ✓ GET /runs/{id}/cases/{case} 字段与 output 原文  (0.01s) · 字段齐备，ops_total=40，output 原文可读
+  ✓ ops 切片分页与 total  (0.03s) · 分页 7+7+6=20、mb/until/group 过滤与 total 正确
+  ✓ SSE 收到 run.queued/running/done  (0.03s) · 收到事件 ['run.done', 'run.queued', 'run.running']
+  ✓ 同 idempotency_key 只写一行  (0.03s) · 同一 run_id=r-0006，账本只写了 1 行
+  ✓ 单用例 10 s 超时 kill 并记 timeout  (10.02s) · 10 s 超时 kill，state=timeout，solve_ms=10009，耗时 10.02s
+  ✓ 账本 solver_cmd 原文 + 同命令同 commit 可复现  (0.09s) · 同命令 + 同 commit 两次 Time/输出哈希一致，账本记命令原文
+  ✓ solver 失败 → failed  (0.02s) · solver 退出码 3 → run failed + category=solver
+  ✓ /api/versions 相对分与排名  (0.00s) · 11 个版本，非法版本 score=null 且排最后，合法版本 score=1.0
+  ✓ 运行中取结果 409（§2.8）  (1.24s) · 运行中 409 not-ready，结束后 200
+  ✓ 账本 fsync + flock + 只追加  (0.03s) · fsync×2 flock×4，行数 13
+  ✓ 只监听 127.0.0.1（不绑 0.0.0.0）  (0.00s) · server_address=127.0.0.1，0.0.0.0 被拒绝
+  ✓ CLI eval 退出码  (0.24s) · 退出码 0/1/2 符合 CONTRACT §4
+  ✓ CLI run 落账本 + versions 聚合  (0.29s) · CLI run 落账本，/api/versions 能聚合出该行（score=1.0, rank 非空）
+  ✓ CLI 离线/本地模式 + ls + acceptance  (0.34s) · 离线 → 3、--local → 0 并落账本、ls 可见、acceptance 7/7
+  ✓ serve Ctrl-C 干净退出  (0.11s) · SIGINT → 退出码 0，无 traceback，打印已停止
+  ✓ 账本行结构（§3）  (0.00s) · 16 行账本，字段齐全，ops 只存路径
+
+selftest：23/23 项通过（全部通过）

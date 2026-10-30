@@ -1,0 +1,18 @@
+求解 6 个用例：budget=8.5s/例，输出目录 runs/val-t1-20261029-2228/official-current，judge 复核=开
+  ex1   V=1 P=2 psi=[] K=1 W=2  solver_time=560 (lb=560)  judge=ok time=560 lb=560  target≤560 [OK]  solve=0.0s
+  ex2   V=2 P=2 psi=[1] K=2 W=2  solver_time=4880 (lb=3200)  judge=ok time=4880 lb=3200  target≤4880 [OK]  solve=0.646s
+  ex3   V=2 P=2 psi=[1] K=2 W=2  solver_time=6072 (lb=4000)  judge=ok time=6072 lb=4000  target≤7000 [OK]  solve=0.55s
+  ex4   V=1 P=2 psi=[] K=1 W=2  solver_time=3200 (lb=3200)  judge=ok time=3200 lb=3200  target≤3200 [OK]  solve=0.0s
+  ex5   V=2 P=1 psi=[1] K=2 W=2  solver_time=416 (lb=320)  judge=ok time=416 lb=320  target≤416 [OK]  solve=0.424s
+  ex6   V=2 P=2 psi=[1] K=2 W=2  solver_time=1696 (lb=1120)  judge=ok time=1696 lb=1120  target≤1696 [OK]  solve=0.747s
+退化形态自测（solver/selftests/）：
+退化形态自测：6 个用例（judge 复核=开）
+  nmb2             V=2 P=2 D=1 K=2 psi=[1] W=2 Time=198 (judge 198, lb=144) solve=0.80s  形态=nmb=2 [OK]
+  p1_zero_comm     V=2 P=1 D=1 K=2 psi=[1] W=2 Time=252 (judge 252, lb=216) solve=0.43s  形态=P=1,x=0 [OK]
+  r1               V=1 P=1 D=1 K=1 psi=[] W=2 Time=432 (judge 432, lb=432) solve=0.00s  形态=R=1,V=1,P=1 [OK]
+  s0               V=1 P=2 D=1 K=1 psi=[] W=2 Time=249 (judge 249, lb=240) solve=0.66s  形态=s=0 [OK]
+  v1_l1            V=1 P=4 D=1 K=1 psi=[] W=2 Time=168 (judge 168, lb=168) solve=0.00s  形态=V=1,L=1 [OK]
+  x0_zero_payload  V=2 P=1 D=1 K=2 psi=[1] W=2 Time=0 (judge 0, lb=0) solve=0.00s  形态=x=0,s=0,全零时长 [OK]
+[selftests] 6 个退化形态全部合法（judge 复核通过）
+  退化形态：全部合法
+合计：合法 是 / 10s 内 是 / 不劣于题面值 是 / 退化形态 通过

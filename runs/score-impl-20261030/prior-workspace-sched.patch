@@ -1,0 +1,81 @@
+diff --git a/solver/sched.py b/solver/sched.py
+index 5715bee..5ec9a4d 100644
+--- a/solver/sched.py
++++ b/solver/sched.py
+@@ -20,6 +20,7 @@
+ 
+ from __future__ import annotations
+ 
++from bisect import bisect_right
+ from dataclasses import dataclass
+ from heapq import heappop, heappush
+ from typing import Optional, Sequence
+@@ -139,6 +140,7 @@ def schedule(
+     mode: str = "prio",
+     priority: Optional[Sequence[int]] = None,
+     comm_gap: int = 0,
++    fill_gaps: bool = False,
+ ) -> Optional[Schedule]:
+     """生成一份调度；``mode`` = ``"prio"``（按优先级出堆，报告 §2.4）或 ``"early"``
+     （按最早可开始时刻出堆，堆键做惰性修正）。构造上合法，返回 ``None`` 仅表示死锁
+@@ -176,6 +178,8 @@ def schedule(
+     pushed = bytearray(total)
+     comp_free = [0] * V
+     comm_free = [0] * V
++    # 空隙按终点排序；列表调度可将后访问的独立操作插入已留出的空闲段。
++    gaps = [[[], []] for _ in range(V)] if fill_gaps else None
+     # bw_left[g][mb]：还有多少个反向操作没排；rel[g][mb]：已排反向操作的最大完成时刻
+     # 窗口释放条件按**激活存活**计（题面 §4.6：激活从 comb 结束到 s_bwd 开始为存活），
+     # 因此每个 (mb, 层) 只要 `s_bwd` 排上了就算释放；不能等 6 个反向操作全排完
+@@ -271,13 +275,24 @@ def schedule(
+             dep_end = end[idx + offset]
+             if dep_end > ready:
+                 ready = dep_end
+-        free = comp_free[group] if ENGINE[oi] == COMP else comm_free[group]
+-        if free > ready:
+-            ready = free
+         if layer == 0 and base_rem[oi] == 0 and mb >= W:
+             waiting = rel[group][mb - W]
+             if waiting > ready:
+                 ready = waiting
++        dur = durations[layer][oi]
++        engine = ENGINE[oi]
++        free = comp_free[group] if engine == COMP else comm_free[group]
++        slot = -1
++        if gaps is not None and dur and not comm_gap:
++            available = gaps[group][engine]
++            for j in range(bisect_right(available, (ready, float("inf"))), len(available)):
++                stop, begin = available[j]
++                if max(ready, begin) + dur <= stop:
++                    ready = max(ready, begin)
++                    slot = j
++                    break
++        if slot < 0 and free > ready:
++            ready = free
+         if mode == "early" and heap and ready > heap[0][0]:
+             # 惰性修正：引擎/依赖只让起点后移，重排一次即可（摊还 O(1)）
+             heappush(heap, (ready, entry[1], idx))
+@@ -290,10 +305,21 @@ def schedule(
+         if finish > time_max:
+             time_max = finish
+         if dur:
++            if gaps is not None and not comm_gap:
++                available = gaps[group][engine]
++                if slot >= 0:
++                    stop, begin = available.pop(slot)
++                    if begin < ready:
++                        available.insert(slot, (ready, begin))
++                        slot += 1
++                    if finish < stop:
++                        available.insert(slot, (stop, finish))
++                elif free < ready:
++                    available.append((ready, free))
+             if ENGINE[oi] == COMP:
+-                comp_free[group] = finish
++                comp_free[group] = max(comp_free[group], finish)
+             else:
+-                comm_free[group] = finish + comm_gap
++                comm_free[group] = max(comm_free[group], finish + comm_gap)
+         elif ENGINE[oi] == COMM and comm_gap:
+             # 零时长通信也拉开距离（闭区间峰值下同一个 t 会算成多块缓冲）
+             if finish + comm_gap > comm_free[group]:

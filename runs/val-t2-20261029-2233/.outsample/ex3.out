@@ -1,0 +1,17 @@
+1 2 2
+PSI
+
+MAP
+0 1 0 1
+SCHEDULE
+0 0:0:disp 0:0:s 1:0:s
+500 0:0:gemm 1:0:disp
+1000 0:0:comb 1:0:gemm
+1500 0:0:s_bwd 1:0:comb
+2000 0:0:comb_bwd 1:0:s_bwd
+2500 0:0:gemm_dx 1:0:comb_bwd
+2518 0:0:gemm_dw
+3000 0:0:disp_bwd 1:0:gemm_dx
+3018 1:0:gemm_dw
+3500 0:0:s_dw 1:0:disp_bwd
+4000 1:0:s_dw

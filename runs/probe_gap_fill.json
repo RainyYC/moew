@@ -1,0 +1,470 @@
+[
+  {
+    "case": "b01-loose",
+    "mode": "prio",
+    "fill": false,
+    "time": 6912000000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.154
+  },
+  {
+    "case": "b01-loose",
+    "mode": "prio",
+    "fill": true,
+    "time": 6912000000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.169
+  },
+  {
+    "case": "b01-loose",
+    "mode": "early",
+    "fill": false,
+    "time": 6967000000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.335
+  },
+  {
+    "case": "b01-loose",
+    "mode": "early",
+    "fill": true,
+    "time": 6967000000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.408
+  },
+  {
+    "case": "b02-m512",
+    "mode": "prio",
+    "fill": false,
+    "time": 542157603132750,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.168
+  },
+  {
+    "case": "b02-m512",
+    "mode": "prio",
+    "fill": true,
+    "time": 542157603132750,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.215
+  },
+  {
+    "case": "b02-m512",
+    "mode": "early",
+    "fill": false,
+    "time": 642599440730975,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.245
+  },
+  {
+    "case": "b02-m512",
+    "mode": "early",
+    "fill": true,
+    "time": 642599440730975,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.316
+  },
+  {
+    "case": "b03-m256",
+    "mode": "prio",
+    "fill": false,
+    "time": 811784777827320,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.17
+  },
+  {
+    "case": "b03-m256",
+    "mode": "prio",
+    "fill": true,
+    "time": 811784777827320,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.216
+  },
+  {
+    "case": "b03-m256",
+    "mode": "early",
+    "fill": false,
+    "time": 963560448159708,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.244
+  },
+  {
+    "case": "b03-m256",
+    "mode": "early",
+    "fill": true,
+    "time": 963560448159708,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.317
+  },
+  {
+    "case": "b04-m96",
+    "mode": "prio",
+    "fill": false,
+    "time": 946917900211470,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.177
+  },
+  {
+    "case": "b04-m96",
+    "mode": "prio",
+    "fill": true,
+    "time": 946917900211470,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.218
+  },
+  {
+    "case": "b04-m96",
+    "mode": "early",
+    "fill": false,
+    "time": 1124115510049343,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.26
+  },
+  {
+    "case": "b04-m96",
+    "mode": "early",
+    "fill": true,
+    "time": 1124115510049343,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.321
+  },
+  {
+    "case": "b05-maxmb",
+    "mode": "prio",
+    "fill": false,
+    "time": 50016000000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 1.914
+  },
+  {
+    "case": "b05-maxmb",
+    "mode": "prio",
+    "fill": true,
+    "time": 50016000000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 2.043
+  },
+  {
+    "case": "b05-maxmb",
+    "mode": "early",
+    "fill": false,
+    "time": 50078000000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 17.853
+  },
+  {
+    "case": "b05-maxmb",
+    "mode": "early",
+    "fill": true,
+    "time": 50078000000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 22.222
+  },
+  {
+    "case": "b06-maxmb-tight",
+    "mode": "prio",
+    "fill": false,
+    "time": 5229861932305704,
+    "legal": false,
+    "errors": 0,
+    "seconds": 2.083
+  },
+  {
+    "case": "b06-maxmb-tight",
+    "mode": "prio",
+    "fill": true,
+    "time": 5229861932305704,
+    "legal": false,
+    "errors": 0,
+    "seconds": 2.865
+  },
+  {
+    "case": "b06-maxmb-tight",
+    "mode": "early",
+    "fill": false,
+    "time": 5383372800000000,
+    "legal": false,
+    "errors": 0,
+    "seconds": 6.149
+  },
+  {
+    "case": "b06-maxmb-tight",
+    "mode": "early",
+    "fill": true,
+    "time": 5383372800000000,
+    "legal": false,
+    "errors": 0,
+    "seconds": 7.81
+  },
+  {
+    "case": "b07-mixed",
+    "mode": "prio",
+    "fill": false,
+    "time": 3492807937646768,
+    "legal": true,
+    "errors": 0,
+    "seconds": 2.241
+  },
+  {
+    "case": "b07-mixed",
+    "mode": "prio",
+    "fill": true,
+    "time": 3492807937646768,
+    "legal": true,
+    "errors": 0,
+    "seconds": 3.111
+  },
+  {
+    "case": "b07-mixed",
+    "mode": "early",
+    "fill": false,
+    "time": 3589743400001692,
+    "legal": true,
+    "errors": 0,
+    "seconds": 6.164
+  },
+  {
+    "case": "b07-mixed",
+    "mode": "early",
+    "fill": true,
+    "time": 3589743400001692,
+    "legal": true,
+    "errors": 0,
+    "seconds": 7.879
+  },
+  {
+    "case": "b08-narrow",
+    "mode": "prio",
+    "fill": false,
+    "time": 1569450570466152,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.544
+  },
+  {
+    "case": "b08-narrow",
+    "mode": "prio",
+    "fill": true,
+    "time": 1569450570466152,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.631
+  },
+  {
+    "case": "b08-narrow",
+    "mode": "early",
+    "fill": false,
+    "time": 1720501248159708,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.822
+  },
+  {
+    "case": "b08-narrow",
+    "mode": "early",
+    "fill": true,
+    "time": 1720501248159708,
+    "legal": true,
+    "errors": 0,
+    "seconds": 1.065
+  },
+  {
+    "case": "b09-small-e",
+    "mode": "prio",
+    "fill": false,
+    "time": 50016000000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 2.025
+  },
+  {
+    "case": "b09-small-e",
+    "mode": "prio",
+    "fill": true,
+    "time": 50016000000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 2.213
+  },
+  {
+    "case": "b09-small-e",
+    "mode": "early",
+    "fill": false,
+    "time": 50078000000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 18.041
+  },
+  {
+    "case": "b09-small-e",
+    "mode": "early",
+    "fill": true,
+    "time": 50078000000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 22.451
+  },
+  {
+    "case": "b10-high-k",
+    "mode": "prio",
+    "fill": false,
+    "time": 179346953034600,
+    "legal": false,
+    "errors": 0,
+    "seconds": 1.069
+  },
+  {
+    "case": "b10-high-k",
+    "mode": "prio",
+    "fill": true,
+    "time": 179346953034600,
+    "legal": false,
+    "errors": 0,
+    "seconds": 1.462
+  },
+  {
+    "case": "b10-high-k",
+    "mode": "early",
+    "fill": false,
+    "time": 186628707744408,
+    "legal": false,
+    "errors": 0,
+    "seconds": 2.154
+  },
+  {
+    "case": "b10-high-k",
+    "mode": "early",
+    "fill": true,
+    "time": 186628707744408,
+    "legal": false,
+    "errors": 0,
+    "seconds": 2.815
+  },
+  {
+    "case": "b11-short-l",
+    "mode": "prio",
+    "fill": false,
+    "time": 4934667467641224,
+    "legal": false,
+    "errors": 0,
+    "seconds": 0.146
+  },
+  {
+    "case": "b11-short-l",
+    "mode": "prio",
+    "fill": true,
+    "time": 4934667467641224,
+    "legal": false,
+    "errors": 0,
+    "seconds": 0.294
+  },
+  {
+    "case": "b11-short-l",
+    "mode": "early",
+    "fill": false,
+    "time": 4941004800000000,
+    "legal": false,
+    "errors": 0,
+    "seconds": 3.533
+  },
+  {
+    "case": "b11-short-l",
+    "mode": "early",
+    "fill": true,
+    "time": 4941004800000000,
+    "legal": false,
+    "errors": 0,
+    "seconds": 4.53
+  },
+  {
+    "case": "b12-compute-bound",
+    "mode": "prio",
+    "fill": false,
+    "time": 98600244176000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.167
+  },
+  {
+    "case": "b12-compute-bound",
+    "mode": "prio",
+    "fill": true,
+    "time": 98307789776000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.191
+  },
+  {
+    "case": "b12-compute-bound",
+    "mode": "early",
+    "fill": false,
+    "time": 98307789776000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.245
+  },
+  {
+    "case": "b12-compute-bound",
+    "mode": "early",
+    "fill": true,
+    "time": 98307789776000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.296
+  },
+  {
+    "case": "b13-balanced-compute",
+    "mode": "prio",
+    "fill": false,
+    "time": 70113881000000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.173
+  },
+  {
+    "case": "b13-balanced-compute",
+    "mode": "prio",
+    "fill": true,
+    "time": 66750424000000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.202
+  },
+  {
+    "case": "b13-balanced-compute",
+    "mode": "early",
+    "fill": false,
+    "time": 51910524000000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.607
+  },
+  {
+    "case": "b13-balanced-compute",
+    "mode": "early",
+    "fill": true,
+    "time": 51910524000000000,
+    "legal": true,
+    "errors": 0,
+    "seconds": 0.786
+  }
+]

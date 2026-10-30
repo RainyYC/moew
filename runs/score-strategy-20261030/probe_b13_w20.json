@@ -1,0 +1,262 @@
+[
+ {
+  "case": "b02-m512",
+  "P": 2,
+  "V": 64,
+  "nmb": 102,
+  "variants": [
+   {
+    "W": 20,
+    "mode": "early",
+    "time": 1464590441252625,
+    "mem_ok": true,
+    "peak_act": 20
+   },
+   {
+    "W": 20,
+    "mode": "prio",
+    "time": 1383764338902350,
+    "mem_ok": true,
+    "peak_act": 20
+   },
+   {
+    "W": 102,
+    "mode": "early",
+    "time": 642599440730975,
+    "mem_ok": true,
+    "peak_act": 102
+   },
+   {
+    "W": 102,
+    "mode": "prio",
+    "time": 542157603132750,
+    "mem_ok": true,
+    "peak_act": 102
+   }
+  ]
+ },
+ {
+  "case": "b03-m256",
+  "P": 4,
+  "V": 64,
+  "nmb": 102,
+  "variants": [
+   {
+    "W": 20,
+    "mode": "early",
+    "time": 2194620244185060,
+    "mem_ok": true,
+    "peak_act": 20
+   },
+   {
+    "W": 20,
+    "mode": "prio",
+    "time": 2071722160395768,
+    "mem_ok": true,
+    "peak_act": 20
+   },
+   {
+    "W": 102,
+    "mode": "early",
+    "time": 963560448159708,
+    "mem_ok": true,
+    "peak_act": 102
+   },
+   {
+    "W": 102,
+    "mode": "prio",
+    "time": 811784777827320,
+    "mem_ok": true,
+    "peak_act": 102
+   }
+  ]
+ },
+ {
+  "case": "b07-mixed",
+  "P": 2,
+  "V": 64,
+  "nmb": 1000,
+  "variants": [
+   {
+    "W": 200,
+    "mode": "prio",
+    "time": 3493632098881556,
+    "mem_ok": true,
+    "peak_act": 200
+   },
+   {
+    "W": 1000,
+    "mode": "prio",
+    "time": 3492807937646768,
+    "mem_ok": true,
+    "peak_act": 1000
+   }
+  ]
+ },
+ {
+  "case": "b08-narrow",
+  "P": 4,
+  "V": 64,
+  "nmb": 256,
+  "variants": [
+   {
+    "W": 51,
+    "mode": "early",
+    "time": 2372970430728156,
+    "mem_ok": true,
+    "peak_act": 51
+   },
+   {
+    "W": 51,
+    "mode": "prio",
+    "time": 2370020578932452,
+    "mem_ok": true,
+    "peak_act": 51
+   },
+   {
+    "W": 256,
+    "mode": "early",
+    "time": 1720501248159708,
+    "mem_ok": true,
+    "peak_act": 256
+   },
+   {
+    "W": 256,
+    "mode": "prio",
+    "time": 1569450570466152,
+    "mem_ok": true,
+    "peak_act": 256
+   }
+  ]
+ },
+ {
+  "case": "b10-high-k",
+  "P": 4,
+  "V": 64,
+  "nmb": 512,
+  "variants": [
+   {
+    "W": 102,
+    "mode": "prio",
+    "time": 183096845967496,
+    "mem_ok": true,
+    "peak_act": 102
+   },
+   {
+    "W": 512,
+    "mode": "prio",
+    "time": 179346953034600,
+    "mem_ok": false,
+    "peak_act": 512
+   }
+  ]
+ },
+ {
+  "case": "b12-compute-bound",
+  "P": 8,
+  "V": 64,
+  "nmb": 102,
+  "variants": [
+   {
+    "W": 20,
+    "mode": "early",
+    "time": 200257865325000000,
+    "mem_ok": true,
+    "peak_act": 20
+   },
+   {
+    "W": 20,
+    "mode": "prio",
+    "time": 2414795013274000000,
+    "mem_ok": true,
+    "peak_act": 20
+   },
+   {
+    "W": 102,
+    "mode": "early",
+    "time": 98307789776000000,
+    "mem_ok": true,
+    "peak_act": 102
+   },
+   {
+    "W": 102,
+    "mode": "prio",
+    "time": 98307789776000000,
+    "mem_ok": true,
+    "peak_act": 102
+   }
+  ]
+ },
+ {
+  "case": "b04-m96",
+  "P": 8,
+  "V": 64,
+  "nmb": 102,
+  "variants": [
+   {
+    "W": 20,
+    "mode": "early",
+    "time": 2578718905769828,
+    "mem_ok": true,
+    "peak_act": 20
+   },
+   {
+    "W": 20,
+    "mode": "prio",
+    "time": 2416516369630478,
+    "mem_ok": true,
+    "peak_act": 20
+   },
+   {
+    "W": 102,
+    "mode": "early",
+    "time": 1124115510049343,
+    "mem_ok": true,
+    "peak_act": 102
+   },
+   {
+    "W": 102,
+    "mode": "prio",
+    "time": 946917900211470,
+    "mem_ok": true,
+    "peak_act": 102
+   }
+  ]
+ },
+ {
+  "case": "b11-short-l",
+  "P": 4,
+  "V": 4,
+  "nmb": 1000,
+  "variants": [
+   {
+    "W": 200,
+    "mode": "early",
+    "time": 4934874923233224,
+    "mem_ok": true,
+    "peak_act": 200
+   },
+   {
+    "W": 200,
+    "mode": "prio",
+    "time": 4934674467641224,
+    "mem_ok": true,
+    "peak_act": 200
+   },
+   {
+    "W": 1000,
+    "mode": "early",
+    "time": 4941004800000000,
+    "mem_ok": false,
+    "peak_act": 1000
+   },
+   {
+    "W": 1000,
+    "mode": "prio",
+    "time": 4934667467641224,
+    "mem_ok": false,
+    "peak_act": 1000
+   }
+  ]
+ }
+]
