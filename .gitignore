@@ -15,3 +15,6 @@ refs/*.pdf
 bigcases/battery/out/
 bigcases/sweep/
 bigcases/fuzz/
+
+# 独立工作副本（已合并回主目录，保留在本地用于对照）
+opt-claude/
