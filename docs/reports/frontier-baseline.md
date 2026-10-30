@@ -3,6 +3,7 @@
 > 基线对象：`/home/rainy/hackathon/work-frontier-baseline`（detached `c558d9be025b4825ce00fdb8ff343da6392272b8`）。
 > 对照工具：`tools/frontier_bench.py`（本任务交付，最终 SHA-256 `e53c1d3ebb002856...`）。
 > 口径：`docs/reports/frontier-protocol.md`（t1 冻结，未改写）；本报告只补 t3 的实测与三处澄清。
+> **t6 勘误**（异常处理与不可行性归因）见 **§12**：原 t3 结论与原始基线输出不受影响。
 
 ## 0. 结论摘要
 
@@ -53,7 +54,10 @@
 - **预算**：显式传 `--budget B`，`B=auto_budget(n_ops)` 与 `solve_all.py` 同表（≤20k→7.6 s、≤200k→7.2 s、>200k→6.2 s），逐例写入 record/meta；A/B 两边由同一函数计算，天然同预算。
 - **环境隔离**：`PYTHONPATH=<worktree>/src`、`PYTHONDONTWRITEBYTECODE=1`；基线 worktree 运行后仍 `git status` 干净。**不 import** solver/judge。
 - **双判分**：先跑官方 `grader.py`（成绩权威），再跑 `python3 -m judge eval ... --json`（更严格的第二道闸）；判题 wall/CPU 独立记录，不占求解预算。
-- **资格判定**：`probe_official_input()` 只 import 官方 `grader` 并调用其 `parse_instance`，**独立于 solver 输出与报错字符串**。`eligible=false` 的用例记 `INPUT_REJECT`，报告为 N/A，不计 solver 失败、也不计官方成功；官方合格用例上的超时/非法/错误退出照常计失败。
+- **输入资格三态**：`probe_official_input()` 只 import 官方 `grader` 并调用其 `parse_instance`，**独立于 solver 输出与报错字符串**：
+  `True`=官方解析通过；`False`=官方解析器**明确拒绝**（记 `INPUT_REJECT`/N/A，不计 solver 失败、不计官方分母）；
+  `None`=探针本身失败（记 `UNVERIFIED`，该例资格未验证，**严格验证与 CLI 必须失败**）。
+- **严格双判与退出码（fail-closed）**：`summary.json` 把两类信息分开——`official_valid`/`official_ok_rate` 是官方成绩统计，`strict_ok`/`strict_failures`/`strict_pass` 是验收。官方合格用例必须全部 `status=OK`（官方合法 + 本地合法 + 官方/本地 `Time` 一致）才 `strict_pass=True`；任何 `LOCAL_FAIL`、`TIME_MISMATCH`、`TO`、`ERROR`、`INVALID` 或 `UNVERIFIED` 都使 CLI 退出非零。官方明确输入拒绝只单列，不阻止其余合格用例通过。
 - **证据**：每例落盘 `.out`、`.stdout`（与 `.out` 相同时只留说明）、`.stderr`、`.grader.out/.err`、`.judge.json`、`<case>.json`；批次落盘 `meta.json`、`cmd.txt`、`env.txt`、`summary.json/md`。run 目录**追加不覆盖**（已存在非空目录直接拒绝，除非 `--force`）。
 
 > **为什么不用 `tools/run_official.py` 记成绩**：它默认 8 路并行、超时 30 s；注释声称 `TIME` 与串行逐位相同，
@@ -63,18 +67,21 @@
 
 ### 3.2 工具自测（防止把失败记成成功）
 
-`python3 tools/frontier_bench.py --selftest` 用四个假 solver 验证四条路径（证据：`runs/frontier/selftest-20261030-130027/`）：
+`python3 tools/frontier_bench.py --selftest` 用假 solver / 假官方 grader / 假本地 judge，并用**真实 CLI 退出码**验证 fail-closed（t6 版证据：`runs/frontier/selftest-20261030-131434/`，共 15 项断言全部 PASS）：
 
-| 假 solver | 期望 | 实测 |
+| 场景 | 期望 | 实测（t6） |
 | --- | --- | --- |
-| 直接抄官方样例输出 | `OK`（双判分器一致） | OK |
+| 直接抄官方样例输出 | `OK`，双判分器一致，exit 0 | OK，exit 0 |
 | 写非法映射 | `INVALID` | INVALID（`grader_reject`） |
 | sleep 5 s（超时 1 s） | `TO` | TO（`solver_timeout`） |
 | `exit 3` | `ERROR` | ERROR（`solver_exit_3`） |
+| 探针异常（假 grader 抛非 `Invalid`） | `UNVERIFIED`，exit≠0，**不是 N/A** | UNVERIFIED，exit 2，`input_unknown=['ex1']` |
+| 官方合法但本地判非法 | `LOCAL_FAIL`，strict fail，exit≠0 | LOCAL_FAIL，official_valid=1，exit 1 |
+| 官方/本地 `Time` 不一致 | `TIME_MISMATCH`，strict fail，exit≠0 | TIME_MISMATCH，exit 1 |
+| 官方明确拒绝（mini）+ 合法（ex1）混合 | mini 记 N/A，ex1 strict pass，exit 0 | INPUT_REJECT + OK，exit 0 |
 
-最终版 SHA-256：`e53c1d3ebb0028564f5c376d6d8a934f6b1ba181c25eaad28f516d63a02af574`。
-t3 期间工具迭代过几次（加资格探针、绝对路径、本地 judge 恒跑、留出集可行性过滤、`--audit-inputs`）。
-**求解计时路径未改**；官方 50 例批次的 Time 仍由同一 solver + 同一 grader 产生，资格由事后审计补确认。
+t6 最终工具 SHA-256：`07314d0cb2fcd133e186d688412c511e356a80f242828b172ab694102af840f3`（t3 版为 `e53c1d3e…`，原始证据保留）。
+**求解计时路径未改**；官方 50 例批次的 Time 仍由同一 solver + 同一 grader 产生，资格由事后审计补确认；t6 未重跑全量基线。
 
 ### 3.3 如何复用到候选 A/B
 
@@ -296,14 +303,18 @@ fast12 是 `tools/run_official.py --subset fast` 既有的 12 例集合（计算
 | h07 | 1,179,000,000 | 4.60 | 4/1/4 | zero_len_comm_suspect |
 
 - 8/8 输入被官方解析接受；7/8 得到合法解。`h02` 求解器返回 `exit=1`（"没有找到合法映射"），**不是 solver 回归**：
-  `h02` 参数 `L=2,E=16,Z=1024,Zs=65536,U=Uact=262144,M=239895`。取对内存最友好的 `V=2,P=1`：
-  `Mexp=1×(16×1024+65536)=81,920`，加至少一份激活 `Uact=262,144` 已是 **344,064 > M=239,895**；
-  若再计通信缓冲只会更大。该用例在输入层面就不可行。
-- 根因：`tools/fuzz.py` 的 M 只按 Mexp 估最小驻留量，未计 `Movl/Mact`。t3 **未修改** `tools/fuzz.py`，而是在对照工具里加输入层面必要可行性过滤（只用题面公式，不看求解结果），并用**新的固定 seed** 重生成，避免对已看过的样本挑挑拣拣。
+  `h02` 参数 `L=2,E=16,Z=1024,Zs=65536,U=Uact=262144,M=239895`。
+  **严格证书（与网格无关）**：任何合法调度在任一时刻都至少有一份激活 `(mb,ℓ)` 存活
+  （`comb` 结束到 `s_bwd` 开始是闭区间，至少包含一个时刻），而 `Uact=262,144 > M=239,895`，
+  故仅这一份必需激活就超内存——该用例在**官方口径下不可行**，不需要枚举 V/P。
+  （t3 首版曾用"最友好 V/P 的 Mexp+Uact"作论据，t6 已由上述独立证书取代，见 §12。）
+- 根因：`tools/fuzz.py` 的 M 只按 Mexp 估最小驻留量，未计 `Movl/Mact`。t3 **未修改** `tools/fuzz.py`，而是在对照工具里加输入层面**本地保守必要筛选**（只用题面公式，不看求解结果），并用**新的固定 seed** 重生成，避免对已看过的样本挑挑拣拣。
 
 **v2：seed=424243（预注册必要可行性过滤）**
 
-过滤条件（写入 `heldout-manifest.json`）：`ceil(L/V)·((E/P)Z+Zs) + U + Uact <= M`（本地保守口径）。
+过滤条件（写入 `heldout-manifest.json`）：`ceil(L/V)·((E/P)Z+Zs) + U + Uact <= M`（本地保守口径，`V≤64`）。
+注意：这只是**必要**筛选。`False` 可能只表示"未通过本地保守条件"（官方忽略零时长通信，仍可能可行），
+不等于官方不可行；`True` 也不是充分可行保证。唯一可直接主张官方不可行的是 `Uact > M` 的严格证书。
 
 | case | TIME | wall(s) | V/P/K | flags |
 | --- | ---: | ---: | --- | --- |
@@ -421,3 +432,37 @@ python3 tools/frontier_bench.py --label baseline-mini-even --set custom \
 | 日期 | 版本 | 变更 |
 | --- | --- | --- |
 | 2026-10-30 | v1 | t3 首版：工具、自测、官方 50 / fast12 / samples7 / battery13 / 两版留出集 / mini-even 基线；补 t1 协议三处澄清与 mini 资格处理 |
+| 2026-10-30 | v1.1 | t6 勘误：unknown 资格 fail-closed、Time mismatch 严格失败、官方成绩与严格验收分离、h02 用 Uact>M 严格证书、necessary_feasible 语义澄清、V≤64；基线原始终态未变 |
+
+## 12. t6 勘误：异常处理与不可行性归因（追加，不改 t3 原始终态）
+
+本轮只改 `tools/frontier_bench.py` 与本节，**未重跑全量基线、未覆盖任何既有 `runs/frontier/baseline/` 记录**，
+也未触碰 `src/solver`、`src/judge`、官方输入或 grader。
+
+1. **输入资格 unknown 不再被静默当 N/A**。探针改为官方异常类型驱动：官方 `parse_instance` 返回 → `True`；
+   官方自己的 `grader.Invalid` → `False`（唯一允许 `INPUT_REJECT`/N/A 的情况）；import 失败、超时或其它异常
+   → `None`，记录 `UNVERIFIED + input_probe_unavailable`，严格验证和 CLI 都必须失败。此前 `None` 与 `False`
+   一起被排除出 `eligible`，可能在 `official_valid==eligible` 时返回 0，现已修正。
+2. **双判 `Time` 不一致不再算 strict OK**。`payload.time != official.time` 现在置 `status=TIME_MISMATCH`
+   （此前只加 flag），并进入 `strict_failures`，CLI 非零；`LOCAL_FAIL` 同理。`status=OK` 的语义收紧为
+   "官方合法 + 本地合法 + Time 一致"。
+3. **官方成绩与严格验收分离**。`summary.json` 新增/明确：
+   `officially_rejected`（官方明确拒绝，N/A，不计分母）、`input_unknown`（探针失败，必须失败）、
+   `official_score_complete`（合格用例是否都有官方 TIME）、`strict_ok`/`strict_failures`/`strict_pass`。
+   缺省 CLI：`strict_pass=True` 才退出 0；否则 1；没有官方合格用例退出 2（nonzero）。不再用
+   `official_valid==eligible` 直接判成功。
+4. **不可行性归因修正**。`h02` 的严格证据是 `Uact=262,144 > M=239,895`（至少一份激活必需），与网格无关；
+   §5.5 首版"最友好 V/P 的 81,920+262,144"只是补充，不是必需论据。工具 docstring 里旧的
+   "min Mexp=133120 + U + Uact" 与报告数字不一致的说法已删除。
+5. **`necessary_feasible` 语义澄清**（生成留出集用）：它检查 `Uact>M` 的官方严格不可行证书，否则检查
+   本地保守必要式（含 `U`），并明确 `False` 分两种 reason：`official_infeasible_activation`（严格证书）
+   与 `local_necessary_failed`（只说明未过本地保守条件，**不**冒称官方不可行）；`True` 不是充分可行保证。
+   同时把 V 上限显式限制为 `min(L, R//P, 64)`（题面 §6 `V≤64`）。**未重新生成已冻结的 seed 424243 留出集**；
+   其原过滤实际 V≤L≤32，符合 64 上限。
+6. **对既有基线结论的影响**：复查全部已保存批次，`flags` 中只有 `zero_len_comm_suspect` 与
+   `mini` 的 `grader_reject`（INPUT_REJECT），**没有** `input_probe_unavailable`、`time_mismatch`、
+   `local_reject`、`judge_unavailable`；所有官方合格用例均为 `OK`。因此 t3 的 50/50、battery 13/13、
+   samples 6/6、留出集 v1/v2 数值与结论**不受影响**；原始 summary/逐例记录保持原样。
+7. **t4/t5 使用修补版工具**（SHA-256 `07314d0c…`）。已有批次是 t3 版工具产物，仍可引用其原始数值；
+   新 A/B 必须用修补版，并以 `strict_pass` 而非 `official_valid` 作为验收门槛。自测证据：
+   `runs/frontier/selftest-20261030-131434/`（15 项断言）。

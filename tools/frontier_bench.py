@@ -16,8 +16,17 @@
   额外 `PYTHONDONTWRITEBYTECODE=1`，保持其 git status 干净；
 * 官方 grader 判成绩，本地 judge 作更严格的第二道闸；零时长通信的已知口径差异
   （官方忽略、本地保守计入）单列，不算作任一边的 bug；
-* 非法 / 超时 / 非零退出 / 缺输出**一律不计成功**；
-* `--selftest` 用四个假 solver 自测上述四条路径，防止工具本身把失败记成成功。
+* **输入资格三态**：`True`=官方解析通过；`False`=官方解析器明确拒绝（只有这种记
+  `INPUT_REJECT`/N/A）；`None`=探针本身失败（`UNVERIFIED`，必须让正式 CLI 失败）；
+* 非法 / 超时 / 非零退出 / 缺输出 / 本地判非法（`LOCAL_FAIL`）/ 双判 `Time` 不一致
+  （`TIME_MISMATCH`）**一律不计严格通过**；
+* **官方成绩统计与严格双判验证分开**：`summary.json` 里 `official_valid`/`official_ok_rate`
+  是成绩，`strict_ok`/`strict_failures`/`strict_pass` 是验收；缺省 CLI 只在
+  `strict_pass=True` 时退出 0（fail-closed），不会因"官方 TIME 合法"而忽略本地失败或
+  未验证输入；
+* `--selftest` 用假 solver / 假 grader / 假本地 judge 覆盖原有 4 条失败路径，以及
+  unknown 探针、官方明确拒绝、官方合法但本地失败、双判 Time 不一致，并用**真实 CLI
+  退出码**验证 fail-closed。
 
 用法::
 
@@ -272,18 +281,28 @@ def run_local_judge(case, out_path, worktree, timeout=120.0) -> dict:
 
 
 def probe_official_input(case, grader) -> dict:
-    """用**官方输入解析器**独立判定该用例是否有资格进入官方评分。
+    """用**官方输入解析器**独立判定该用例的输入资格，三态语义：
+
+    * ``eligible=True``：官方 ``parse_instance`` 正常返回；
+    * ``eligible=False``：官方**明确拒绝**该输入（只捕获官方自己的 ``grader.Invalid``）；
+    * ``eligible=None``：探针本身失败（import 失败、超时、未知异常），资格**未验证**。
 
     只 import grader 并调用它的 ``parse_instance``：不跑模拟、不读任何 solver 输出、
-    不依赖报错字符串。``eligible=False`` 表示输入被官方解析拒绝（题面 §4.7 的输入
-    保证不满足），该例在报告里记 N/A，不计 solver 失败，也不计官方成功。
+    不依赖报错字符串。只有 ``False`` 允许记 N/A；``None`` 必须让严格验证失败。
     """
     env = dict(os.environ)
     env.pop("PYTHONPATH", None)
     code = (
         "import sys, grader\n"
         "text = open(sys.argv[1], encoding='utf-8').read()\n"
-        "grader.parse_instance(text)\n"
+        "try:\n"
+        "    grader.parse_instance(text)\n"
+        "except grader.Invalid as exc:\n"
+        "    print('INELIGIBLE: ' + str(exc), file=sys.stderr)\n"
+        "    sys.exit(3)\n"
+        "except Exception as exc:\n"
+        "    print('PROBE-FAILED: ' + repr(exc), file=sys.stderr)\n"
+        "    sys.exit(4)\n"
         "print('ELIGIBLE')\n"
     )
     result = run_proc(
@@ -293,10 +312,16 @@ def probe_official_input(case, grader) -> dict:
     eligible = None
     if result["exit"] == 0 and "ELIGIBLE" in result["stdout"]:
         eligible = True
-    elif result["exit"] is not None:
+        detail = "eligible"
+    elif result["exit"] == 3:
         eligible = False
+        detail = "official_reject"
+    else:
+        eligible = None
+        detail = "probe_failed"
     return {
         "eligible": eligible,
+        "detail": detail,
         "exit": result["exit"],
         "timed_out": result["timed_out"],
         "wall_s": result["wall_s"],
@@ -432,6 +457,7 @@ def run_one(trial, case: Path, *, solver, worktree, grader, run_dir,
         elif status == "INVALID":
             flags.append("local_accepts_official_reject")
         elif payload.get("time") != official["time"]:
+            status = "TIME_MISMATCH"
             flags.append("time_mismatch")
 
     if record.get("zero_len_comm_suspect"):
@@ -445,6 +471,9 @@ def run_one(trial, case: Path, *, solver, worktree, grader, run_dir,
         if record.get("local") and record["local"].get("ok"):
             flags.append("local_accepts_official_reject")
     elif official_eligible is None:
+        # 资格探针失败：该例的官方资格未验证，绝不能当 N/A。保留 solver 观测 flags，
+        # 但整体状态记为 UNVERIFIED，严格验证与正式 CLI 都必须失败。
+        status = "UNVERIFIED"
         flags.append("input_probe_unavailable")
     record["official_eligible"] = official_eligible
     record["status"] = status
@@ -504,23 +533,41 @@ def summarize(records: list[dict], label: str, meta: dict) -> dict:
         }
 
     eligible_records = [r for r in records if r.get("official_eligible") is True]
-    ineligible_records = [r for r in records if r.get("official_eligible") is not True]
+    rejected_records = [r for r in records if r.get("official_eligible") is False]
+    unknown_records = [r for r in records if r.get("official_eligible") is None]
     eligible_times = [r["official"]["time"] for r in eligible_records
                       if r.get("official") and r["official"]["time"] is not None]
+    strict_failures = [
+        {"case": r["case"], "status": r["status"], "flags": r["flags"]}
+        for r in eligible_records if r["status"] != "OK"
+    ]
+    strict_pass = bool(eligible_records) and not strict_failures and not unknown_records
     return {
         "label": label, "meta": meta, "cases": len(records),
         "by_status": by_status,
         "eligible": len(eligible_records),
-        "ineligible": [r["case"] for r in ineligible_records],
-        "ineligible_detail": [
+        "officially_rejected": [r["case"] for r in rejected_records],
+        "input_unknown": [r["case"] for r in unknown_records],
+        "ineligible": [r["case"] for r in rejected_records],  # 兼容旧字段：只含官方明确拒绝
+        "rejected_detail": [
             {"case": r["case"], "official_input": r.get("official_input"),
              "status": r["status"], "local_ok": (r.get("local") or {}).get("ok")}
-            for r in ineligible_records
+            for r in rejected_records
         ],
+        "unknown_detail": [
+            {"case": r["case"], "official_input": r.get("official_input"),
+             "status": r["status"], "flags": r["flags"]}
+            for r in unknown_records
+        ],
+        # —— 官方成绩统计：只统计官方输入合格的用例，INPUT_REJECT 不计入分母 ——
         "valid_official": len(official_times),
         "official_valid": len(eligible_times),
         "official_ok_rate": (len(eligible_times) / len(eligible_records)) if eligible_records else None,
+        "official_score_complete": bool(eligible_records) and len(eligible_times) == len(eligible_records),
+        # —— 严格双判验证：官方合格用例必须全部 status=OK（官方合法 + 本地合法 + Time 一致） ——
         "strict_ok": by_status.get("OK", 0),
+        "strict_failures": strict_failures,
+        "strict_pass": strict_pass,
         "official_time_stats": stats(official_times),
         "solver_wall_stats": stats(walls),
         "solver_cpu_stats": stats(cpus),
@@ -538,9 +585,14 @@ def render_markdown(summary: dict) -> str:
     lines = [f"# {summary['label']}", "",
              f"- cases: {summary['cases']}  status: {summary['by_status']}",
              f"- eligible(official input): {summary['eligible']}  "
-             f"ineligible: {summary['ineligible'] or '-'}",
-             f"- valid(official, eligible only): {summary['official_valid']}/"
-             f"{summary['eligible']}  strict OK: {summary['strict_ok']}"]
+             f"officially rejected (N/A): {summary['officially_rejected'] or '-'}  "
+             f"input unknown (fail): {summary['input_unknown'] or '-'}",
+             f"- official score: valid {summary['official_valid']}/{summary['eligible']} "
+             f"(complete={summary['official_score_complete']})",
+             f"- strict dual-judge: {summary['strict_ok']}/{summary['eligible']} OK, "
+             f"strict_pass={summary['strict_pass']}"]
+    if summary["strict_failures"]:
+        lines.append(f"- strict failures: {summary['strict_failures']}")
     meta = summary["meta"]
     lines.append(f"- solver worktree: `{meta['worktree']}` @ `{meta['git']['sha']}`"
                  f" (dirty={meta['git']['dirty']})")
@@ -566,36 +618,58 @@ def render_markdown(summary: dict) -> str:
 # 留出集生成（固定 seed + 前置过滤；不看求解结果挑样本）
 # --------------------------------------------------------------------------- #
 def necessary_feasible(text: str) -> tuple[bool, dict]:
-    """输入层面的**必要**可行性检查（只用题面公式，不看任何求解结果）。
+    """输入层面的**本地保守必要筛选**，外加一个独立的官方不可行严格证书。
 
-    任何合法映射至少要有 1 份激活与 1 块通信缓冲（本地口径把零时长通信也计入），
-    因此对某组 (V,P)：``ceil(L/V)*((E/P)Z + Zs) + U + Uact <= M`` 是必要条件。
-    生成器 ``tools/fuzz.py`` 的 M 只按 Mexp 估最小驻留量，会造出连必要条件的过不了的
-    用例（实测 seed=424242 的 h02：min Mexp=133120，+U+Uact=657408 > M=239895）。
-    这里把该缺口显式挡在留出集之外；它不改变任何已有夹具，也不参与求解。
+    语义（不要混用）：
+
+    * ``reason="official_infeasible_activation"``：``Uact > M``。任何合法调度在任一时刻
+      都至少有一份激活 ``(mb, ℓ)`` 存活（``comb`` 结束到 ``s_bwd`` 开始是闭区间，至少
+      包含一个时刻），因此仅这一份就超过内存上限——与网格、通信、放置都无关，是**官方
+      口径下的严格不可行证书**。
+    * ``reason="local_necessary_failed"``：对某个 (V,P) 连
+      ``ceil(L/V)·((E/P)Z+Zs) + U + Uact <= M`` 都不满足。这是**本地保守口径**的必要
+      条件（把零时长通信也算一块缓冲）。它不满足**不等于官方不可行**：官方 grader 忽略
+      零时长通信，可能在 P=1/H=0/Fio=0 时给出更小的 Movl。因此这类 False 只能表述为
+      "未通过本地必要筛选"，不能冒称官方不可行。
+    * ``reason="local_necessary_passed"``：找到一组满足本地必要条件的 (V,P)。这**不是**
+      充分可行保证（只是输入层面的必要条件）。
+
+    V 上限按题面 §6 取 64（同时不超过 L 与 R//P）。
     """
     lines = text.strip().splitlines()
     line1, line2, line3 = lines[0].split(), lines[1].split(), lines[2].split()
     N, S, M = int(line1[0]), int(line1[1]), int(line1[2])
     (L, E, Z, Zs, U, Uact, k, nmb, Fs, Fio, Fin) = (int(x) for x in line2[:11])
     d, b = int(line3[0]), int(line3[1])
-    H = (d * b) // k if k else 0
     R = N * S
+    if Uact > M:
+        return False, {
+            "reason": "official_infeasible_activation",
+            "certificate": f"Uact={Uact} > M={M}",
+            "note": "任一合法调度至少一份激活存活，故官方口径下不可行（与网格无关）",
+        }
     best = None
+    V_CAP = 64  # 题面 §6：V ≤ 64
     for P in range(1, E + 1):
         if E % P or not (S % P == 0 or P % S == 0) or P > R:
             continue
-        for V in range(1, min(L, R // P) + 1):
+        for V in range(1, min(L, R // P, V_CAP) + 1):
             per_layer = (E // P) * Z + Zs
             mexp = -(-L // V) * per_layer
             comm = U  # 本地口径：即使通信时长为 0 也计入一块缓冲
             need = mexp + comm + Uact
+            item = {"V": V, "P": P, "mexp": mexp, "comm": comm,
+                    "uact": Uact, "need": need, "M": M}
             if best is None or need < best["need"]:
-                best = {"V": V, "P": P, "mexp": mexp, "comm": comm,
-                        "uact": Uact, "need": need, "M": M}
+                best = item
             if need <= M:
-                return True, {"V": V, "P": P, "mexp": mexp, "need": need, "M": M}
-    return False, (best or {"need": None, "M": M})
+                return True, {"reason": "local_necessary_passed", **item,
+                              "note": "仅输入层面必要条件，不是充分可行保证"}
+    return False, {
+        "reason": "local_necessary_failed",
+        "best_effort": best,
+        "note": "未通过本地保守必要条件（含零时长通信缓冲）；不等于官方不可行",
+    }
 
 
 def generate_heldout(seed: int, count: int, out_dir: Path, *,
@@ -620,7 +694,8 @@ def generate_heldout(seed: int, count: int, out_dir: Path, *,
             continue
         feasible, why = necessary_feasible(text)
         if not feasible:
-            rejected.append({"index": scanned, "reason": "necessary_memory_infeasible",
+            rejected.append({"index": scanned,
+                             "reason": why.get("reason", "necessary_filter_failed"),
                              "detail": why})
             continue
         path = out_dir / f"h{len(chosen):02d}.in"
@@ -633,8 +708,9 @@ def generate_heldout(seed: int, count: int, out_dir: Path, *,
                    "max_nmb": max_nmb, "max_ops": max_ops},
         "selection": "按 RNG 顺序取前 N 个满足前置过滤 + 输入层面必要可行性检查的样本，"
                      "未参考任何求解结果",
-        "necessary_filter": "ceil(L/V)*((E/P)Z+Zs) + U + Uact <= M（本地保守口径，"
-                            "只用题面公式）",
+        "necessary_filter": "Uact > M 单独即官方不可行；否则检查 "
+                            "ceil(L/V)*((E/P)Z+Zs) + U + Uact <= M（本地保守口径，"
+                            "V≤64，只用题面公式；False 不冒称官方不可行，True 非充分保证）",
         "rejected": rejected,
         "files": {p.name: sha256_file(p) for p in chosen},
     }
@@ -645,12 +721,18 @@ def generate_heldout(seed: int, count: int, out_dir: Path, *,
 
 
 # --------------------------------------------------------------------------- #
-# 自测：非法 / 超时 / 非零退出 / 正常 四条路径必须被正确分类
+# 自测：原有 4 条路径 + 输入资格 unknown / 官方明确拒绝 / 本地失败 / Time 不一致
 # --------------------------------------------------------------------------- #
-SELFTEST_VALID = """\
-import shutil, sys
-shutil.copy(sys.argv[2] and {src!r} or {src!r}, sys.argv[2])
-sys.stdout.write(open({src!r}, encoding='utf-8').read())
+SELFTEST_COPY = """\
+import pathlib, shutil, sys
+MAPPING = {mapping}
+name = pathlib.Path(sys.argv[1]).stem
+src = MAPPING.get(name)
+if src is None:
+    print('no fake output for ' + name, file=sys.stderr)
+    sys.exit(2)
+shutil.copy(src, sys.argv[2])
+sys.stdout.write(open(src, encoding='utf-8').read())
 """
 SELFTEST_INVALID = """\
 import sys
@@ -668,56 +750,179 @@ print('deliberate failure', file=sys.stderr)
 sys.exit(3)
 """
 
+FAKE_GRADER_OK = """\
+class Invalid(Exception):
+    pass
+
+def parse_instance(text):
+    return {"ok": True}
+
+def main():
+    print(999)
+    return 0
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())
+"""
+FAKE_GRADER_UNKNOWN = """\
+def parse_instance(text):
+    raise RuntimeError("probe infrastructure failure")
+
+def main():
+    print(999)
+    return 0
+
+if __name__ == "__main__":
+    import sys
+    sys.exit(main())
+"""
+FAKE_JUDGE = """\
+import json
+print(json.dumps({payload}))
+"""
+
+
+def _write(path: Path, text: str) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return path
+
 
 def selftest(out_root: Path) -> int:
     stamp = time.strftime("%Y%m%d-%H%M%S")
     base = out_root / f"selftest-{stamp}"
     base.mkdir(parents=True, exist_ok=False)
-    fake_dir = base / "fake_solvers"
-    fake_dir.mkdir()
-    case = SAMPLES_DIR / "ex1.in"
-    valid_out = SAMPLES_DIR / "ex1.out"
-    if not case.is_file() or not valid_out.is_file():
-        print("[selftest] 缺少 cases/ex1.in 或 cases/ex1.out", file=sys.stderr)
+    ex1 = SAMPLES_DIR / "ex1.in"
+    ex1_out = SAMPLES_DIR / "ex1.out"
+    mini = SAMPLES_DIR / "mini.in"
+    mini_out = SAMPLES_DIR / "mini.out"
+    if not all(p.is_file() for p in (ex1, ex1_out, mini, mini_out)):
+        print("[selftest] 缺少 cases/ex1.in|ex1.out|mini.in|mini.out", file=sys.stderr)
         return 1
 
-    scripts = {
-        "valid": (SELFTEST_VALID.format(src=str(valid_out)), 10.0, "OK"),
-        "invalid": (SELFTEST_INVALID, 10.0, "INVALID"),
-        "timeout": (SELFTEST_TIMEOUT, 1.0, "TO"),
-        "error": (SELFTEST_ERROR, 10.0, "ERROR"),
+    # ---------- 假 solver ----------
+    mapping = {ex1.stem: str(ex1_out), mini.stem: str(mini_out)}
+    fake_solver = _write(base / "fake_solvers/copy.py", SELFTEST_COPY.format(mapping=mapping))
+    _write(base / "fake_solvers/invalid.py", SELFTEST_INVALID)
+    _write(base / "fake_solvers/timeout.py", SELFTEST_TIMEOUT)
+    _write(base / "fake_solvers/error.py", SELFTEST_ERROR)
+
+    # ---------- 假官方 grader（只用于 unknown 探针场景） ----------
+    grader_ok = _write(base / "fake_graders/ok/grader.py", FAKE_GRADER_OK)
+    grader_unknown = _write(base / "fake_graders/unknown/grader.py", FAKE_GRADER_UNKNOWN)
+
+    # ---------- 假本地 judge（jduge 包放 src/judge，跑 python -m judge） ----------
+    def fake_worktree(name: str, payload: str) -> Path:
+        root = base / "fake_worktrees" / name
+        _write(root / "src/judge/__init__.py", "")
+        _write(root / "src/judge/__main__.py", FAKE_JUDGE.format(payload=payload))
+        return root
+
+    wt_ok = fake_worktree(
+        "ok", '{"ok": True, "time": 999, "lb": 0, "groups": [], "errors": []}')
+    wt_local_fail = fake_worktree(
+        "local_fail", '{"ok": False, "time": None, "lb": 0, "groups": [], "errors": ["local reject"]}')
+    wt_mismatch = fake_worktree(
+        "mismatch", '{"ok": True, "time": 1000, "lb": 0, "groups": [], "errors": []}')
+
+    failures: list[tuple] = []
+    checks: list[tuple[str, bool, str]] = []
+
+    def check(name: str, condition: bool, detail: str) -> None:
+        checks.append((name, condition, detail))
+        if not condition:
+            failures.append((name, detail))
+
+    def invoke_cli(scenario: str, *, cases, solver, worktree, grader, timeout=5.0):
+        run_dir = base / f"cli-{scenario}"
+        args = [
+            "--label", f"selftest-{scenario}", "--cases", *[str(c) for c in cases],
+            "--solver", str(solver), "--worktree", str(worktree),
+            "--grader", str(grader), "--budget", "1", "--timeout", str(timeout),
+            "--out", str(run_dir),
+        ]
+        proc = subprocess.run(
+            [sys.executable, str(Path(__file__).resolve()), *args],
+            capture_output=True, text=True, timeout=180,
+        )
+        summary_path = run_dir / "summary.json"
+        summary = json.loads(summary_path.read_text(encoding="utf-8")) if summary_path.is_file() else None
+        return proc, summary
+
+    print("[selftest] 原有 4 条路径（真 grader + 真本地 judge）", flush=True)
+    direct = {
+        "valid": (fake_solver, 10.0, "OK"),
+        "invalid": (base / "fake_solvers/invalid.py", 10.0, "INVALID"),
+        "timeout": (base / "fake_solvers/timeout.py", 1.0, "TO"),
+        "error": (base / "fake_solvers/error.py", 10.0, "ERROR"),
     }
-    failures = []
-    records = {}
-    for name, (source, timeout, expected) in scripts.items():
-        path = fake_dir / f"fake_{name}.py"
-        path.write_text(source, encoding="utf-8")
-        run_dir = base / name
+    for name, (solver, timeout, expected) in direct.items():
+        run_dir = base / f"direct-{name}"
         run_dir.mkdir()
         record = run_one(
-            None, case, solver=path, worktree=ROOT, grader=DEFAULT_GRADER,
+            None, ex1, solver=solver, worktree=ROOT, grader=DEFAULT_GRADER,
             run_dir=run_dir, budget_mode="auto", budget_override=1.0,
             timeout=timeout, case_set="selftest", repeat_index=0,
-            extra_env={"FAKE_SRC": str(valid_out)},
         )
-        records[name] = record
-        ok = record["status"] == expected
-        if not ok:
-            failures.append((name, expected, record["status"], record["flags"]))
-        print(f"[selftest] {name:8s} expected={expected:8s} got={record['status']:8s} "
-              f"{'PASS' if ok else 'FAIL'} flags={record['flags']}", flush=True)
+        check(f"direct-{name}", record["status"] == expected,
+              f"expected={expected} got={record['status']} flags={record['flags']}")
+        if name == "valid":
+            check("direct-valid-dual-judge",
+                  bool(record.get("official") and record["official"].get("time") is not None
+                       and record.get("local") and record["local"].get("ok")),
+                  f"official={record.get('official')} local={record.get('local')}")
 
-    # 额外断言：正常路径必须让官方 grader 与本地 judge 都判合法
-    record = records.get("valid") or {}
-    if not (record.get("official") and record["official"].get("time") is not None
-            and record.get("local") and record["local"].get("ok")):
-        failures.append(("valid-dual-judge", "both ok", record.get("status"), []))
+    print("[selftest] 新增异常路径（假 solver/grader/judge + 真实 CLI 退出码）", flush=True)
+
+    proc, summary = invoke_cli("ok", cases=[ex1], solver=fake_solver,
+                               worktree=wt_ok, grader=grader_ok)
+    check("cli-ok-exit0", proc.returncode == 0, f"exit={proc.returncode} stderr={proc.stderr[-200:]}")
+    check("cli-ok-status", bool(summary) and summary["by_status"].get("OK") == 1
+          and summary["strict_pass"] is True, f"summary={summary and summary['by_status']}")
+
+    proc, summary = invoke_cli("local-fail", cases=[ex1], solver=fake_solver,
+                               worktree=wt_local_fail, grader=grader_ok)
+    check("cli-local-fail-nonzero", proc.returncode != 0, f"exit={proc.returncode}")
+    check("cli-local-fail-strict", bool(summary) and summary["by_status"].get("LOCAL_FAIL") == 1
+          and summary["strict_pass"] is False
+          and summary["official_valid"] == 1,
+          f"status={summary and summary['by_status']} official_valid={summary and summary['official_valid']}")
+
+    proc, summary = invoke_cli("time-mismatch", cases=[ex1], solver=fake_solver,
+                               worktree=wt_mismatch, grader=grader_ok)
+    check("cli-mismatch-nonzero", proc.returncode != 0, f"exit={proc.returncode}")
+    check("cli-mismatch-strict", bool(summary) and summary["by_status"].get("TIME_MISMATCH") == 1
+          and summary["strict_pass"] is False and "time_mismatch" in summary["flags"],
+          f"status={summary and summary['by_status']} flags={summary and summary['flags']}")
+
+    proc, summary = invoke_cli("unknown-probe", cases=[ex1], solver=fake_solver,
+                               worktree=wt_ok, grader=grader_unknown)
+    check("cli-unknown-nonzero", proc.returncode != 0, f"exit={proc.returncode}")
+    check("cli-unknown-not-n-a", bool(summary) and summary["by_status"].get("UNVERIFIED") == 1
+          and summary["input_unknown"] == [ex1.stem]
+          and summary["officially_rejected"] == []
+          and summary["strict_pass"] is False,
+          f"status={summary and summary['by_status']} unknown={summary and summary['input_unknown']}")
+
+    proc, summary = invoke_cli("official-reject-mixed", cases=[ex1, mini], solver=fake_solver,
+                               worktree=ROOT, grader=DEFAULT_GRADER)
+    check("cli-reject-exit0", proc.returncode == 0, f"exit={proc.returncode} stderr={proc.stderr[-200:]}")
+    check("cli-reject-n-a", bool(summary) and summary["officially_rejected"] == [mini.stem]
+          and summary["by_status"].get("INPUT_REJECT") == 1
+          and summary["by_status"].get("OK") == 1
+          and summary["strict_pass"] is True
+          and summary["official_valid"] == 1,
+          f"status={summary and summary['by_status']} rejected={summary and summary['officially_rejected']}")
 
     print(f"[selftest] artifacts: {base}")
+    for name, condition, detail in checks:
+        print(f"[selftest] {name:28s} {'PASS' if condition else 'FAIL'}  {detail}", flush=True)
     if failures:
         print(f"[selftest] FAIL: {failures}", file=sys.stderr)
         return 1
-    print("[selftest] PASS: 非法/超时/错误退出均未被计成成功，正常解双判分器一致")
+    print("[selftest] PASS: 原有 4 路径 + unknown/官方明确拒绝/本地失败/Time 不一致 "
+          "均按 fail-closed 语义分类；unknown 未计 N/A，本地失败/Time 不一致未计 strict OK")
     return 0
 
 
@@ -823,15 +1028,19 @@ def main(argv: list[str] | None = None) -> int:
             "grader": {"path": str(grader), "sha256": sha256_file(grader)},
             "case_set": args.set, "cases": rows,
             "eligible": sum(1 for row in rows if row["eligible"] is True),
-            "ineligible": [row["case"] for row in rows if row["eligible"] is not True],
-            "note": "资格只由官方 grader.parse_instance 判定，与 solver 输出无关",
+            "officially_rejected": [row["case"] for row in rows if row["eligible"] is False],
+            "input_unknown": [row["case"] for row in rows if row["eligible"] is None],
+            "ineligible": [row["case"] for row in rows if row["eligible"] is False],  # 兼容旧字段
+            "note": "资格只由官方 grader.parse_instance 判定，与 solver 输出无关；"
+                    "False=官方明确拒绝，None=探针失败（未验证）",
         }
         out_path = Path(args.out).resolve()
         out_path.parent.mkdir(parents=True, exist_ok=True)
         out_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
                            encoding="utf-8")
         print(f"[audit] {len(rows)} 例，eligible={payload['eligible']}，"
-              f"ineligible={payload['ineligible'] or '-'} → {out_path}", flush=True)
+              f"officially_rejected={payload['officially_rejected'] or '-'}，"
+              f"input_unknown={payload['input_unknown'] or '-'} → {out_path}", flush=True)
         return 0 if payload["eligible"] == len(rows) else 1
 
     if args.gen_heldout:
@@ -946,15 +1155,25 @@ def main(argv: list[str] | None = None) -> int:
     (run_dir / "summary.md").write_text(render_markdown(summary), encoding="utf-8")
     print(f"[bench] total wall {total_wall:.1f}s  status={summary['by_status']}  "
           f"eligible={summary['eligible']}/{summary['cases']}  "
-          f"valid(official, eligible)={summary['official_valid']}/{summary['eligible']}  "
-          f"strict OK={summary['strict_ok']}", flush=True)
-    if summary["ineligible"]:
-        print(f"[bench] 输入被官方解析拒绝（N/A，不计 solver 失败）：{summary['ineligible']}",
-              flush=True)
+          f"official score={summary['official_valid']}/{summary['eligible']}  "
+          f"strict OK={summary['strict_ok']}/{summary['eligible']}  "
+          f"strict_pass={summary['strict_pass']}", flush=True)
+    if summary["officially_rejected"]:
+        print("[bench] 官方明确拒绝的输入（N/A，不计 solver 失败，也不计入官方分母）："
+              f"{summary['officially_rejected']}", flush=True)
+    if summary["input_unknown"]:
+        print("[bench] 输入资格探针失败（UNVERIFIED，严格验证失败）："
+              f"{summary['input_unknown']}", file=sys.stderr)
+    if summary["strict_failures"]:
+        print(f"[bench] 严格双判失败：{summary['strict_failures']}", file=sys.stderr)
     if summary["eligible"] == 0:
         print("[bench] 没有任何官方合格用例，无法形成官方成绩", file=sys.stderr)
         return 2
-    return 0 if summary["official_valid"] == summary["eligible"] else 1
+    if not summary["strict_pass"]:
+        print("[bench] FAIL-CLOSED：官方成绩统计不等于严格双判通过；"
+              "正式候选验收不得使用退出码 0", file=sys.stderr)
+        return 1
+    return 0
 
 
 if __name__ == "__main__":
