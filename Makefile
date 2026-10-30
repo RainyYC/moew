@@ -1,9 +1,29 @@
-.PHONY: build submission submission-check smoke check official official-serial report help
+.PHONY: build build-multi submission submission-check smoke check official official-serial report help
 
 .DEFAULT_GOAL := build
 
-build:
-	./scripts/build.sh
+include src/sources.mk
+CXX ?= g++
+CPPFLAGS ?= -Isrc
+CXXFLAGS ?= -std=c++17 -O2 -pipe -Wall -Wextra -flto
+LDFLAGS ?= -flto
+TARGET ?= build/solver
+BUILD_DIR ?= build/obj
+OBJECTS := $(patsubst src/%.cpp,$(BUILD_DIR)/%.o,$(SOLVER_SOURCES))
+DEPS := $(OBJECTS:.o=.d)
+
+build: build-multi
+
+build-multi: $(TARGET)
+
+$(TARGET): $(OBJECTS) Makefile src/sources.mk
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $(OBJECTS) -o $@
+
+$(BUILD_DIR)/%.o: src/%.cpp
+	@mkdir -p $(dir $@)
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -MMD -MP -c $< -o $@
+
+-include $(DEPS)
 
 submission:
 	python3 scripts/amalgamate.py
@@ -27,7 +47,7 @@ report:
 help:
 	@printf '%s\n' \
 	  'make (默认)       编译 build/solver' \
-	  'make build        编译求解器' \
+	  'make build        增量编译多翻译单元求解器' \
 	  'make submission   导出单文件 submission/solver.cpp' \
 	  'make submission-check 检查单文件导出是否最新' \
 	  'make smoke        用官方 grader 验收 x01 与 x18' \

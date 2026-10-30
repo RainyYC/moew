@@ -1,8 +1,20 @@
+// BEGIN TRANSLATION UNIT: src/solver.cpp
 // BEGIN MODULE: src/solver.cpp
 // BEGIN MODULE: src/app/solver.hpp
+namespace solver {
+int run(int argc, char** argv);
+}
+// END MODULE: src/app/solver.hpp
+
+int main(int argc, char** argv) {
+    return solver::run(argc, argv);
+}
+// END MODULE: src/solver.cpp
+// END TRANSLATION UNIT: src/solver.cpp
+// BEGIN TRANSLATION UNIT: src/app/solver.cpp
+// BEGIN MODULE: src/app/solver.cpp
 // Top-level phase orchestration; global main stays in solver.cpp.
 // BEGIN MODULE: src/io/input.hpp
-// Input stream parsing into the problem value object.
 // BEGIN MODULE: src/model/problem.hpp
 // Shared problem and result value types.
 // BEGIN MODULE: src/common.hpp
@@ -56,7 +68,874 @@ inline constexpr std::array<int, 4> kCommunicationOperations = {
     kDispatchForward, kCombineForward, kCombineBackward, kDispatchBackward};
 }  // namespace operation
 // END MODULE: src/common.hpp
+// BEGIN MODULE: src/search/limits.hpp
+
+namespace solver::search_limits {
+inline constexpr int kDefaultBudgetMs = 9200;
+inline constexpr int kMinimumBudgetMs = 9000;
+inline constexpr int kMaximumBudgetMs = 9500;
+inline constexpr int kWindowExhaustiveMicrobatchLimit = 64;
+inline constexpr int kExtraLayoutMicrobatchLimit = 16;
+inline constexpr int kExtraLayoutNodeLimit = 8000;
+inline constexpr int kWaveDeadlineMs = 9000;
+inline constexpr int kPolishPrefixDeadlineMs = 9000;
+inline constexpr int kWaveWarmupMs = 8000;
+inline constexpr int kWaveExtensionReserveMs = 1000;
+inline constexpr int kListNormalDeadlineMs = 8000;
+inline constexpr int kListDeepDeadlineMs = 30000;
+inline constexpr int kPrefixEvaluationsPerRound = 3000;
+inline constexpr int kPrefixNodeLimit = 8000;
+inline constexpr int kPrefixMaxRounds = 4;
+inline constexpr int kPrefixRoundReserveMs = 100;
+inline constexpr int kQuickGapFillLatestStartMs = 4000;
+inline constexpr int kListReleaseDeadlineMs = 8000;
+inline constexpr int kExtensionDeadlineReserveMs = 30;
+inline constexpr int kExtensionIterationBudget = 700;
+inline constexpr int kPlacementSearchBudget = 250000;
+inline constexpr int kPlacementPeakSearchSteps = 12;
+inline constexpr int kMaximumPartitionCount = 64;
+inline constexpr long long kMillion = 1000000LL;
+inline constexpr long long kTrillion = 1000000000000LL;
+inline constexpr __int128_t kInfiniteTime = static_cast<__int128_t>(1) << 126;
+}  // namespace solver::search_limits
+// END MODULE: src/search/limits.hpp
+// BEGIN MODULE: src/model/scheduled_operation.hpp
+
+namespace event_sched {
+using i128 = __int128_t;
+
+struct Op {
+    i128 start;
+    int mb;
+    int l;
+    int op;
+};
+}  // namespace event_sched
+// END MODULE: src/model/scheduled_operation.hpp
+namespace solver {
+using i128 = __int128_t;
+struct InputData {
+    int N, S, L, E, k, mb;
+    i128 M, Bi, Bo, Z, Zs, U, Ua, d, b, Fs, Fio, Fin, ax, bx;
+    std::vector<i128> T;
+    std::vector<std::vector<i128>> load;
+};
+struct Candidate {
+    int P = 0, V = 0;
+    i128 score = 0;
+    std::vector<int> cuts;
+    std::vector<std::vector<int>> map;
+};
+struct PartitionCandidate {
+    Candidate best_v, max_v;
+    i128 probe_time = search_limits::kInfiniteTime;
+};
+struct ScheduleResult {
+    Candidate c;
+    int G = 0, K = 0;
+    i128 time = search_limits::kInfiniteTime;
+    std::vector<int> cuts, group;
+    std::vector<event_sched::Op> ops;
+};
+
+}  // namespace solver
+// END MODULE: src/model/problem.hpp
+namespace solver {
+InputData read_input(std::istream& in);
+}
+// END MODULE: src/io/input.hpp
+// BEGIN MODULE: src/io/options.hpp
+namespace solver {
+struct Options {
+    int force_p = 0;
+    bool serial = false, do_list = false, list_deep = false, list_deep_topos = false;
+    bool force_wave = false;
+    int budget_ms = search_limits::kDefaultBudgetMs;
+    int polish_pass_limit = 0;
+    std::string retime_mode = "auto";
+    std::string borrow = "ac", diff = "auto", scale = "auto";
+    std::string input_path;
+};
+Options parse_options(int argc, char** argv);
+}  // namespace solver
+// END MODULE: src/io/options.hpp
+// BEGIN MODULE: src/io/output.hpp
+namespace solver {
+void write_output(const InputData& x, const ScheduleResult& best, bool serial);
+}
+// END MODULE: src/io/output.hpp
+// BEGIN MODULE: src/search/boost_search.hpp
+namespace solver {
+ScheduleResult run_boost_borrow(const InputData& x, ScheduleResult best,
+                                const ScheduleResult& v5_base, bool serial,
+                                const std::string& borrow);
+}
+// END MODULE: src/search/boost_search.hpp
+// BEGIN MODULE: src/search/candidate_search.hpp
+namespace solver {
+std::vector<PartitionCandidate> generate_candidates(const InputData& x, int force_p);
+}
+// END MODULE: src/search/candidate_search.hpp
+// BEGIN MODULE: src/search/initial_search.hpp
+namespace solver {
+struct InitialResults {
+    ScheduleResult best;
+    ScheduleResult probe_base;
+    ScheduleResult v5_base;
+};
+InitialResults refine_initial_candidates(const InputData& x, std::vector<PartitionCandidate>& pcs,
+                                         bool serial);
+}  // namespace solver
+// END MODULE: src/search/initial_search.hpp
+// BEGIN MODULE: src/search/list_search.hpp
+namespace solver {
+ScheduleResult run_v7_list_search(const InputData& x, ScheduleResult best, bool serial,
+                                  bool do_list, bool list_deep, bool list_deep_topos,
+                                  bool diff_enabled,
+                                  std::chrono::steady_clock::time_point main_start,
+                                  const std::string& borrow);
+}
+// END MODULE: src/search/list_search.hpp
+// BEGIN MODULE: src/search/placement_search.hpp
+namespace solver {
+ScheduleResult run_alt_placement(const InputData& x, ScheduleResult best,
+                                 const ScheduleResult& v5_base, bool serial,
+                                 const std::string& borrow);
+}
+// END MODULE: src/search/placement_search.hpp
+// BEGIN MODULE: src/search/polish_driver.hpp
+namespace solver {
+void polish_final_schedule(const InputData& x, ScheduleResult& best, bool serial, bool do_wave,
+                           std::chrono::steady_clock::time_point main_start, int budget_ms,
+                           const std::string& retime_mode, int polish_pass_limit);
+}
+// END MODULE: src/search/polish_driver.hpp
+// BEGIN MODULE: src/search/wave_search.hpp
+namespace solver {
+void run_scale_v8_search(const InputData& x, const std::vector<PartitionCandidate>& pcs,
+                         const ScheduleResult& v7_incumbent, ScheduleResult& best, bool serial,
+                         bool do_wave, std::chrono::steady_clock::time_point main_start);
+}
+// END MODULE: src/search/wave_search.hpp
+// BEGIN MODULE: src/search/window_borrow.hpp
+namespace solver {
+ScheduleResult run_window_borrow(const InputData& x, ScheduleResult best,
+                                 const ScheduleResult& probe_base, const ScheduleResult& v5_base,
+                                 bool serial, const std::string& borrow);
+}
+// END MODULE: src/search/window_borrow.hpp
+namespace solver {
+using namespace std;
+int run(int argc, char** argv) {
+    try {
+        auto main_start = chrono::steady_clock::now();
+        ios::sync_with_stdio(false);
+        cin.tie(nullptr);
+        Options options = parse_options(argc, argv);
+        ifstream input_file;
+        istream* input = &cin;
+        if (!options.input_path.empty() && options.input_path != "-") {
+            input_file.open(options.input_path);
+            if (!input_file) {
+                throw runtime_error("cannot open input file: " + options.input_path);
+            }
+            input = &input_file;
+        }
+        InputData x = read_input(*input);
+        int force_p = options.force_p;
+        bool serial = options.serial, do_list = options.do_list, list_deep = options.list_deep,
+             list_deep_topos = options.list_deep_topos, force_wave = options.force_wave;
+        string borrow = options.borrow, diff = options.diff, scale = options.scale;
+        bool diff_enabled = !serial && (diff == "on" || (diff == "auto" && borrow == "ac"));
+        if (diff_enabled) {
+            do_list = true;
+        }
+        if (diff == "off") {
+            do_list = false;
+        }
+        bool do_wave = !serial && (force_wave || scale == "on" ||
+                                   (scale == "auto" && borrow == "ac" && diff == "auto"));
+        if (borrow == "none" || diff == "off" || scale == "off") {
+            do_wave = false;
+        }
+        vector<PartitionCandidate> pcs = generate_candidates(x, force_p);
+        if (pcs.empty()) {
+            cerr << "no feasible config\n";
+            return 2;
+        }
+        InitialResults initial = refine_initial_candidates(x, pcs, serial);
+        ScheduleResult best = move(initial.best);
+        ScheduleResult probe_base = move(initial.probe_base);
+        ScheduleResult v5_base = move(initial.v5_base);
+        best = run_window_borrow(x, move(best), probe_base, v5_base, serial, borrow);
+        best = run_boost_borrow(x, move(best), v5_base, serial, borrow);
+        best = run_alt_placement(x, move(best), v5_base, serial, borrow);
+        best = run_v7_list_search(x, move(best), serial, do_list, list_deep, list_deep_topos,
+                                  diff_enabled, main_start, borrow);
+        ScheduleResult v7_incumbent = best;
+        run_scale_v8_search(x, pcs, v7_incumbent, best, serial, do_wave, main_start);
+        polish_final_schedule(x, best, serial, do_wave, main_start, options.budget_ms,
+                              options.retime_mode, options.polish_pass_limit);
+        write_output(x, best, serial);
+    } catch (const exception& e) {
+        cerr << "input/options error: " << e.what() << "\n";
+        return 2;
+    }
+    return 0;
+}
+
+}  // namespace solver
+// END MODULE: src/app/solver.cpp
+// END TRANSLATION UNIT: src/app/solver.cpp
+// BEGIN TRANSLATION UNIT: src/io/numeric.cpp
+// BEGIN MODULE: src/io/numeric.cpp
+// BEGIN MODULE: src/io/numeric.hpp
+namespace solver {
+using i128 = __int128_t;
+std::istream& operator>>(std::istream& in, i128& v);
+inline i128 ceil_div(i128 a, i128 b) {
+    return (a + b - 1) / b;
+}
+std::string to_decimal(i128 x);
+}  // namespace solver
+// END MODULE: src/io/numeric.hpp
+// Exact integer parsing, formatting, and arithmetic helpers.
+namespace solver {
+using namespace std;
+using i128 = __int128_t;
+istream& operator>>(istream& in, i128& v) {
+    string s;
+    if (!(in >> s)) {
+        return in;
+    }
+    v = 0;
+    for (char c : s) {
+        if (c >= '0' && c <= '9') {
+            v = v * 10 + c - '0';
+        }
+    }
+    return in;
+}
+string to_decimal(i128 x) {
+    if (!x) {
+        return "0";
+    }
+    string s;
+    while (x) {
+        s += char('0' + x % 10);
+        x /= 10;
+    }
+    reverse(s.begin(), s.end());
+    return s;
+}
+
+}  // namespace solver
+// END MODULE: src/io/numeric.cpp
+// END TRANSLATION UNIT: src/io/numeric.cpp
+// BEGIN TRANSLATION UNIT: src/io/input.cpp
+// BEGIN MODULE: src/io/input.cpp
+// Input stream parsing into the problem value object.
+namespace solver {
+using namespace std;
+InputData read_input(istream& in) {
+    InputData x{};
+    if (!(in >> x.N >> x.S >> x.M >> x.Bi >> x.Bo)) {
+        throw runtime_error("failed to read input headers (line 1)");
+    }
+    if (!(in >> x.L >> x.E >> x.Z >> x.Zs >> x.U >> x.Ua >> x.k >> x.mb >> x.Fs >> x.Fio >> x.Fin >>
+          x.ax >> x.bx)) {
+        throw runtime_error("failed to read input headers (line 2)");
+    }
+    if (!(in >> x.d >> x.b)) {
+        throw runtime_error("failed to read input headers (line 3)");
+    }
+    x.T.resize(x.L);
+    x.load.resize(x.L);
+    for (int l = 0; l < x.L; l++) {
+        if (!(in >> x.T[l])) {
+            throw runtime_error("failed to read T for layer " + to_string(l));
+        }
+        x.load[l].resize(x.E);
+        string line;
+        getline(in, line);
+        stringstream ss(line);
+        vector<i128> a;
+        i128 z;
+        while (ss >> z) {
+            a.push_back(z);
+        }
+        if ((int)a.size() == x.E) {
+            x.load[l] = a;
+        } else {
+            i128 base = x.T[l] / x.E, rem = x.T[l] % x.E;
+            for (int e = 0; e < x.E; e++) {
+                x.load[l][e] = base + (e < rem);
+            }
+        }
+    }
+    return x;
+}
+}  // namespace solver
+// END MODULE: src/io/input.cpp
+// END TRANSLATION UNIT: src/io/input.cpp
+// BEGIN TRANSLATION UNIT: src/io/options.cpp
+// BEGIN MODULE: src/io/options.cpp
+// Command-line options and validation.
+namespace solver {
+using namespace std;
+
+
+Options parse_options(int argc, char** argv) {
+    Options options;
+    for (int i = 1; i < argc; i++) {
+        string a = argv[i];
+        if (a == "-") {
+            if (!options.input_path.empty()) {
+                throw runtime_error("multiple input paths");
+            }
+            options.input_path = a;
+        } else if (!a.empty() && a[0] != '-') {
+            if (!options.input_path.empty()) {
+                throw runtime_error("multiple input paths");
+            }
+            options.input_path = a;
+        } else if (a == "--baseline") {
+            options.serial = true;
+        } else if (a == "--list") {
+            options.do_list = true;
+        } else if (a == "--list-deep") {
+            options.do_list = true;
+            options.list_deep = true;
+        } else if (a == "--list-deep-topos") {
+            options.do_list = true;
+            options.list_deep = true;
+            options.list_deep_topos = true;
+        } else if (a == "--wave") {
+            options.force_wave = true;
+        } else if (a.rfind("--scale=", 0) == 0) {
+            options.scale = a.substr(8);
+        } else if (a.rfind("--force-p=", 0) == 0) {
+            options.force_p = stoi(a.substr(10));
+        } else if (a.rfind("--borrow=", 0) == 0) {
+            options.borrow = a.substr(9);
+        } else if (a.rfind("--diff=", 0) == 0) {
+            options.diff = a.substr(7);
+        } else if (a.rfind("--budget-ms=", 0) == 0) {
+            size_t used = 0;
+            int value = stoi(a.substr(12), &used);
+            if (used != a.size() - 12 || value < search_limits::kMinimumBudgetMs ||
+                value > search_limits::kMaximumBudgetMs) {
+                throw runtime_error("--budget-ms must be an integer from 9000 to 9500");
+            }
+            options.budget_ms = value;
+        } else if (a.rfind("--retime-mode=", 0) == 0) {
+            options.retime_mode = a.substr(14);
+            if (options.retime_mode != "auto" && options.retime_mode != "wide") {
+                throw runtime_error("--retime-mode must be auto or wide");
+            }
+        } else if (a.rfind("--polish-pass-limit=", 0) == 0) {
+            size_t used = 0;
+            int value = stoi(a.substr(20), &used);
+            if (used != a.size() - 20 || value < 0) {
+                throw runtime_error("--polish-pass-limit must be a nonnegative integer");
+            }
+            options.polish_pass_limit = value;
+        }
+    }
+    return options;
+}
+
+}  // namespace solver
+// END MODULE: src/io/options.cpp
+// END TRANSLATION UNIT: src/io/options.cpp
+// BEGIN TRANSLATION UNIT: src/io/output.cpp
+// BEGIN MODULE: src/io/output.cpp
+// Stable result and schedule serialization.
+// BEGIN MODULE: src/placement/expert_mapping.hpp
+namespace solver {
+std::vector<std::vector<int>> build_expert_map(const InputData& x, int P, i128& cost);
+std::vector<std::array<i128, operation::kCount>> compute_durations(const InputData& x,
+                                                                   const Candidate& c);
+}  // namespace solver
+// END MODULE: src/placement/expert_mapping.hpp
+namespace solver {
+using namespace std;
+void write_output(const InputData& x, const ScheduleResult& best, bool serial) {
+    // This display table follows operation::Code index order.
+    const array<string, operation::kCount> names = {
+        "s", "disp", "gemm", "comb", "s_bwd", "comb_bwd", "gemm_dx", "gemm_dw", "disp_bwd", "s_dw"};
+    cout << best.G << " " << best.c.P << "\nPSI\n" << best.K;
+    for (int j = 1; j < best.K; j++) {
+        cout << " " << best.cuts[j];
+    }
+    cout << "\nMAP\n";
+    for (auto& r : best.c.map) {
+        for (int e = 0; e < x.E; e++) {
+            cout << (e ? " " : "") << r[e];
+        }
+        cout << "\n";
+    }
+    cout << "SCHEDULE\n";
+    if (serial) {
+        auto dur = compute_durations(x, best.c);
+        i128 t = 0;
+        auto emit = [&](int mb, int l, int op) {
+            cout << to_decimal(t) << " " << mb << ":" << l << ":" << names[op] << "\n";
+            t += dur[l][op] + 1;
+        };
+        for (int mb = 0; mb < x.mb; mb++) {
+            for (int l = 0; l < x.L; l++) {
+                emit(mb, l, operation::index(operation::kSharedForward));
+                emit(mb, l, operation::index(operation::kDispatchForward));
+                emit(mb, l, operation::index(operation::kExpertForward));
+                emit(mb, l, operation::index(operation::kCombineForward));
+            }
+            for (int l = x.L - 1; l >= 0; l--) {
+                emit(mb, l, operation::index(operation::kCombineBackward));
+                emit(mb, l, operation::index(operation::kSharedBackward));
+                emit(mb, l, operation::index(operation::kExpertInputGradient));
+                emit(mb, l, operation::index(operation::kDispatchBackward));
+                emit(mb, l, operation::index(operation::kExpertWeightGradient));
+                emit(mb, l, operation::index(operation::kSharedWeightGradient));
+            }
+        }
+    } else {
+        for (auto& o : best.ops) {
+            cout << to_decimal(o.start) << " " << o.mb << ":" << o.l << ":" << names[o.op] << "\n";
+        }
+    }
+}
+
+}  // namespace solver
+// END MODULE: src/io/output.cpp
+// END TRANSLATION UNIT: src/io/output.cpp
+// BEGIN TRANSLATION UNIT: src/placement/expert_mapping.cpp
+// BEGIN MODULE: src/placement/expert_mapping.cpp
+// Per-layer expert assignment and duration cost model.
+namespace solver {
+using namespace std;
+vector<vector<int>> build_expert_map(const InputData& x, int P, i128& cost) {
+    vector<vector<int>> mp(x.L, vector<int>(x.E));
+    cost = 0;
+    for (int l = 0; l < x.L; l++) {
+        vector<int> e(x.E);
+        iota(e.begin(), e.end(), 0);
+        sort(e.begin(), e.end(), [&](int a, int b) { return x.load[l][a] > x.load[l][b]; });
+        vector<i128> loads(P);
+        vector<int> cnt(P);
+        for (int id : e) {
+            int r = -1;
+            for (int j = 0; j < P; j++) {
+                if (cnt[j] < x.E / P && (r < 0 || loads[j] < loads[r])) {
+                    r = j;
+                }
+            }
+            mp[l][id] = r;
+            ++cnt[r];
+            loads[r] += x.load[l][id];
+        }
+        i128 total = 0, heavy = 0, sq = 0;
+        for (auto v : x.load[l]) {
+            total += v;
+            heavy = max(heavy, v);
+        }
+        for (auto v : loads) {
+            sq += v * v;
+        }
+        for (int it = 0; it < 6; it++) {
+            i128 mx = *max_element(loads.begin(), loads.end());
+            if (mx == max(heavy, ceil_div(total, P))) {
+                break;
+            }
+            vector<int> order(P);
+            iota(order.begin(), order.end(), 0);
+            sort(order.begin(), order.end(), [&](int a, int b) { return loads[a] > loads[b]; });
+            int be = -1, bf = -1;
+            i128 bm = mx, bs = sq;
+            for (int a = 0; a < x.E; a++) {
+                for (int b = a + 1; b < x.E; b++) {
+                    int ra = mp[l][a], rb = mp[l][b];
+                    if (ra == rb) {
+                        continue;
+                    }
+                    i128 na = loads[ra] - x.load[l][a] + x.load[l][b],
+                         nb = loads[rb] - x.load[l][b] + x.load[l][a], outside = 0;
+                    for (int r : order) {
+                        if (r != ra && r != rb) {
+                            outside = loads[r];
+                            break;
+                        }
+                    }
+                    i128 nm = max(outside, max(na, nb)),
+                         ns =
+                             sq - loads[ra] * loads[ra] - loads[rb] * loads[rb] + na * na + nb * nb;
+                    if (nm < bm || (nm == bm && ns < bs)) {
+                        bm = nm;
+                        bs = ns;
+                        be = a;
+                        bf = b;
+                    }
+                }
+            }
+            if (be < 0) {
+                break;
+            }
+            int ra = mp[l][be], rb = mp[l][bf];
+            loads[ra] = loads[ra] - x.load[l][be] + x.load[l][bf];
+            loads[rb] = loads[rb] - x.load[l][bf] + x.load[l][be];
+            swap(mp[l][be], mp[l][bf]);
+            sq = bs;
+        }
+        cost += *max_element(loads.begin(), loads.end());
+    }
+    return mp;
+}
+vector<array<i128, operation::kCount>> compute_durations(const InputData& x, const Candidate& c) {
+    vector<array<i128, operation::kCount>> d(x.L);
+    i128 H = x.d * x.b / x.k;
+    for (int l = 0; l < x.L; l++) {
+        vector<i128> load(c.P);
+        for (int e = 0; e < x.E; e++) {
+            load[c.map[l][e]] += x.load[l][e];
+        }
+        i128 m = *max_element(load.begin(), load.end()), X = ceil_div(x.T[l] * H, c.P),
+             pin = min(c.P, x.S) - 1, pout = c.P - 1 - pin;
+        i128 com = max(ceil_div(pin * X, x.Bi), ceil_div(pout * X, x.Bo)) * x.Fio, g = m * x.Fin,
+             s = x.T[l] * x.Fs;
+        d[l] = {};
+        d[l][operation::kSharedForward] = s;
+        d[l][operation::kDispatchForward] = com;
+        d[l][operation::kExpertForward] = g;
+        d[l][operation::kCombineForward] = com;
+        d[l][operation::kSharedBackward] = ceil_div(x.ax * s, search_limits::kMillion);
+        d[l][operation::kCombineBackward] = ceil_div(x.ax * com, search_limits::kMillion);
+        d[l][operation::kExpertInputGradient] = ceil_div(x.ax * g, search_limits::kMillion);
+        d[l][operation::kExpertWeightGradient] =
+            ceil_div(x.ax * x.bx * g, search_limits::kTrillion);
+        d[l][operation::kDispatchBackward] = ceil_div(x.ax * com, search_limits::kMillion);
+        d[l][operation::kSharedWeightGradient] =
+            ceil_div(x.ax * x.bx * s, search_limits::kTrillion);
+    }
+    return d;
+}
+}  // namespace solver
+// END MODULE: src/placement/expert_mapping.cpp
+// END TRANSLATION UNIT: src/placement/expert_mapping.cpp
+// BEGIN TRANSLATION UNIT: src/placement/grouped_placement.cpp
+// BEGIN MODULE: src/placement/grouped_placement.cpp
+// BEGIN MODULE: src/placement/grouped_placement.hpp
+namespace grouped_placement {
+using i128 = __int128_t;
+namespace limits {
+inline constexpr int kMaxWeightTypes = 4;
+inline constexpr int kMaxRanks = 32;
+inline constexpr int kMaxSlotsPerRank = 32;
+inline constexpr std::uint64_t kDefaultNodeBudget = 250000;
+}  // namespace limits
+struct Plan {
+    std::vector<i128> values;
+    std::vector<std::vector<int>> rank_counts;
+    i128 peak = 0;
+};
+bool find_at_peak(const std::vector<i128>& slots, int P, int per_rank, i128 target_peak, Plan& plan,
+                  std::uint64_t node_budget = limits::kDefaultNodeBudget);
+bool materialize(const std::vector<i128>& slots, const Plan& plan, std::vector<int>& row);
+}  // namespace grouped_placement
+// END MODULE: src/placement/grouped_placement.hpp
+
+// ===== grouped_placement =====
+
+// Bounded exact placement search for layers with only a few distinct slot
+// weights. Experts with equal weights are grouped; the search assigns counts
+// of each weight to ranks, then materialize() maps those counts back to the
+// original expert indices.
+
+namespace grouped_placement {
+using i128 = __int128_t;
+namespace detail {
+struct State {
+    int rank;
+    int first_pattern;
+    std::vector<int> used;
+
+    bool operator==(const State& other) const {
+        return rank == other.rank && first_pattern == other.first_pattern && used == other.used;
+    }
+};
+
+struct StateHash {
+    std::size_t operator()(const State& state) const {
+        std::size_t h = std::hash<int>{}(state.rank);
+        auto mix = [&h](std::size_t x) { h ^= x + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2); };
+        mix(std::hash<int>{}(state.first_pattern));
+        for (int x : state.used) {
+            mix(std::hash<int>{}(x));
+        }
+        return h;
+    }
+};
+
+class Search {
+private:
+    int P;
+    int per_rank;
+    i128 target;
+    const std::vector<i128>& values;
+    const std::vector<int>& available;
+    std::uint64_t budget;
+    std::uint64_t visited = 0;
+    bool exhausted = false;
+    std::vector<std::vector<int>> patterns;
+    std::vector<std::vector<int>> solution;
+    std::unordered_set<State, StateHash> failed;
+
+public:
+    Search(int p, int q, i128 cap, const std::vector<i128>& type_values,
+           const std::vector<int>& type_counts, std::uint64_t node_budget)
+        : P(p),
+          per_rank(q),
+          target(cap),
+          values(type_values),
+          available(type_counts),
+          budget(node_budget) {}
+
+    bool solve() {
+        std::vector<int> pattern(values.size(), 0);
+        enumerate_patterns(0, per_rank, 0, pattern);
+        if (exhausted || patterns.empty()) {
+            return false;
+        }
+        std::vector<int> used(values.size(), 0);
+        std::vector<std::vector<int>> chosen;
+        chosen.reserve(P);
+        return dfs(0, 0, used, chosen) && !exhausted;
+    }
+
+    bool is_exhausted() const {
+        return exhausted;
+    }
+
+    std::vector<std::vector<int>> take_solution() {
+        return std::move(solution);
+    }
+
+private:
+    bool tick() {
+        if (++visited > budget) {
+            exhausted = true;
+            return false;
+        }
+        return true;
+    }
+
+    void enumerate_patterns(int type, int slots_left, i128 load, std::vector<int>& counts) {
+        if (exhausted || !tick()) {
+            return;
+        }
+        if (type == static_cast<int>(values.size()) - 1) {
+            int n = slots_left;
+            if (n < 0 || n > available[type]) {
+                return;
+            }
+            i128 sum = load + static_cast<i128>(n) * values[type];
+            if (sum > target) {
+                return;
+            }
+            counts[type] = n;
+            patterns.push_back(counts);
+            return;
+        }
+        const int max_n = std::min(slots_left, available[type]);
+        for (int n = 0; n <= max_n && !exhausted; ++n) {
+            i128 next_load = load + static_cast<i128>(n) * values[type];
+            if (next_load > target) {
+                break;
+            }
+            counts[type] = n;
+            enumerate_patterns(type + 1, slots_left - n, next_load, counts);
+        }
+    }
+
+    bool dfs(int rank, int first_pattern, std::vector<int>& used,
+             std::vector<std::vector<int>>& chosen) {
+        if (!tick()) {
+            return false;
+        }
+        if (rank == P) {
+            if (used == available) {
+                solution = chosen;
+                return true;
+            }
+            return false;
+        }
+
+        State key{rank, first_pattern, used};
+        if (failed.find(key) != failed.end()) {
+            return false;
+        }
+        const int remaining_ranks = P - rank - 1;
+        for (int p = first_pattern; p < static_cast<int>(patterns.size()); ++p) {
+            const auto& pattern = patterns[p];
+            bool fits = true;
+            for (std::size_t t = 0; t < used.size(); ++t) {
+                if (used[t] + pattern[t] > available[t]) {
+                    fits = false;
+                    break;
+                }
+                // After this rank, remaining experts of this type must still
+                // fit in the remaining rank capacities.
+                if (available[t] - used[t] - pattern[t] > remaining_ranks * per_rank) {
+                    fits = false;
+                    break;
+                }
+            }
+            if (!fits) {
+                continue;
+            }
+            for (std::size_t t = 0; t < used.size(); ++t) {
+                used[t] += pattern[t];
+            }
+            chosen.push_back(pattern);
+            if (dfs(rank + 1, p, used, chosen)) {
+                return true;
+            }
+            chosen.pop_back();
+            for (std::size_t t = 0; t < used.size(); ++t) {
+                used[t] -= pattern[t];
+            }
+            if (exhausted) {
+                return false;
+            }
+        }
+        failed.insert(std::move(key));
+        return false;
+    }
+};
+}  // namespace detail
+
+// Find a rank-by-weight allocation under target_peak. Returns false when the
+// target is infeasible, the type count is outside the supported small range,
+// or the bounded search exhausts its node budget. It never mutates input.
+// Search is bounded to <=4 weight types, P<=32, per_rank<=32 and the supplied
+// node budget. For other shapes, retain the caller's existing MAP.
+bool find_at_peak(const std::vector<i128>& slots, int P, int per_rank, i128 target_peak,
+                         Plan& out, std::uint64_t node_budget) {
+    if (P < 1 || P > limits::kMaxRanks || per_rank < 1 || per_rank > limits::kMaxSlotsPerRank ||
+        slots.size() != static_cast<std::size_t>(P) * per_rank || target_peak < 0 ||
+        node_budget == 0) {
+        return false;
+    }
+
+    std::vector<i128> values = slots;
+    if (std::any_of(values.begin(), values.end(), [](i128 x) { return x < 0; })) {
+        return false;
+    }
+    std::sort(values.begin(), values.end());
+    values.erase(std::unique(values.begin(), values.end()), values.end());
+    if (values.empty() || values.size() > limits::kMaxWeightTypes) {
+        return false;
+    }
+
+    std::vector<int> available(values.size(), 0);
+    for (i128 x : slots) {
+        int t =
+            static_cast<int>(std::lower_bound(values.begin(), values.end(), x) - values.begin());
+        ++available[t];
+    }
+
+    detail::Search search(P, per_rank, target_peak, values, available, node_budget);
+    if (!search.solve()) {
+        return false;
+    }
+
+    Plan result;
+    result.values = std::move(values);
+    result.rank_counts = search.take_solution();
+    result.peak = target_peak;
+    out = std::move(result);
+    return true;
+}
+
+// Convert a cached type-count plan back to expert-index ranks for this layer.
+// This explicitly re-buckets the current slots, so plans can safely be reused
+// across layers with the same value histogram but different expert ordering.
+bool materialize(const std::vector<i128>& slots, const Plan& plan, std::vector<int>& row) {
+    const int P = static_cast<int>(plan.rank_counts.size());
+    if (P < 1 || plan.values.empty() || plan.values.size() > limits::kMaxWeightTypes) {
+        return false;
+    }
+    const std::size_t K = plan.values.size();
+    std::vector<std::vector<int>> experts(K);
+    for (int e = 0; e < static_cast<int>(slots.size()); ++e) {
+        auto it = std::lower_bound(plan.values.begin(), plan.values.end(), slots[e]);
+        if (it == plan.values.end() || *it != slots[e]) {
+            return false;
+        }
+        experts[static_cast<std::size_t>(it - plan.values.begin())].push_back(e);
+    }
+    std::vector<int> expected(K, 0);
+    for (const auto& rank : plan.rank_counts) {
+        if (rank.size() != K) {
+            return false;
+        }
+        for (std::size_t t = 0; t < K; ++t) {
+            if (rank[t] < 0) {
+                return false;
+            }
+            expected[t] += rank[t];
+        }
+    }
+    for (std::size_t t = 0; t < K; ++t) {
+        if (expected[t] != static_cast<int>(experts[t].size())) {
+            return false;
+        }
+    }
+
+    std::vector<int> result(slots.size(), -1);
+    std::vector<std::size_t> cursor(K, 0);
+    for (int r = 0; r < P; ++r) {
+        int rank_size = 0;
+        for (std::size_t t = 0; t < K; ++t) {
+            rank_size += plan.rank_counts[r][t];
+            for (int n = 0; n < plan.rank_counts[r][t]; ++n) {
+                if (cursor[t] >= experts[t].size()) {
+                    return false;
+                }
+                result[experts[t][cursor[t]++]] = r;
+            }
+        }
+        if (rank_size != static_cast<int>(slots.size() / P)) {
+            return false;
+        }
+    }
+    if (std::any_of(result.begin(), result.end(), [](int r) { return r < 0; })) {
+        return false;
+    }
+    row = std::move(result);
+    return true;
+}
+
+}  // namespace grouped_placement
+// END MODULE: src/placement/grouped_placement.cpp
+// END TRANSLATION UNIT: src/placement/grouped_placement.cpp
+// BEGIN TRANSLATION UNIT: src/scheduling/event_scheduler.cpp
+// BEGIN MODULE: src/scheduling/event_scheduler.cpp
 // BEGIN MODULE: src/scheduling/event_scheduler.hpp
+namespace event_sched {
+namespace limits {
+inline constexpr int kReadyLookahead = 16;
+inline constexpr int kEventCompletion = 0;
+inline constexpr int kReservationReturn = 1;
+}  // namespace limits
+using i128 = __int128_t;
+bool schedule(int mb, int L, int G, const std::vector<int>& layer_group,
+              const std::vector<std::array<i128, operation::kCount>>& dur,
+              const std::vector<int>& group_layers, const std::vector<int>& activation_capacity,
+              const std::vector<int>& comm_buffers, int window, std::vector<Op>& out,
+              i128& makespan, int mode = 0, int fill_groups = 0, int fill_mbs = 0,
+              int reward_tenths = 0, bool flat_reward = false, int window_release = 0);
+}  // namespace event_sched
+// END MODULE: src/scheduling/event_scheduler.hpp
 // BEGIN MODULE: src/core/operation_graph.hpp
 
 // The shared ten-operation DAG. Keep edge emission order stable: adjacency
@@ -110,19 +989,6 @@ inline void append_layer_edges(int microbatch, int layer, int layer_count, Id id
 }
 }  // namespace operation_graph
 // END MODULE: src/core/operation_graph.hpp
-// BEGIN MODULE: src/model/scheduled_operation.hpp
-
-namespace event_sched {
-using i128 = __int128_t;
-
-struct Op {
-    i128 start;
-    int mb;
-    int l;
-    int op;
-};
-}  // namespace event_sched
-// END MODULE: src/model/scheduled_operation.hpp
 
 // ===== event_scheduler =====
 
@@ -130,12 +996,6 @@ struct Op {
 // Times and all time arithmetic remain signed 128-bit integers.
 
 namespace event_sched {
-namespace limits {
-inline constexpr int kReadyLookahead = 16;
-inline constexpr int kEventCompletion = 0;
-inline constexpr int kReservationReturn = 1;
-}  // namespace limits
-
 // Operation codes follow operation::Code in common.hpp.
 // activation_capacity[g] is the number of simultaneously reserved activation
 // slots A_g after reserving communication buffers. comm_buffers[g] is between
@@ -277,13 +1137,13 @@ inline ReadyItem priority_item(const Node& n, int id, int mode, i128 tail) {
 // Schedule all operation::kCount*mb*L operations. `layer_group` has L entries;
 // `dur[l][op]` are nonnegative compute_durations. `group_layers[g]` is n_g.
 // Returns false only for malformed/impossible inputs or a deadlocked state.
-inline bool schedule(int mb, int L, int G, const std::vector<int>& layer_group,
+bool schedule(int mb, int L, int G, const std::vector<int>& layer_group,
                      const std::vector<std::array<i128, operation::kCount>>& dur,
                      const std::vector<int>& group_layers,
                      const std::vector<int>& activation_capacity,
                      const std::vector<int>& comm_buffers, int window, std::vector<Op>& out,
-                     i128& makespan, int mode = 0, int fill_groups = 0, int fill_mbs = 0,
-                     int reward_tenths = 0, bool flat_reward = false, int window_release = 0) {
+                     i128& makespan, int mode, int fill_groups, int fill_mbs,
+                     int reward_tenths, bool flat_reward, int window_release) {
     using namespace detail;
     out.clear();
     makespan = 0;
@@ -752,921 +1612,11 @@ inline bool schedule(int mb, int L, int G, const std::vector<int>& layer_group,
     return (int)out.size() == N;
 }
 }  // namespace event_sched
-// END MODULE: src/scheduling/event_scheduler.hpp
-// BEGIN MODULE: src/search/limits.hpp
-
-namespace solver::search_limits {
-inline constexpr int kDefaultBudgetMs = 9200;
-inline constexpr int kMinimumBudgetMs = 9000;
-inline constexpr int kMaximumBudgetMs = 9500;
-inline constexpr int kWindowExhaustiveMicrobatchLimit = 64;
-inline constexpr int kExtraLayoutMicrobatchLimit = 16;
-inline constexpr int kExtraLayoutNodeLimit = 8000;
-inline constexpr int kWaveDeadlineMs = 9000;
-inline constexpr int kPolishPrefixDeadlineMs = 9000;
-inline constexpr int kWaveWarmupMs = 8000;
-inline constexpr int kWaveExtensionReserveMs = 1000;
-inline constexpr int kListNormalDeadlineMs = 8000;
-inline constexpr int kListDeepDeadlineMs = 30000;
-inline constexpr int kPrefixEvaluationsPerRound = 3000;
-inline constexpr int kPrefixNodeLimit = 8000;
-inline constexpr int kPrefixMaxRounds = 4;
-inline constexpr int kPrefixRoundReserveMs = 100;
-inline constexpr int kQuickGapFillLatestStartMs = 4000;
-inline constexpr int kListReleaseDeadlineMs = 8000;
-inline constexpr int kExtensionDeadlineReserveMs = 30;
-inline constexpr int kExtensionIterationBudget = 700;
-inline constexpr int kPlacementSearchBudget = 250000;
-inline constexpr int kPlacementPeakSearchSteps = 12;
-inline constexpr int kMaximumPartitionCount = 64;
-inline constexpr long long kMillion = 1000000LL;
-inline constexpr long long kTrillion = 1000000000000LL;
-inline constexpr __int128_t kInfiniteTime = static_cast<__int128_t>(1) << 126;
-}  // namespace solver::search_limits
-// END MODULE: src/search/limits.hpp
-namespace solver {
-using namespace std;
-using i128 = __int128_t;
-struct InputData {
-    int N, S, L, E, k, mb;
-    i128 M, Bi, Bo, Z, Zs, U, Ua, d, b, Fs, Fio, Fin, ax, bx;
-    vector<i128> T;
-    vector<vector<i128>> load;
-};
-struct Candidate {
-    int P = 0, V = 0;
-    i128 score = 0;
-    vector<int> cuts;
-    vector<vector<int>> map;
-};
-struct PartitionCandidate {
-    Candidate best_v, max_v;
-    i128 probe_time = search_limits::kInfiniteTime;
-};
-struct ScheduleResult {
-    Candidate c;
-    int G = 0, K = 0;
-    i128 time = search_limits::kInfiniteTime;
-    vector<int> cuts, group;
-    vector<event_sched::Op> ops;
-};
-
-}  // namespace solver
-// END MODULE: src/model/problem.hpp
-// BEGIN MODULE: src/io/numeric.hpp
-// Exact integer parsing, formatting, and arithmetic helpers.
-namespace solver {
-using namespace std;
-using i128 = __int128_t;
-istream& operator>>(istream& in, i128& v) {
-    string s;
-    if (!(in >> s)) {
-        return in;
-    }
-    v = 0;
-    for (char c : s) {
-        if (c >= '0' && c <= '9') {
-            v = v * 10 + c - '0';
-        }
-    }
-    return in;
-}
-i128 ceil_div(i128 a, i128 b) {
-    return (a + b - 1) / b;
-}
-string to_decimal(i128 x) {
-    if (!x) {
-        return "0";
-    }
-    string s;
-    while (x) {
-        s += char('0' + x % 10);
-        x /= 10;
-    }
-    reverse(s.begin(), s.end());
-    return s;
-}
-
-}  // namespace solver
-// END MODULE: src/io/numeric.hpp
-namespace solver {
-using namespace std;
-InputData read_input(istream& in) {
-    InputData x{};
-    if (!(in >> x.N >> x.S >> x.M >> x.Bi >> x.Bo)) {
-        throw runtime_error("failed to read input headers (line 1)");
-    }
-    if (!(in >> x.L >> x.E >> x.Z >> x.Zs >> x.U >> x.Ua >> x.k >> x.mb >> x.Fs >> x.Fio >> x.Fin >>
-          x.ax >> x.bx)) {
-        throw runtime_error("failed to read input headers (line 2)");
-    }
-    if (!(in >> x.d >> x.b)) {
-        throw runtime_error("failed to read input headers (line 3)");
-    }
-    x.T.resize(x.L);
-    x.load.resize(x.L);
-    for (int l = 0; l < x.L; l++) {
-        if (!(in >> x.T[l])) {
-            throw runtime_error("failed to read T for layer " + to_string(l));
-        }
-        x.load[l].resize(x.E);
-        string line;
-        getline(in, line);
-        stringstream ss(line);
-        vector<i128> a;
-        i128 z;
-        while (ss >> z) {
-            a.push_back(z);
-        }
-        if ((int)a.size() == x.E) {
-            x.load[l] = a;
-        } else {
-            i128 base = x.T[l] / x.E, rem = x.T[l] % x.E;
-            for (int e = 0; e < x.E; e++) {
-                x.load[l][e] = base + (e < rem);
-            }
-        }
-    }
-    return x;
-}
-}  // namespace solver
-// END MODULE: src/io/input.hpp
-// BEGIN MODULE: src/io/options.hpp
-// Command-line options and validation.
-namespace solver {
-using namespace std;
-struct Options {
-    int force_p = 0;
-    bool serial = false, do_list = false, list_deep = false, list_deep_topos = false;
-    bool force_wave = false;
-    int budget_ms = search_limits::kDefaultBudgetMs;
-    int polish_pass_limit = 0;
-    string retime_mode = "auto";
-    string borrow = "ac", diff = "auto", scale = "auto";
-    string input_path;
-};
-
-Options parse_options(int argc, char** argv) {
-    Options options;
-    for (int i = 1; i < argc; i++) {
-        string a = argv[i];
-        if (a == "-") {
-            if (!options.input_path.empty()) {
-                throw runtime_error("multiple input paths");
-            }
-            options.input_path = a;
-        } else if (!a.empty() && a[0] != '-') {
-            if (!options.input_path.empty()) {
-                throw runtime_error("multiple input paths");
-            }
-            options.input_path = a;
-        } else if (a == "--baseline") {
-            options.serial = true;
-        } else if (a == "--list") {
-            options.do_list = true;
-        } else if (a == "--list-deep") {
-            options.do_list = true;
-            options.list_deep = true;
-        } else if (a == "--list-deep-topos") {
-            options.do_list = true;
-            options.list_deep = true;
-            options.list_deep_topos = true;
-        } else if (a == "--wave") {
-            options.force_wave = true;
-        } else if (a.rfind("--scale=", 0) == 0) {
-            options.scale = a.substr(8);
-        } else if (a.rfind("--force-p=", 0) == 0) {
-            options.force_p = stoi(a.substr(10));
-        } else if (a.rfind("--borrow=", 0) == 0) {
-            options.borrow = a.substr(9);
-        } else if (a.rfind("--diff=", 0) == 0) {
-            options.diff = a.substr(7);
-        } else if (a.rfind("--budget-ms=", 0) == 0) {
-            size_t used = 0;
-            int value = stoi(a.substr(12), &used);
-            if (used != a.size() - 12 || value < search_limits::kMinimumBudgetMs ||
-                value > search_limits::kMaximumBudgetMs) {
-                throw runtime_error("--budget-ms must be an integer from 9000 to 9500");
-            }
-            options.budget_ms = value;
-        } else if (a.rfind("--retime-mode=", 0) == 0) {
-            options.retime_mode = a.substr(14);
-            if (options.retime_mode != "auto" && options.retime_mode != "wide") {
-                throw runtime_error("--retime-mode must be auto or wide");
-            }
-        } else if (a.rfind("--polish-pass-limit=", 0) == 0) {
-            size_t used = 0;
-            int value = stoi(a.substr(20), &used);
-            if (used != a.size() - 20 || value < 0) {
-                throw runtime_error("--polish-pass-limit must be a nonnegative integer");
-            }
-            options.polish_pass_limit = value;
-        }
-    }
-    return options;
-}
-
-}  // namespace solver
-// END MODULE: src/io/options.hpp
-// BEGIN MODULE: src/io/output.hpp
-// Stable result and schedule serialization.
-// BEGIN MODULE: src/placement/expert_mapping.hpp
-// Per-layer expert assignment and duration cost model.
-namespace solver {
-using namespace std;
-vector<vector<int>> build_expert_map(const InputData& x, int P, i128& cost) {
-    vector<vector<int>> mp(x.L, vector<int>(x.E));
-    cost = 0;
-    for (int l = 0; l < x.L; l++) {
-        vector<int> e(x.E);
-        iota(e.begin(), e.end(), 0);
-        sort(e.begin(), e.end(), [&](int a, int b) { return x.load[l][a] > x.load[l][b]; });
-        vector<i128> loads(P);
-        vector<int> cnt(P);
-        for (int id : e) {
-            int r = -1;
-            for (int j = 0; j < P; j++) {
-                if (cnt[j] < x.E / P && (r < 0 || loads[j] < loads[r])) {
-                    r = j;
-                }
-            }
-            mp[l][id] = r;
-            ++cnt[r];
-            loads[r] += x.load[l][id];
-        }
-        i128 total = 0, heavy = 0, sq = 0;
-        for (auto v : x.load[l]) {
-            total += v;
-            heavy = max(heavy, v);
-        }
-        for (auto v : loads) {
-            sq += v * v;
-        }
-        for (int it = 0; it < 6; it++) {
-            i128 mx = *max_element(loads.begin(), loads.end());
-            if (mx == max(heavy, ceil_div(total, P))) {
-                break;
-            }
-            vector<int> order(P);
-            iota(order.begin(), order.end(), 0);
-            sort(order.begin(), order.end(), [&](int a, int b) { return loads[a] > loads[b]; });
-            int be = -1, bf = -1;
-            i128 bm = mx, bs = sq;
-            for (int a = 0; a < x.E; a++) {
-                for (int b = a + 1; b < x.E; b++) {
-                    int ra = mp[l][a], rb = mp[l][b];
-                    if (ra == rb) {
-                        continue;
-                    }
-                    i128 na = loads[ra] - x.load[l][a] + x.load[l][b],
-                         nb = loads[rb] - x.load[l][b] + x.load[l][a], outside = 0;
-                    for (int r : order) {
-                        if (r != ra && r != rb) {
-                            outside = loads[r];
-                            break;
-                        }
-                    }
-                    i128 nm = max(outside, max(na, nb)),
-                         ns =
-                             sq - loads[ra] * loads[ra] - loads[rb] * loads[rb] + na * na + nb * nb;
-                    if (nm < bm || (nm == bm && ns < bs)) {
-                        bm = nm;
-                        bs = ns;
-                        be = a;
-                        bf = b;
-                    }
-                }
-            }
-            if (be < 0) {
-                break;
-            }
-            int ra = mp[l][be], rb = mp[l][bf];
-            loads[ra] = loads[ra] - x.load[l][be] + x.load[l][bf];
-            loads[rb] = loads[rb] - x.load[l][bf] + x.load[l][be];
-            swap(mp[l][be], mp[l][bf]);
-            sq = bs;
-        }
-        cost += *max_element(loads.begin(), loads.end());
-    }
-    return mp;
-}
-vector<array<i128, operation::kCount>> compute_durations(const InputData& x, const Candidate& c) {
-    vector<array<i128, operation::kCount>> d(x.L);
-    i128 H = x.d * x.b / x.k;
-    for (int l = 0; l < x.L; l++) {
-        vector<i128> load(c.P);
-        for (int e = 0; e < x.E; e++) {
-            load[c.map[l][e]] += x.load[l][e];
-        }
-        i128 m = *max_element(load.begin(), load.end()), X = ceil_div(x.T[l] * H, c.P),
-             pin = min(c.P, x.S) - 1, pout = c.P - 1 - pin;
-        i128 com = max(ceil_div(pin * X, x.Bi), ceil_div(pout * X, x.Bo)) * x.Fio, g = m * x.Fin,
-             s = x.T[l] * x.Fs;
-        d[l] = {};
-        d[l][operation::kSharedForward] = s;
-        d[l][operation::kDispatchForward] = com;
-        d[l][operation::kExpertForward] = g;
-        d[l][operation::kCombineForward] = com;
-        d[l][operation::kSharedBackward] = ceil_div(x.ax * s, search_limits::kMillion);
-        d[l][operation::kCombineBackward] = ceil_div(x.ax * com, search_limits::kMillion);
-        d[l][operation::kExpertInputGradient] = ceil_div(x.ax * g, search_limits::kMillion);
-        d[l][operation::kExpertWeightGradient] =
-            ceil_div(x.ax * x.bx * g, search_limits::kTrillion);
-        d[l][operation::kDispatchBackward] = ceil_div(x.ax * com, search_limits::kMillion);
-        d[l][operation::kSharedWeightGradient] =
-            ceil_div(x.ax * x.bx * s, search_limits::kTrillion);
-    }
-    return d;
-}
-}  // namespace solver
-// END MODULE: src/placement/expert_mapping.hpp
-namespace solver {
-using namespace std;
-void write_output(const InputData& x, const ScheduleResult& best, bool serial) {
-    // This display table follows operation::Code index order.
-    const array<string, operation::kCount> names = {
-        "s", "disp", "gemm", "comb", "s_bwd", "comb_bwd", "gemm_dx", "gemm_dw", "disp_bwd", "s_dw"};
-    cout << best.G << " " << best.c.P << "\nPSI\n" << best.K;
-    for (int j = 1; j < best.K; j++) {
-        cout << " " << best.cuts[j];
-    }
-    cout << "\nMAP\n";
-    for (auto& r : best.c.map) {
-        for (int e = 0; e < x.E; e++) {
-            cout << (e ? " " : "") << r[e];
-        }
-        cout << "\n";
-    }
-    cout << "SCHEDULE\n";
-    if (serial) {
-        auto dur = compute_durations(x, best.c);
-        i128 t = 0;
-        auto emit = [&](int mb, int l, int op) {
-            cout << to_decimal(t) << " " << mb << ":" << l << ":" << names[op] << "\n";
-            t += dur[l][op] + 1;
-        };
-        for (int mb = 0; mb < x.mb; mb++) {
-            for (int l = 0; l < x.L; l++) {
-                emit(mb, l, operation::index(operation::kSharedForward));
-                emit(mb, l, operation::index(operation::kDispatchForward));
-                emit(mb, l, operation::index(operation::kExpertForward));
-                emit(mb, l, operation::index(operation::kCombineForward));
-            }
-            for (int l = x.L - 1; l >= 0; l--) {
-                emit(mb, l, operation::index(operation::kCombineBackward));
-                emit(mb, l, operation::index(operation::kSharedBackward));
-                emit(mb, l, operation::index(operation::kExpertInputGradient));
-                emit(mb, l, operation::index(operation::kDispatchBackward));
-                emit(mb, l, operation::index(operation::kExpertWeightGradient));
-                emit(mb, l, operation::index(operation::kSharedWeightGradient));
-            }
-        }
-    } else {
-        for (auto& o : best.ops) {
-            cout << to_decimal(o.start) << " " << o.mb << ":" << o.l << ":" << names[o.op] << "\n";
-        }
-    }
-}
-
-}  // namespace solver
-// END MODULE: src/io/output.hpp
-// BEGIN MODULE: src/search/boost_search.hpp
-// Forward-fill priority search.
-// BEGIN MODULE: src/search/layout_search.hpp
-// Evaluate group layouts under the event scheduler.
-namespace solver {
-using namespace std;
-ScheduleResult evaluate_layouts(
-    const InputData& x, const Candidate& c, bool rich, bool deep,
-    chrono::steady_clock::time_point deadline = chrono::steady_clock::time_point::max()) {
-    ScheduleResult best;
-    best.c = c;
-    auto dur = compute_durations(x, c);
-    vector<int> base_group(x.L);
-    for (int g = 0; g < c.V; g++) {
-        for (int l = c.cuts[g]; l < c.cuts[g + 1]; l++) {
-            base_group[l] = g;
-        }
-    }
-    auto test_layout = [&](const vector<int>& lg, const vector<int>& cuts, int K, int G) {
-        if (chrono::steady_clock::now() >= deadline) {
-            return;
-        }
-        vector<int> ng(G);
-        for (int g : lg) {
-            ng[g]++;
-        }
-        vector<int> windows = rich ? vector<int>{1, 2, G, 2 * G, 0} : vector<int>{0};
-        sort(windows.begin(), windows.end());
-        windows.erase(unique(windows.begin(), windows.end()), windows.end());
-        for (int one = 0; one <= (rich ? 1 : 0); one++) {
-            vector<int> caps(G), buf(G);
-            bool ok = true;
-            for (int g = 0; g < G; g++) {
-                bool zero = true;
-                for (int l = 0; l < x.L; l++) {
-                    if (lg[l] == g && (dur[l][operation::index(operation::kDispatchForward)] ||
-                                       dur[l][operation::index(operation::kCombineForward)] ||
-                                       dur[l][operation::index(operation::kCombineBackward)] ||
-                                       dur[l][operation::index(operation::kDispatchBackward)])) {
-                        zero = false;
-                    }
-                }
-                // If every communication duration is zero, the official checker omits buffers.
-                int bbuf = zero ? 0 : 1;
-                if (rich && !one && !zero) {
-                    i128 two = x.M - ng[g] * ((x.E / c.P) * x.Z + x.Zs) - 2 * x.U;
-                    if (two >= 0 && two / x.Ua >= ng[g]) {
-                        bbuf = 2;
-                    }
-                }
-                i128 avail = x.M - ng[g] * ((x.E / c.P) * x.Z + x.Zs) - (zero ? 0 : bbuf * x.U);
-                if (avail < 0) {
-                    ok = false;
-                    break;
-                }
-                caps[g] = (int)min<i128>(avail / x.Ua, (i128)x.mb * ng[g]);
-                buf[g] = bbuf;
-                if (caps[g] < ng[g]) {
-                    ok = false;
-                    break;
-                }
-            }
-            if (!ok) {
-                continue;
-            }
-            int mmax = rich ? 2 : 0;
-            for (int mode = 0; mode <= mmax; mode++) {
-                for (int w : windows) {
-                    if (chrono::steady_clock::now() >= deadline) {
-                        return;
-                    }
-                    vector<event_sched::Op> ops;
-                    i128 tm;
-                    if (event_sched::schedule(x.mb, x.L, G, lg, dur, ng, caps, buf, w, ops, tm,
-                                              mode) &&
-                        tm < best.time) {
-                        best.time = tm;
-                        best.G = G;
-                        best.K = K;
-                        best.cuts = cuts;
-                        best.group = lg;
-                        best.ops.swap(ops);
-                    }
-                }
-            }
-        }
-    };
-    test_layout(base_group, c.cuts, c.V, c.V);
-    if (rich && deep) {
-        int max_g = min(x.L / 2, x.N * x.S / c.P);
-        set<int> gs;
-        for (int g : {max_g, min(max_g, c.V), max(1, min(max_g, c.V / 2))}) {
-            if (g >= 1 && g <= max_g) {
-                gs.insert(g);
-            }
-        }
-        for (int G : gs) {
-            if (chrono::steady_clock::now() >= deadline) {
-                break;
-            }
-            int K = 2 * G;
-            vector<int> cuts(K + 1), group(x.L);
-            for (int j = 0; j <= K; j++) {
-                cuts[j] = x.L * j / K;
-            }
-            for (int j = 0; j < K; j++) {
-                for (int l = cuts[j]; l < cuts[j + 1]; l++) {
-                    group[l] = (j < G ? j : 2 * G - 1 - j);
-                }
-            }
-            test_layout(group, cuts, K, G);
-        }
-        if (best.time < search_limits::kInfiniteTime) {
-            vector<i128> lw(x.L);
-            for (int l = 0; l < x.L; l++) {
-                for (auto v : dur[l]) {
-                    lw[l] += v;
-                }
-            }
-            vector<int> order;
-            for (int j = 1; j < best.K; j++) {
-                if (best.cuts[j] > 0 && best.cuts[j] < x.L) {
-                    order.push_back(j);
-                }
-            }
-            sort(order.begin(), order.end(), [&](int a, int b) {
-                return abs((long long)(lw[best.cuts[a] - 1] - lw[best.cuts[a]])) >
-                       abs((long long)(lw[best.cuts[b] - 1] - lw[best.cuts[b]]));
-            });
-            vector<int> seed = best.cuts;
-            int K = best.K, G = best.G;
-            int tried = 0;
-            for (int j : order) {
-                if (chrono::steady_clock::now() >= deadline) {
-                    break;
-                }
-                for (int delta : {-1, 1}) {
-                    if (chrono::steady_clock::now() >= deadline) {
-                        break;
-                    }
-                    auto cuts = seed;
-                    cuts[j] += delta;
-                    bool ok = true;
-                    for (int z = 1; z < K; z++) {
-                        if (cuts[z] <= cuts[z - 1] || cuts[z] >= cuts[z + 1]) {
-                            ok = false;
-                        }
-                    }
-                    if (!ok) {
-                        continue;
-                    }
-                    vector<int> group(x.L);
-                    for (int bl = 0; bl < K; bl++) {
-                        int g = (K == G ? bl : (bl < G ? bl : 2 * G - 1 - bl));
-                        for (int l = cuts[bl]; l < cuts[bl + 1]; l++) {
-                            group[l] = g;
-                        }
-                    }
-                    test_layout(group, cuts, K, G);
-                }
-                if (++tried >= 3) {
-                    break;
-                }
-            }
-        }
-    }
-    if (best.time >= search_limits::kInfiniteTime) {
-        best.G = c.V;
-        best.K = c.V;
-        best.cuts = c.cuts;
-        best.group = base_group;
-        best.time = 0;
-        for (int mb = 0; mb < x.mb; mb++) {
-            for (int l = 0; l < x.L; l++) {
-                for (auto d : dur[l]) {
-                    best.time += d + 1;
-                }
-            }
-        }
-    }
-    return best;
-}
-
-}  // namespace solver
-// END MODULE: src/search/layout_search.hpp
-namespace solver {
-using namespace std;
-ScheduleResult run_boost_borrow(const InputData& x, ScheduleResult best,
-                                const ScheduleResult& v5_base, bool serial, const string& borrow) {
-    if (!serial && (borrow == "boost" || borrow == "boost_grid" || borrow == "all")) {
-        ScheduleResult trial = v5_base;
-        auto dur = compute_durations(x, v5_base.c);
-        vector<int> ng(v5_base.G);
-        for (int g : v5_base.group) {
-            ng[g]++;
-        }
-        i128 boost_best_time = search_limits::kInfiniteTime;
-        int best_fg = 0, best_fm = 0, best_ratio = 0, best_buffer = 0;
-        bool best_flat = false;
-        for (int one = 0; one <= 1; one++) {
-            vector<int> caps(v5_base.G), buf(v5_base.G);
-            bool ok = true;
-            for (int g = 0; g < v5_base.G; g++) {
-                bool zero = true;
-                for (int l = 0; l < x.L; l++) {
-                    if (v5_base.group[l] == g &&
-                        (dur[l][operation::index(operation::kDispatchForward)] ||
-                         dur[l][operation::index(operation::kCombineForward)] ||
-                         dur[l][operation::index(operation::kCombineBackward)] ||
-                         dur[l][operation::index(operation::kDispatchBackward)])) {
-                        zero = false;
-                    }
-                }
-                int b = zero ? 0 : 1;
-                if (!zero && !one) {
-                    i128 two = x.M - ng[g] * ((x.E / v5_base.c.P) * x.Z + x.Zs) - 2 * x.U;
-                    if (two >= 0 && two / x.Ua >= ng[g]) {
-                        b = 2;
-                    }
-                }
-                i128 avail =
-                    x.M - ng[g] * ((x.E / v5_base.c.P) * x.Z + x.Zs) - (zero ? 0 : b * x.U);
-                if (avail < 0) {
-                    ok = false;
-                    break;
-                }
-                caps[g] = (int)min<i128>(avail / x.Ua, (i128)x.mb * ng[g]);
-                buf[g] = b;
-                if (caps[g] < ng[g]) {
-                    ok = false;
-                    break;
-                }
-            }
-            if (!ok) {
-                continue;
-            }
-            vector<tuple<int, int, int, bool, bool>> cfg;
-            if (borrow == "boost_grid") {
-                set<int> fss = {1, 2, max(1, v5_base.G / 2), v5_base.G},
-                         fms = {max(1, x.mb / 4), max(1, x.mb / 2), x.mb};
-                vector<int> ratios = {0, 5, 10, 20, 50, 100};
-                for (int fg : fss) {
-                    for (int fm0 : fms) {
-                        for (int ratio : ratios) {
-                            cfg.emplace_back(fg, fm0, ratio, false, false);
-                        }
-                    }
-                }
-                cfg.emplace_back(min(2, v5_base.G), min(x.mb, max(1, x.mb / 2)), 20, true, false);
-            } else {
-                int fs = min(v5_base.G, max(1, v5_base.G / 2)), fm = min(x.mb, 16);
-                cfg.emplace_back(v5_base.G, min(x.mb, max(2, v5_base.G)), 0, false, false);
-                cfg.emplace_back(fs, fm, 10, false, false);
-                cfg.emplace_back(fs, fm, 20, false, false);
-                cfg.emplace_back(fs, fm, 50, false, false);
-                cfg.emplace_back(min(2, v5_base.G), min(x.mb, 8), 20, true, false);
-            }
-            for (auto [fg, fm0, ratio, flat, unused] : cfg) {
-                (void)unused;
-                vector<event_sched::Op> ops;
-                i128 tm;
-                if (event_sched::schedule(x.mb, x.L, v5_base.G, v5_base.group, dur, ng, caps, buf,
-                                          0, ops, tm, 3, fg, fm0, ratio, flat)) {
-                    if (tm < boost_best_time) {
-                        boost_best_time = tm;
-                        best_fg = fg;
-                        best_fm = fm0;
-                        best_ratio = ratio;
-                        best_flat = flat;
-                        best_buffer = one;
-                    }
-                    if (tm < trial.time) {
-                        trial.time = tm;
-                        trial.ops.swap(ops);
-                    }
-                }
-            }
-        }
-        if (borrow == "boost_grid" && boost_best_time < search_limits::kInfiniteTime) {
-            cerr << "BORROW_B_GRID_BEST P=" << v5_base.c.P << " G=" << best_fg << " M=" << best_fm
-                 << " ratio=" << best_ratio << " flat=" << best_flat << " buffer=" << best_buffer
-                 << " Time=" << to_decimal(boost_best_time) << " base=" << to_decimal(v5_base.time)
-                 << "\n";
-        }
-        if (trial.time < best.time) {
-            best = move(trial);
-        }
-    }
-    return best;
-}
-
-}  // namespace solver
-// END MODULE: src/search/boost_search.hpp
-// BEGIN MODULE: src/search/candidate_search.hpp
-// Partition generation and dynamic-programming initialization.
-namespace solver {
-using namespace std;
-vector<PartitionCandidate> generate_candidates(const InputData& x, int force_p) {
-    int R = x.N * x.S;
-    i128 H = x.d * x.b / x.k;
-    vector<PartitionCandidate> pcs;
-    for (int P = 1; P <= min(R, x.E); P++) {
-        if ((force_p && P != force_p) || x.E % P || (x.S % P && P % x.S)) {
-            continue;
-        }
-        i128 mapcost;
-        auto mp = build_expert_map(x, P, mapcost);
-        i128 q = (x.E / P) * x.Z + x.Zs;
-        bool zero_comms = true;
-        vector<i128> pref(x.L + 1);
-        for (int l = 0; l < x.L; l++) {
-            i128 X = ceil_div(x.T[l] * H, P), pin = min(P, x.S) - 1, pout = P - 1 - pin;
-            i128 com = max(ceil_div(pin * X, x.Bi), ceil_div(pout * X, x.Bo)) * x.Fio,
-                 g = ceil_div(x.T[l], P) * x.Fin, s = x.T[l] * x.Fs;
-            if (com) {
-                zero_comms = false;
-            }
-            pref[l + 1] = pref[l] + 4 * com + 2 * g + 2 * s +
-                          2 * ceil_div(x.ax * com, search_limits::kMillion) +
-                          ceil_div(x.ax * g, search_limits::kMillion) +
-                          ceil_div(x.ax * x.bx * g, search_limits::kTrillion) +
-                          ceil_div(x.ax * s, search_limits::kMillion) +
-                          ceil_div(x.ax * x.bx * s, search_limits::kTrillion);
-        }
-        PartitionCandidate pc;
-        i128 best_score = search_limits::kInfiniteTime;
-        int vmax = min({x.L, search_limits::kMaximumPartitionCount, R / P});
-        for (int V = 1; V <= vmax; V++) {
-            i128 INF = search_limits::kInfiniteTime;
-            vector<vector<i128>> dp(V + 1, vector<i128>(x.L + 1, INF));
-            vector<vector<int>> par(V + 1, vector<int>(x.L + 1, -1));
-            dp[0][0] = 0;
-            for (int j = 1; j <= V; j++) {
-                for (int i = j; i <= x.L - (V - j); i++) {
-                    for (int h = j - 1; h < i; h++) {
-                        if (dp[j - 1][h] < INF &&
-                            (i - h) * (q + x.Ua) + (zero_comms ? 0 : x.U) <= x.M) {
-                            i128 val = max(dp[j - 1][h], pref[i] - pref[h]);
-                            if (val < dp[j][i]) {
-                                dp[j][i] = val, par[j][i] = h;
-                            }
-                        }
-                    }
-                }
-            }
-            if (dp[V][x.L] >= INF) {
-                continue;
-            }
-            Candidate c;
-            c.P = P;
-            c.V = V;
-            c.score = dp[V][x.L] * search_limits::kMillion + mapcost;
-            c.map = mp;
-            c.cuts.resize(V + 1);
-            c.cuts[V] = x.L;
-            int at = x.L;
-            bool ok = true;
-            for (int j = V; j > 0; j--) {
-                int h = par[j][at];
-                if (h < 0) {
-                    ok = false;
-                    break;
-                }
-                c.cuts[j - 1] = h;
-                at = h;
-            }
-            if (!ok) {
-                continue;
-            }
-            if (c.score < best_score) {
-                best_score = c.score;
-                pc.best_v = c;
-            }
-            pc.max_v = c;
-        }
-        if (pc.max_v.P) {
-            pcs.push_back(move(pc));
-        }
-    }
-    return pcs;
-}
-
-}  // namespace solver
-// END MODULE: src/search/candidate_search.hpp
-// BEGIN MODULE: src/search/initial_search.hpp
-// Select initial candidates and preserve the baseline incumbents.
-// BEGIN MODULE: src/search/window_search.hpp
-// Release-one window sweep for the initial schedule.
-namespace solver {
-using namespace std;
-ScheduleResult scan_release1(const InputData& x, const ScheduleResult& anchor,
-                             chrono::steady_clock::time_point deadline, bool& cutoff) {
-    ScheduleResult trial = anchor;
-    auto dur = compute_durations(x, anchor.c);
-    vector<int> ng(anchor.G);
-    for (int g : anchor.group) {
-        ++ng[g];
-    }
-    vector<int> wins;
-    if (x.mb <= search_limits::kWindowExhaustiveMicrobatchLimit) {
-        for (int w = 1; w <= x.mb; ++w) {
-            wins.push_back(w);
-        }
-    } else {
-        wins = {1,
-                2,
-                30,  // sampled window value retained for large batches
-
-                31,
-                32,
-                search_limits::kWindowExhaustiveMicrobatchLimit,
-                anchor.G,
-                max(1, anchor.G - 1),
-                anchor.G + 1,
-                2 * anchor.G,
-                max(1, 2 * anchor.G - 1),
-                2 * anchor.G + 1,
-                x.mb};
-        for (int& w : wins) {
-            w = min(w, x.mb);
-        }
-        sort(wins.begin(), wins.end());
-        wins.erase(unique(wins.begin(), wins.end()), wins.end());
-    }
-    for (int one = 0; one <= 1 && !cutoff; ++one) {
-        vector<int> caps(anchor.G), buf(anchor.G);
-        bool ok = true;
-        for (int g = 0; g < anchor.G; ++g) {
-            bool zero = true;
-            for (int l = 0; l < x.L; ++l) {
-                if (anchor.group[l] == g &&
-                    (dur[l][operation::index(operation::kDispatchForward)] ||
-                     dur[l][operation::index(operation::kCombineForward)] ||
-                     dur[l][operation::index(operation::kCombineBackward)] ||
-                     dur[l][operation::index(operation::kDispatchBackward)])) {
-                    zero = false;
-                }
-            }
-            int b = zero ? 0 : 1;
-            if (!zero && !one) {
-                i128 two = x.M - (i128)ng[g] * ((x.E / anchor.c.P) * x.Z + x.Zs) - 2 * x.U;
-                if (two >= 0 && two / x.Ua >= ng[g]) {
-                    b = 2;
-                }
-            }
-            i128 avail =
-                x.M - (i128)ng[g] * ((x.E / anchor.c.P) * x.Z + x.Zs) - (zero ? 0 : b * x.U);
-            if (avail < 0) {
-                ok = false;
-                break;
-            }
-            caps[g] = (int)min<i128>(avail / x.Ua, (i128)x.mb * ng[g]);
-            buf[g] = b;
-            if (caps[g] < ng[g]) {
-                ok = false;
-                break;
-            }
-        }
-        if (!ok) {
-            continue;
-        }
-        for (int w : wins) {
-            if (chrono::steady_clock::now() >= deadline) {
-                cutoff = true;
-                break;
-            }
-            vector<event_sched::Op> ops;
-            i128 tm;
-            if (event_sched::schedule(x.mb, x.L, anchor.G, anchor.group, dur, ng, caps, buf, w, ops,
-                                      tm, 0, 0, 0, 0, false, 1) &&
-                tm < trial.time) {
-                trial.time = tm;
-                trial.ops.swap(ops);
-            }
-        }
-    }
-    return trial;
-}
-
-}  // namespace solver
-// END MODULE: src/search/window_search.hpp
-namespace solver {
-using namespace std;
-struct InitialResults {
-    ScheduleResult best;
-    ScheduleResult probe_base;
-    ScheduleResult v5_base;
-};
-
-InitialResults refine_initial_candidates(const InputData& x, vector<PartitionCandidate>& pcs,
-                                         bool serial) {
-    vector<ScheduleResult> probes;
-    probes.reserve(pcs.size());
-    for (auto& pc : pcs) {
-        ScheduleResult r = evaluate_layouts(x, pc.max_v, false, false);
-        pc.probe_time = r.time;
-        probes.push_back(move(r));
-    }
-    int winner = 0;
-    for (int i = 1; i < (int)probes.size(); i++) {
-        if (probes[i].time < probes[winner].time) {
-            winner = i;
-        }
-    }
-    ScheduleResult best = move(probes[winner]);
-    ScheduleResult probe_base = best;
-    if (!serial) {
-        vector<int> ord(pcs.size());
-        iota(ord.begin(), ord.end(), 0);
-        sort(ord.begin(), ord.end(),
-             [&](int a, int b) { return pcs[a].probe_time < pcs[b].probe_time; });
-        if (winner != ord[0]) {
-            swap(ord[0], ord[find(ord.begin(), ord.end(), winner) - ord.begin()]);
-        }
-        for (int j = 0; j < min(2, (int)ord.size()); j++) {
-            int id = ord[j];
-            const Candidate& c = pcs[id].best_v.P ? pcs[id].best_v : pcs[id].max_v;
-            ScheduleResult r = evaluate_layouts(x, c, true, j == 0);
-            // Candidate replacement is strict on Time; equal values retain traversal order.
-            if (r.time < best.time) {
-                best = move(r);
-            }
-        }
-    }
-    // Freeze the complete v5 result, including its original P/V and rich schedule
-    // competition. Every borrow experiment branches from this exact incumbent.
-    ScheduleResult v5_base = best;
-    return {move(best), move(probe_base), move(v5_base)};
-}
-
-}  // namespace solver
-// END MODULE: src/search/initial_search.hpp
-// BEGIN MODULE: src/search/list_search.hpp
-// List-scheduler strategy and its local parameter sweeps.
+// END MODULE: src/scheduling/event_scheduler.cpp
+// END TRANSLATION UNIT: src/scheduling/event_scheduler.cpp
+// BEGIN TRANSLATION UNIT: src/scheduling/list_scheduler.cpp
+// BEGIN MODULE: src/scheduling/list_scheduler.cpp
 // BEGIN MODULE: src/scheduling/list_scheduler.hpp
-
-// ===== list_scheduler =====
 namespace list_sched {
 namespace limits {
 inline constexpr int kVariantCount = 8;
@@ -1677,6 +1627,22 @@ struct Op {
     int mb, l, op;
 };
 using Dur = std::vector<std::array<i128, operation::kCount>>;
+inline bool comm(int o) {
+    return o == operation::kDispatchForward || o == operation::kCombineForward ||
+           o == operation::kCombineBackward || o == operation::kDispatchBackward;
+}
+bool schedule(int mb, int L, int G, const std::vector<int>& grp, const Dur& d,
+              const std::vector<int>& ng, int W, int vi, bool early, int gap, int fs, int fm,
+              i128 busy, int ratio10, bool ramp, std::vector<Op>& out, i128& tm,
+              std::vector<i128>* starts = nullptr, std::vector<i128>* ends = nullptr,
+              bool wave_rank = false, bool fill_gaps = false, int rank_mode = 0, int A = 1,
+              int B = 1, int phase = 0, int pitch_num = 1, int pitch_den = 1, int duration_head = 0,
+              bool mb_desc = false, int dw_order = 0);
+}  // namespace list_sched
+// END MODULE: src/scheduling/list_scheduler.hpp
+
+// ===== list_scheduler =====
+namespace list_sched {
 struct Variant {
     bool fwd_first;
     bool mb_desc;
@@ -1691,10 +1657,6 @@ static const std::array<Variant, limits::kVariantCount> VARIANTS = {{{true, fals
                                                                      {false, true, true, false},
                                                                      {true, false, false, true},
                                                                      {false, true, false, true}}};
-inline bool comm(int o) {
-    return o == operation::kDispatchForward || o == operation::kCombineForward ||
-           o == operation::kCombineBackward || o == operation::kDispatchBackward;
-}
 struct Item {
     int id;
     i128 early;
@@ -1711,13 +1673,13 @@ struct Later {
         return a.id > b.id;
     }
 };
-inline bool schedule(int mb, int L, int G, const std::vector<int>& grp, const Dur& d,
+bool schedule(int mb, int L, int G, const std::vector<int>& grp, const Dur& d,
                      const std::vector<int>& ng, int W, int vi, bool early, int gap, int fs, int fm,
                      i128 busy, int ratio10, bool ramp, std::vector<Op>& out, i128& tm,
-                     std::vector<i128>* starts = nullptr, std::vector<i128>* ends = nullptr,
-                     bool wave_rank = false, bool fill_gaps = false, int rank_mode = 0, int A = 1,
-                     int B = 1, int phase = 0, int pitch_num = 1, int pitch_den = 1,
-                     int duration_head = 0, bool mb_desc = false, int dw_order = 0) {
+                     std::vector<i128>* starts, std::vector<i128>* ends,
+                     bool wave_rank, bool fill_gaps, int rank_mode, int A,
+                     int B, int phase, int pitch_num, int pitch_den,
+                     int duration_head, bool mb_desc, int dw_order) {
     (void)mb_desc;  // Kept in the stable scheduler call signature; currently not used.
     if (mb < 1 || L < 1 || G < 1 || vi < 0 || vi >= limits::kVariantCount) {
         return false;
@@ -1991,7 +1953,860 @@ inline bool schedule(int mb, int L, int G, const std::vector<int>& grp, const Du
     return true;
 }
 }  // namespace list_sched
-// END MODULE: src/scheduling/list_scheduler.hpp
+// END MODULE: src/scheduling/list_scheduler.cpp
+// END TRANSLATION UNIT: src/scheduling/list_scheduler.cpp
+// BEGIN TRANSLATION UNIT: src/search/candidate_search.cpp
+// BEGIN MODULE: src/search/candidate_search.cpp
+// Partition generation and dynamic-programming initialization.
+namespace solver {
+using namespace std;
+vector<PartitionCandidate> generate_candidates(const InputData& x, int force_p) {
+    int R = x.N * x.S;
+    i128 H = x.d * x.b / x.k;
+    vector<PartitionCandidate> pcs;
+    for (int P = 1; P <= min(R, x.E); P++) {
+        if ((force_p && P != force_p) || x.E % P || (x.S % P && P % x.S)) {
+            continue;
+        }
+        i128 mapcost;
+        auto mp = build_expert_map(x, P, mapcost);
+        i128 q = (x.E / P) * x.Z + x.Zs;
+        bool zero_comms = true;
+        vector<i128> pref(x.L + 1);
+        for (int l = 0; l < x.L; l++) {
+            i128 X = ceil_div(x.T[l] * H, P), pin = min(P, x.S) - 1, pout = P - 1 - pin;
+            i128 com = max(ceil_div(pin * X, x.Bi), ceil_div(pout * X, x.Bo)) * x.Fio,
+                 g = ceil_div(x.T[l], P) * x.Fin, s = x.T[l] * x.Fs;
+            if (com) {
+                zero_comms = false;
+            }
+            pref[l + 1] = pref[l] + 4 * com + 2 * g + 2 * s +
+                          2 * ceil_div(x.ax * com, search_limits::kMillion) +
+                          ceil_div(x.ax * g, search_limits::kMillion) +
+                          ceil_div(x.ax * x.bx * g, search_limits::kTrillion) +
+                          ceil_div(x.ax * s, search_limits::kMillion) +
+                          ceil_div(x.ax * x.bx * s, search_limits::kTrillion);
+        }
+        PartitionCandidate pc;
+        i128 best_score = search_limits::kInfiniteTime;
+        int vmax = min({x.L, search_limits::kMaximumPartitionCount, R / P});
+        for (int V = 1; V <= vmax; V++) {
+            i128 INF = search_limits::kInfiniteTime;
+            vector<vector<i128>> dp(V + 1, vector<i128>(x.L + 1, INF));
+            vector<vector<int>> par(V + 1, vector<int>(x.L + 1, -1));
+            dp[0][0] = 0;
+            for (int j = 1; j <= V; j++) {
+                for (int i = j; i <= x.L - (V - j); i++) {
+                    for (int h = j - 1; h < i; h++) {
+                        if (dp[j - 1][h] < INF &&
+                            (i - h) * (q + x.Ua) + (zero_comms ? 0 : x.U) <= x.M) {
+                            i128 val = max(dp[j - 1][h], pref[i] - pref[h]);
+                            if (val < dp[j][i]) {
+                                dp[j][i] = val, par[j][i] = h;
+                            }
+                        }
+                    }
+                }
+            }
+            if (dp[V][x.L] >= INF) {
+                continue;
+            }
+            Candidate c;
+            c.P = P;
+            c.V = V;
+            c.score = dp[V][x.L] * search_limits::kMillion + mapcost;
+            c.map = mp;
+            c.cuts.resize(V + 1);
+            c.cuts[V] = x.L;
+            int at = x.L;
+            bool ok = true;
+            for (int j = V; j > 0; j--) {
+                int h = par[j][at];
+                if (h < 0) {
+                    ok = false;
+                    break;
+                }
+                c.cuts[j - 1] = h;
+                at = h;
+            }
+            if (!ok) {
+                continue;
+            }
+            if (c.score < best_score) {
+                best_score = c.score;
+                pc.best_v = c;
+            }
+            pc.max_v = c;
+        }
+        if (pc.max_v.P) {
+            pcs.push_back(move(pc));
+        }
+    }
+    return pcs;
+}
+
+}  // namespace solver
+// END MODULE: src/search/candidate_search.cpp
+// END TRANSLATION UNIT: src/search/candidate_search.cpp
+// BEGIN TRANSLATION UNIT: src/search/layout_search.cpp
+// BEGIN MODULE: src/search/layout_search.cpp
+// BEGIN MODULE: src/search/layout_search.hpp
+namespace solver {
+ScheduleResult evaluate_layouts(
+    const InputData& x, const Candidate& c, bool rich, bool deep,
+    std::chrono::steady_clock::time_point deadline = std::chrono::steady_clock::time_point::max());
+}
+// END MODULE: src/search/layout_search.hpp
+// Evaluate group layouts under the event scheduler.
+namespace solver {
+using namespace std;
+ScheduleResult evaluate_layouts(
+    const InputData& x, const Candidate& c, bool rich, bool deep,
+    chrono::steady_clock::time_point deadline) {
+    ScheduleResult best;
+    best.c = c;
+    auto dur = compute_durations(x, c);
+    vector<int> base_group(x.L);
+    for (int g = 0; g < c.V; g++) {
+        for (int l = c.cuts[g]; l < c.cuts[g + 1]; l++) {
+            base_group[l] = g;
+        }
+    }
+    auto test_layout = [&](const vector<int>& lg, const vector<int>& cuts, int K, int G) {
+        if (chrono::steady_clock::now() >= deadline) {
+            return;
+        }
+        vector<int> ng(G);
+        for (int g : lg) {
+            ng[g]++;
+        }
+        vector<int> windows = rich ? vector<int>{1, 2, G, 2 * G, 0} : vector<int>{0};
+        sort(windows.begin(), windows.end());
+        windows.erase(unique(windows.begin(), windows.end()), windows.end());
+        for (int one = 0; one <= (rich ? 1 : 0); one++) {
+            vector<int> caps(G), buf(G);
+            bool ok = true;
+            for (int g = 0; g < G; g++) {
+                bool zero = true;
+                for (int l = 0; l < x.L; l++) {
+                    if (lg[l] == g && (dur[l][operation::index(operation::kDispatchForward)] ||
+                                       dur[l][operation::index(operation::kCombineForward)] ||
+                                       dur[l][operation::index(operation::kCombineBackward)] ||
+                                       dur[l][operation::index(operation::kDispatchBackward)])) {
+                        zero = false;
+                    }
+                }
+                // If every communication duration is zero, the official checker omits buffers.
+                int bbuf = zero ? 0 : 1;
+                if (rich && !one && !zero) {
+                    i128 two = x.M - ng[g] * ((x.E / c.P) * x.Z + x.Zs) - 2 * x.U;
+                    if (two >= 0 && two / x.Ua >= ng[g]) {
+                        bbuf = 2;
+                    }
+                }
+                i128 avail = x.M - ng[g] * ((x.E / c.P) * x.Z + x.Zs) - (zero ? 0 : bbuf * x.U);
+                if (avail < 0) {
+                    ok = false;
+                    break;
+                }
+                caps[g] = (int)min<i128>(avail / x.Ua, (i128)x.mb * ng[g]);
+                buf[g] = bbuf;
+                if (caps[g] < ng[g]) {
+                    ok = false;
+                    break;
+                }
+            }
+            if (!ok) {
+                continue;
+            }
+            int mmax = rich ? 2 : 0;
+            for (int mode = 0; mode <= mmax; mode++) {
+                for (int w : windows) {
+                    if (chrono::steady_clock::now() >= deadline) {
+                        return;
+                    }
+                    vector<event_sched::Op> ops;
+                    i128 tm;
+                    if (event_sched::schedule(x.mb, x.L, G, lg, dur, ng, caps, buf, w, ops, tm,
+                                              mode) &&
+                        tm < best.time) {
+                        best.time = tm;
+                        best.G = G;
+                        best.K = K;
+                        best.cuts = cuts;
+                        best.group = lg;
+                        best.ops.swap(ops);
+                    }
+                }
+            }
+        }
+    };
+    test_layout(base_group, c.cuts, c.V, c.V);
+    if (rich && deep) {
+        int max_g = min(x.L / 2, x.N * x.S / c.P);
+        set<int> gs;
+        for (int g : {max_g, min(max_g, c.V), max(1, min(max_g, c.V / 2))}) {
+            if (g >= 1 && g <= max_g) {
+                gs.insert(g);
+            }
+        }
+        for (int G : gs) {
+            if (chrono::steady_clock::now() >= deadline) {
+                break;
+            }
+            int K = 2 * G;
+            vector<int> cuts(K + 1), group(x.L);
+            for (int j = 0; j <= K; j++) {
+                cuts[j] = x.L * j / K;
+            }
+            for (int j = 0; j < K; j++) {
+                for (int l = cuts[j]; l < cuts[j + 1]; l++) {
+                    group[l] = (j < G ? j : 2 * G - 1 - j);
+                }
+            }
+            test_layout(group, cuts, K, G);
+        }
+        if (best.time < search_limits::kInfiniteTime) {
+            vector<i128> lw(x.L);
+            for (int l = 0; l < x.L; l++) {
+                for (auto v : dur[l]) {
+                    lw[l] += v;
+                }
+            }
+            vector<int> order;
+            for (int j = 1; j < best.K; j++) {
+                if (best.cuts[j] > 0 && best.cuts[j] < x.L) {
+                    order.push_back(j);
+                }
+            }
+            sort(order.begin(), order.end(), [&](int a, int b) {
+                return abs((long long)(lw[best.cuts[a] - 1] - lw[best.cuts[a]])) >
+                       abs((long long)(lw[best.cuts[b] - 1] - lw[best.cuts[b]]));
+            });
+            vector<int> seed = best.cuts;
+            int K = best.K, G = best.G;
+            int tried = 0;
+            for (int j : order) {
+                if (chrono::steady_clock::now() >= deadline) {
+                    break;
+                }
+                for (int delta : {-1, 1}) {
+                    if (chrono::steady_clock::now() >= deadline) {
+                        break;
+                    }
+                    auto cuts = seed;
+                    cuts[j] += delta;
+                    bool ok = true;
+                    for (int z = 1; z < K; z++) {
+                        if (cuts[z] <= cuts[z - 1] || cuts[z] >= cuts[z + 1]) {
+                            ok = false;
+                        }
+                    }
+                    if (!ok) {
+                        continue;
+                    }
+                    vector<int> group(x.L);
+                    for (int bl = 0; bl < K; bl++) {
+                        int g = (K == G ? bl : (bl < G ? bl : 2 * G - 1 - bl));
+                        for (int l = cuts[bl]; l < cuts[bl + 1]; l++) {
+                            group[l] = g;
+                        }
+                    }
+                    test_layout(group, cuts, K, G);
+                }
+                if (++tried >= 3) {
+                    break;
+                }
+            }
+        }
+    }
+    if (best.time >= search_limits::kInfiniteTime) {
+        best.G = c.V;
+        best.K = c.V;
+        best.cuts = c.cuts;
+        best.group = base_group;
+        best.time = 0;
+        for (int mb = 0; mb < x.mb; mb++) {
+            for (int l = 0; l < x.L; l++) {
+                for (auto d : dur[l]) {
+                    best.time += d + 1;
+                }
+            }
+        }
+    }
+    return best;
+}
+
+}  // namespace solver
+// END MODULE: src/search/layout_search.cpp
+// END TRANSLATION UNIT: src/search/layout_search.cpp
+// BEGIN TRANSLATION UNIT: src/search/window_search.cpp
+// BEGIN MODULE: src/search/window_search.cpp
+// BEGIN MODULE: src/search/window_search.hpp
+namespace solver {
+ScheduleResult scan_release1(const InputData& x, const ScheduleResult& anchor,
+                             std::chrono::steady_clock::time_point deadline, bool& cutoff);
+}
+// END MODULE: src/search/window_search.hpp
+// Release-one window sweep for the initial schedule.
+namespace solver {
+using namespace std;
+ScheduleResult scan_release1(const InputData& x, const ScheduleResult& anchor,
+                             chrono::steady_clock::time_point deadline, bool& cutoff) {
+    ScheduleResult trial = anchor;
+    auto dur = compute_durations(x, anchor.c);
+    vector<int> ng(anchor.G);
+    for (int g : anchor.group) {
+        ++ng[g];
+    }
+    vector<int> wins;
+    if (x.mb <= search_limits::kWindowExhaustiveMicrobatchLimit) {
+        for (int w = 1; w <= x.mb; ++w) {
+            wins.push_back(w);
+        }
+    } else {
+        wins = {1,
+                2,
+                30,  // sampled window value retained for large batches
+
+                31,
+                32,
+                search_limits::kWindowExhaustiveMicrobatchLimit,
+                anchor.G,
+                max(1, anchor.G - 1),
+                anchor.G + 1,
+                2 * anchor.G,
+                max(1, 2 * anchor.G - 1),
+                2 * anchor.G + 1,
+                x.mb};
+        for (int& w : wins) {
+            w = min(w, x.mb);
+        }
+        sort(wins.begin(), wins.end());
+        wins.erase(unique(wins.begin(), wins.end()), wins.end());
+    }
+    for (int one = 0; one <= 1 && !cutoff; ++one) {
+        vector<int> caps(anchor.G), buf(anchor.G);
+        bool ok = true;
+        for (int g = 0; g < anchor.G; ++g) {
+            bool zero = true;
+            for (int l = 0; l < x.L; ++l) {
+                if (anchor.group[l] == g &&
+                    (dur[l][operation::index(operation::kDispatchForward)] ||
+                     dur[l][operation::index(operation::kCombineForward)] ||
+                     dur[l][operation::index(operation::kCombineBackward)] ||
+                     dur[l][operation::index(operation::kDispatchBackward)])) {
+                    zero = false;
+                }
+            }
+            int b = zero ? 0 : 1;
+            if (!zero && !one) {
+                i128 two = x.M - (i128)ng[g] * ((x.E / anchor.c.P) * x.Z + x.Zs) - 2 * x.U;
+                if (two >= 0 && two / x.Ua >= ng[g]) {
+                    b = 2;
+                }
+            }
+            i128 avail =
+                x.M - (i128)ng[g] * ((x.E / anchor.c.P) * x.Z + x.Zs) - (zero ? 0 : b * x.U);
+            if (avail < 0) {
+                ok = false;
+                break;
+            }
+            caps[g] = (int)min<i128>(avail / x.Ua, (i128)x.mb * ng[g]);
+            buf[g] = b;
+            if (caps[g] < ng[g]) {
+                ok = false;
+                break;
+            }
+        }
+        if (!ok) {
+            continue;
+        }
+        for (int w : wins) {
+            if (chrono::steady_clock::now() >= deadline) {
+                cutoff = true;
+                break;
+            }
+            vector<event_sched::Op> ops;
+            i128 tm;
+            if (event_sched::schedule(x.mb, x.L, anchor.G, anchor.group, dur, ng, caps, buf, w, ops,
+                                      tm, 0, 0, 0, 0, false, 1) &&
+                tm < trial.time) {
+                trial.time = tm;
+                trial.ops.swap(ops);
+            }
+        }
+    }
+    return trial;
+}
+
+}  // namespace solver
+// END MODULE: src/search/window_search.cpp
+// END TRANSLATION UNIT: src/search/window_search.cpp
+// BEGIN TRANSLATION UNIT: src/search/initial_search.cpp
+// BEGIN MODULE: src/search/initial_search.cpp
+// Select initial candidates and preserve the baseline incumbents.
+namespace solver {
+using namespace std;
+
+
+InitialResults refine_initial_candidates(const InputData& x, vector<PartitionCandidate>& pcs,
+                                         bool serial) {
+    vector<ScheduleResult> probes;
+    probes.reserve(pcs.size());
+    for (auto& pc : pcs) {
+        ScheduleResult r = evaluate_layouts(x, pc.max_v, false, false);
+        pc.probe_time = r.time;
+        probes.push_back(move(r));
+    }
+    int winner = 0;
+    for (int i = 1; i < (int)probes.size(); i++) {
+        if (probes[i].time < probes[winner].time) {
+            winner = i;
+        }
+    }
+    ScheduleResult best = move(probes[winner]);
+    ScheduleResult probe_base = best;
+    if (!serial) {
+        vector<int> ord(pcs.size());
+        iota(ord.begin(), ord.end(), 0);
+        sort(ord.begin(), ord.end(),
+             [&](int a, int b) { return pcs[a].probe_time < pcs[b].probe_time; });
+        if (winner != ord[0]) {
+            swap(ord[0], ord[find(ord.begin(), ord.end(), winner) - ord.begin()]);
+        }
+        for (int j = 0; j < min(2, (int)ord.size()); j++) {
+            int id = ord[j];
+            const Candidate& c = pcs[id].best_v.P ? pcs[id].best_v : pcs[id].max_v;
+            ScheduleResult r = evaluate_layouts(x, c, true, j == 0);
+            // Candidate replacement is strict on Time; equal values retain traversal order.
+            if (r.time < best.time) {
+                best = move(r);
+            }
+        }
+    }
+    // Freeze the complete v5 result, including its original P/V and rich schedule
+    // competition. Every borrow experiment branches from this exact incumbent.
+    ScheduleResult v5_base = best;
+    return {move(best), move(probe_base), move(v5_base)};
+}
+
+}  // namespace solver
+// END MODULE: src/search/initial_search.cpp
+// END TRANSLATION UNIT: src/search/initial_search.cpp
+// BEGIN TRANSLATION UNIT: src/search/window_borrow.cpp
+// BEGIN MODULE: src/search/window_borrow.cpp
+// Window-limit borrowing from frozen initial incumbents.
+namespace solver {
+using namespace std;
+ScheduleResult run_window_borrow(const InputData& x, ScheduleResult best,
+                                 const ScheduleResult& probe_base, const ScheduleResult& v5_base,
+                                 bool serial, const string& borrow) {
+    if (!serial && (borrow == "windows" || borrow == "ac" || borrow == "all")) {
+        auto scan_windows = [&](const ScheduleResult& anchor) {
+            ScheduleResult trial = anchor;
+            auto dur = compute_durations(x, anchor.c);
+            vector<int> ng(anchor.G);
+            for (int g : anchor.group) {
+                ng[g]++;
+            }
+            vector<int> wins;
+            if (x.mb <= search_limits::kWindowExhaustiveMicrobatchLimit) {
+                for (int w = 1; w <= x.mb; w++) {
+                    wins.push_back(w);
+                }
+            } else {
+                wins = {1,
+                        2,
+                        30,  // sampled window value retained for large batches
+
+                        31,
+                        32,
+                        search_limits::kWindowExhaustiveMicrobatchLimit,
+                        0,
+                        anchor.G,
+                        2 * anchor.G,
+                        max(1, anchor.G - 1),
+                        anchor.G + 1,
+                        max(1, 2 * anchor.G - 1),
+                        2 * anchor.G + 1};
+            }
+            sort(wins.begin(), wins.end());
+            wins.erase(unique(wins.begin(), wins.end()), wins.end());
+            for (int one = 0; one <= 1; one++) {
+                vector<int> caps(anchor.G), buf(anchor.G);
+                bool ok = true;
+                for (int g = 0; g < anchor.G; g++) {
+                    bool zero = true;
+                    for (int l = 0; l < x.L; l++) {
+                        if (anchor.group[l] == g &&
+                            (dur[l][operation::index(operation::kDispatchForward)] ||
+                             dur[l][operation::index(operation::kCombineForward)] ||
+                             dur[l][operation::index(operation::kCombineBackward)] ||
+                             dur[l][operation::index(operation::kDispatchBackward)])) {
+                            zero = false;
+                        }
+                    }
+                    int b = zero ? 0 : 1;
+                    if (!zero && !one) {
+                        i128 two = x.M - ng[g] * ((x.E / anchor.c.P) * x.Z + x.Zs) - 2 * x.U;
+                        if (two >= 0 && two / x.Ua >= ng[g]) {
+                            b = 2;
+                        }
+                    }
+                    i128 avail =
+                        x.M - ng[g] * ((x.E / anchor.c.P) * x.Z + x.Zs) - (zero ? 0 : b * x.U);
+                    if (avail < 0) {
+                        ok = false;
+                        break;
+                    }
+                    caps[g] = (int)min<i128>(avail / x.Ua, (i128)x.mb * ng[g]);
+                    buf[g] = b;
+                    if (caps[g] < ng[g]) {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (ok) {
+                    for (int w : wins) {
+                        vector<event_sched::Op> ops;
+                        i128 tm;
+                        if (event_sched::schedule(x.mb, x.L, anchor.G, anchor.group, dur, ng, caps,
+                                                  buf, w, ops, tm, 0) &&
+                            tm < trial.time) {
+                            trial.time = tm;
+                            trial.ops.swap(ops);
+                        }
+                    }
+                }
+            }
+            return trial;
+        };
+        ScheduleResult a = scan_windows(probe_base), b = scan_windows(v5_base);
+        ScheduleResult trial = (a.time <= b.time ? move(a) : move(b));
+        if (trial.time < best.time) {
+            best = move(trial);
+        }
+    }
+    return best;
+}
+
+}  // namespace solver
+// END MODULE: src/search/window_borrow.cpp
+// END TRANSLATION UNIT: src/search/window_borrow.cpp
+// BEGIN TRANSLATION UNIT: src/search/boost_search.cpp
+// BEGIN MODULE: src/search/boost_search.cpp
+// Forward-fill priority search.
+namespace solver {
+using namespace std;
+ScheduleResult run_boost_borrow(const InputData& x, ScheduleResult best,
+                                const ScheduleResult& v5_base, bool serial, const string& borrow) {
+    if (!serial && (borrow == "boost" || borrow == "boost_grid" || borrow == "all")) {
+        ScheduleResult trial = v5_base;
+        auto dur = compute_durations(x, v5_base.c);
+        vector<int> ng(v5_base.G);
+        for (int g : v5_base.group) {
+            ng[g]++;
+        }
+        i128 boost_best_time = search_limits::kInfiniteTime;
+        int best_fg = 0, best_fm = 0, best_ratio = 0, best_buffer = 0;
+        bool best_flat = false;
+        for (int one = 0; one <= 1; one++) {
+            vector<int> caps(v5_base.G), buf(v5_base.G);
+            bool ok = true;
+            for (int g = 0; g < v5_base.G; g++) {
+                bool zero = true;
+                for (int l = 0; l < x.L; l++) {
+                    if (v5_base.group[l] == g &&
+                        (dur[l][operation::index(operation::kDispatchForward)] ||
+                         dur[l][operation::index(operation::kCombineForward)] ||
+                         dur[l][operation::index(operation::kCombineBackward)] ||
+                         dur[l][operation::index(operation::kDispatchBackward)])) {
+                        zero = false;
+                    }
+                }
+                int b = zero ? 0 : 1;
+                if (!zero && !one) {
+                    i128 two = x.M - ng[g] * ((x.E / v5_base.c.P) * x.Z + x.Zs) - 2 * x.U;
+                    if (two >= 0 && two / x.Ua >= ng[g]) {
+                        b = 2;
+                    }
+                }
+                i128 avail =
+                    x.M - ng[g] * ((x.E / v5_base.c.P) * x.Z + x.Zs) - (zero ? 0 : b * x.U);
+                if (avail < 0) {
+                    ok = false;
+                    break;
+                }
+                caps[g] = (int)min<i128>(avail / x.Ua, (i128)x.mb * ng[g]);
+                buf[g] = b;
+                if (caps[g] < ng[g]) {
+                    ok = false;
+                    break;
+                }
+            }
+            if (!ok) {
+                continue;
+            }
+            vector<tuple<int, int, int, bool, bool>> cfg;
+            if (borrow == "boost_grid") {
+                set<int> fss = {1, 2, max(1, v5_base.G / 2), v5_base.G},
+                         fms = {max(1, x.mb / 4), max(1, x.mb / 2), x.mb};
+                vector<int> ratios = {0, 5, 10, 20, 50, 100};
+                for (int fg : fss) {
+                    for (int fm0 : fms) {
+                        for (int ratio : ratios) {
+                            cfg.emplace_back(fg, fm0, ratio, false, false);
+                        }
+                    }
+                }
+                cfg.emplace_back(min(2, v5_base.G), min(x.mb, max(1, x.mb / 2)), 20, true, false);
+            } else {
+                int fs = min(v5_base.G, max(1, v5_base.G / 2)), fm = min(x.mb, 16);
+                cfg.emplace_back(v5_base.G, min(x.mb, max(2, v5_base.G)), 0, false, false);
+                cfg.emplace_back(fs, fm, 10, false, false);
+                cfg.emplace_back(fs, fm, 20, false, false);
+                cfg.emplace_back(fs, fm, 50, false, false);
+                cfg.emplace_back(min(2, v5_base.G), min(x.mb, 8), 20, true, false);
+            }
+            for (auto [fg, fm0, ratio, flat, unused] : cfg) {
+                (void)unused;
+                vector<event_sched::Op> ops;
+                i128 tm;
+                if (event_sched::schedule(x.mb, x.L, v5_base.G, v5_base.group, dur, ng, caps, buf,
+                                          0, ops, tm, 3, fg, fm0, ratio, flat)) {
+                    if (tm < boost_best_time) {
+                        boost_best_time = tm;
+                        best_fg = fg;
+                        best_fm = fm0;
+                        best_ratio = ratio;
+                        best_flat = flat;
+                        best_buffer = one;
+                    }
+                    if (tm < trial.time) {
+                        trial.time = tm;
+                        trial.ops.swap(ops);
+                    }
+                }
+            }
+        }
+        if (borrow == "boost_grid" && boost_best_time < search_limits::kInfiniteTime) {
+            cerr << "BORROW_B_GRID_BEST P=" << v5_base.c.P << " G=" << best_fg << " M=" << best_fm
+                 << " ratio=" << best_ratio << " flat=" << best_flat << " buffer=" << best_buffer
+                 << " Time=" << to_decimal(boost_best_time) << " base=" << to_decimal(v5_base.time)
+                 << "\n";
+        }
+        if (trial.time < best.time) {
+            best = move(trial);
+        }
+    }
+    return best;
+}
+
+}  // namespace solver
+// END MODULE: src/search/boost_search.cpp
+// END TRANSLATION UNIT: src/search/boost_search.cpp
+// BEGIN TRANSLATION UNIT: src/search/placement_search.cpp
+// BEGIN MODULE: src/search/placement_search.cpp
+// Alternative expert placement search and rescheduling.
+namespace solver {
+using namespace std;
+ScheduleResult run_alt_placement(const InputData& x, ScheduleResult best,
+                                 const ScheduleResult& v5_base, bool serial, const string& borrow) {
+    if (!serial && (borrow == "placement" || borrow == "ac" || borrow == "all")) {
+        Candidate alt = v5_base.c;
+        const int P = alt.P, per = x.E / P;
+        bool changed = false;
+        int improved_layers = 0;
+        map<vector<i128>, grouped_placement::Plan> cache;
+        for (int l = 0; l < x.L; l++) {
+            vector<i128> slots = x.load[l], key = slots;
+            sort(key.begin(), key.end());
+            vector<i128> base_load(P);
+            for (int e = 0; e < x.E; e++) {
+                base_load[alt.map[l][e]] += slots[e];
+            }
+            i128 cur = *max_element(base_load.begin(), base_load.end()),
+                 total = accumulate(slots.begin(), slots.end(), (i128)0),
+                 heavy = *max_element(slots.begin(), slots.end());
+            i128 lower = max(ceil_div(total, P), heavy);
+            if (cur <= lower) {
+                continue;
+            }
+            grouped_placement::Plan plan;
+            bool found = false;
+            auto it = cache.find(key);
+            if (it != cache.end()) {
+                plan = it->second;
+                found = true;
+            } else {
+                i128 lo = lower, hi = cur - 1;
+                grouped_placement::Plan best_plan;
+                for (int z = 0; z < search_limits::kPlacementPeakSearchSteps && lo <= hi; z++) {
+                    i128 mid = lo + (hi - lo) / 2;
+                    grouped_placement::Plan trial;
+                    if (grouped_placement::find_at_peak(slots, P, per, mid, trial,
+                                                        search_limits::kPlacementSearchBudget)) {
+                        best_plan = move(trial);
+                        hi = mid - 1;
+                    } else {
+                        lo = mid + 1;
+                    }
+                }
+                if (best_plan.peak) {
+                    plan = move(best_plan);
+                    cache.emplace(key, plan);
+                    found = true;
+                }
+            }
+            if (!found) {
+                continue;
+            }
+            vector<int> row;
+            if (!grouped_placement::materialize(slots, plan, row)) {
+                continue;
+            }
+            vector<i128> new_load(P);
+            for (int e = 0; e < x.E; e++) {
+                new_load[row[e]] += slots[e];
+            }
+            i128 nm = *max_element(new_load.begin(), new_load.end());
+            if (nm < cur) {
+                alt.map[l] = move(row);
+                changed = true;
+                ++improved_layers;
+            }
+        }
+        if (changed) {
+            ScheduleResult trial = v5_base;
+            trial.c = alt;
+            auto dur = compute_durations(x, alt);
+            vector<int> ng(trial.G);
+            for (int g : trial.group) {
+                ng[g]++;
+            }
+            for (int one = 0; one <= 1; one++) {
+                vector<int> caps(trial.G), buf(trial.G);
+                bool ok = true;
+                for (int g = 0; g < trial.G; g++) {
+                    bool zero = true;
+                    for (int l = 0; l < x.L; l++) {
+                        if (trial.group[l] == g &&
+                            (dur[l][operation::index(operation::kDispatchForward)] ||
+                             dur[l][operation::index(operation::kCombineForward)] ||
+                             dur[l][operation::index(operation::kCombineBackward)] ||
+                             dur[l][operation::index(operation::kDispatchBackward)])) {
+                            zero = false;
+                        }
+                    }
+                    int b = zero ? 0 : 1;
+                    if (!zero && !one) {
+                        i128 two = x.M - ng[g] * ((x.E / P) * x.Z + x.Zs) - 2 * x.U;
+                        if (two >= 0 && two / x.Ua >= ng[g]) {
+                            b = 2;
+                        }
+                    }
+                    i128 avail = x.M - ng[g] * ((x.E / P) * x.Z + x.Zs) - (zero ? 0 : b * x.U);
+                    if (avail < 0) {
+                        ok = false;
+                        break;
+                    }
+                    caps[g] = (int)min<i128>(avail / x.Ua, (i128)x.mb * ng[g]);
+                    buf[g] = b;
+                    if (caps[g] < ng[g]) {
+                        ok = false;
+                        break;
+                    }
+                }
+                if (!ok) {
+                    continue;
+                }
+                vector<event_sched::Op> ops;
+                i128 tm;
+                if (event_sched::schedule(x.mb, x.L, trial.G, trial.group, dur, ng, caps, buf, 0,
+                                          ops, tm, 0) &&
+                    tm < trial.time) {
+                    trial.time = tm;
+                    trial.ops.swap(ops);
+                }
+            }
+            if (borrow == "all" || borrow == "ac") {
+                vector<int> wins;
+                if (x.mb <= search_limits::kWindowExhaustiveMicrobatchLimit) {
+                    for (int w = 1; w <= x.mb; w++) {
+                        wins.push_back(w);
+                    }
+                } else {
+                    wins = {1,          2, 30,      31,          32,
+                            64,         0, trial.G, 2 * trial.G, max(1, trial.G - 1),
+                            trial.G + 1};
+                }
+                sort(wins.begin(), wins.end());
+                wins.erase(unique(wins.begin(), wins.end()), wins.end());
+                for (int one = 0; one <= 1; one++) {
+                    vector<int> caps(trial.G), buf(trial.G);
+                    bool ok = true;
+                    for (int g = 0; g < trial.G; g++) {
+                        bool zero = true;
+                        for (int l = 0; l < x.L; l++) {
+                            if (trial.group[l] == g &&
+                                (dur[l][operation::index(operation::kDispatchForward)] ||
+                                 dur[l][operation::index(operation::kCombineForward)] ||
+                                 dur[l][operation::index(operation::kCombineBackward)] ||
+                                 dur[l][operation::index(operation::kDispatchBackward)])) {
+                                zero = false;
+                            }
+                        }
+                        int b = zero ? 0 : 1;
+                        if (!zero && !one) {
+                            i128 two = x.M - ng[g] * ((x.E / P) * x.Z + x.Zs) - 2 * x.U;
+                            if (two >= 0 && two / x.Ua >= ng[g]) {
+                                b = 2;
+                            }
+                        }
+                        i128 avail = x.M - ng[g] * ((x.E / P) * x.Z + x.Zs) - (zero ? 0 : b * x.U);
+                        if (avail < 0) {
+                            ok = false;
+                            break;
+                        }
+                        caps[g] = (int)min<i128>(avail / x.Ua, (i128)x.mb * ng[g]);
+                        buf[g] = b;
+                        if (caps[g] < ng[g]) {
+                            ok = false;
+                            break;
+                        }
+                    }
+                    if (!ok) {
+                        continue;
+                    }
+                    for (int w : wins) {
+                        vector<event_sched::Op> ops;
+                        i128 tm;
+                        if (event_sched::schedule(x.mb, x.L, trial.G, trial.group, dur, ng, caps,
+                                                  buf, w, ops, tm, 0) &&
+                            tm < trial.time) {
+                            trial.time = tm;
+                            trial.ops.swap(ops);
+                        }
+                    }
+                }
+            }
+            if (trial.time < best.time) {
+                best = move(trial);
+                cerr << "BORROW_C P=" << P << " improved_MAP_layers=" << improved_layers
+                     << " Time=" << to_decimal(best.time) << "\n";
+            }
+        }
+    }
+    return best;
+}
+
+}  // namespace solver
+// END MODULE: src/search/placement_search.cpp
+// END TRANSLATION UNIT: src/search/placement_search.cpp
+// BEGIN TRANSLATION UNIT: src/search/list_search.cpp
+// BEGIN MODULE: src/search/list_search.cpp
+// List-scheduler strategy and its local parameter sweeps.
 namespace solver {
 using namespace std;
 ScheduleResult run_v7_list_search(const InputData& x, ScheduleResult best, bool serial,
@@ -2350,495 +3165,260 @@ ScheduleResult run_v7_list_search(const InputData& x, ScheduleResult best, bool 
 }
 
 }  // namespace solver
-// END MODULE: src/search/list_search.hpp
-// BEGIN MODULE: src/search/placement_search.hpp
-// Alternative expert placement search and rescheduling.
-// BEGIN MODULE: src/placement/grouped_placement.hpp
-
-// ===== grouped_placement =====
-
-// Bounded exact placement search for layers with only a few distinct slot
-// weights. Experts with equal weights are grouped; the search assigns counts
-// of each weight to ranks, then materialize() maps those counts back to the
-// original expert indices.
-
-namespace grouped_placement {
-using i128 = __int128_t;
-namespace limits {
-inline constexpr int kMaxWeightTypes = 4;
-inline constexpr int kMaxRanks = 32;
-inline constexpr int kMaxSlotsPerRank = 32;
-inline constexpr std::uint64_t kDefaultNodeBudget = 250000;
-}  // namespace limits
-
-struct Plan {
-    std::vector<i128> values;                   // sorted distinct slot weights
-    std::vector<std::vector<int>> rank_counts;  // [rank][weight type]
-    i128 peak = 0;
-};
-
-namespace detail {
-struct State {
-    int rank;
-    int first_pattern;
-    std::vector<int> used;
-
-    bool operator==(const State& other) const {
-        return rank == other.rank && first_pattern == other.first_pattern && used == other.used;
-    }
-};
-
-struct StateHash {
-    std::size_t operator()(const State& state) const {
-        std::size_t h = std::hash<int>{}(state.rank);
-        auto mix = [&h](std::size_t x) { h ^= x + 0x9e3779b97f4a7c15ULL + (h << 6) + (h >> 2); };
-        mix(std::hash<int>{}(state.first_pattern));
-        for (int x : state.used) {
-            mix(std::hash<int>{}(x));
-        }
-        return h;
-    }
-};
-
-class Search {
-private:
-    int P;
-    int per_rank;
-    i128 target;
-    const std::vector<i128>& values;
-    const std::vector<int>& available;
-    std::uint64_t budget;
-    std::uint64_t visited = 0;
-    bool exhausted = false;
-    std::vector<std::vector<int>> patterns;
-    std::vector<std::vector<int>> solution;
-    std::unordered_set<State, StateHash> failed;
-
-public:
-    Search(int p, int q, i128 cap, const std::vector<i128>& type_values,
-           const std::vector<int>& type_counts, std::uint64_t node_budget)
-        : P(p),
-          per_rank(q),
-          target(cap),
-          values(type_values),
-          available(type_counts),
-          budget(node_budget) {}
-
-    bool solve() {
-        std::vector<int> pattern(values.size(), 0);
-        enumerate_patterns(0, per_rank, 0, pattern);
-        if (exhausted || patterns.empty()) {
-            return false;
-        }
-        std::vector<int> used(values.size(), 0);
-        std::vector<std::vector<int>> chosen;
-        chosen.reserve(P);
-        return dfs(0, 0, used, chosen) && !exhausted;
-    }
-
-    bool is_exhausted() const {
-        return exhausted;
-    }
-
-    std::vector<std::vector<int>> take_solution() {
-        return std::move(solution);
-    }
-
-private:
-    bool tick() {
-        if (++visited > budget) {
-            exhausted = true;
-            return false;
-        }
-        return true;
-    }
-
-    void enumerate_patterns(int type, int slots_left, i128 load, std::vector<int>& counts) {
-        if (exhausted || !tick()) {
-            return;
-        }
-        if (type == static_cast<int>(values.size()) - 1) {
-            int n = slots_left;
-            if (n < 0 || n > available[type]) {
-                return;
-            }
-            i128 sum = load + static_cast<i128>(n) * values[type];
-            if (sum > target) {
-                return;
-            }
-            counts[type] = n;
-            patterns.push_back(counts);
-            return;
-        }
-        const int max_n = std::min(slots_left, available[type]);
-        for (int n = 0; n <= max_n && !exhausted; ++n) {
-            i128 next_load = load + static_cast<i128>(n) * values[type];
-            if (next_load > target) {
-                break;
-            }
-            counts[type] = n;
-            enumerate_patterns(type + 1, slots_left - n, next_load, counts);
-        }
-    }
-
-    bool dfs(int rank, int first_pattern, std::vector<int>& used,
-             std::vector<std::vector<int>>& chosen) {
-        if (!tick()) {
-            return false;
-        }
-        if (rank == P) {
-            if (used == available) {
-                solution = chosen;
-                return true;
-            }
-            return false;
-        }
-
-        State key{rank, first_pattern, used};
-        if (failed.find(key) != failed.end()) {
-            return false;
-        }
-        const int remaining_ranks = P - rank - 1;
-        for (int p = first_pattern; p < static_cast<int>(patterns.size()); ++p) {
-            const auto& pattern = patterns[p];
-            bool fits = true;
-            for (std::size_t t = 0; t < used.size(); ++t) {
-                if (used[t] + pattern[t] > available[t]) {
-                    fits = false;
-                    break;
-                }
-                // After this rank, remaining experts of this type must still
-                // fit in the remaining rank capacities.
-                if (available[t] - used[t] - pattern[t] > remaining_ranks * per_rank) {
-                    fits = false;
-                    break;
-                }
-            }
-            if (!fits) {
-                continue;
-            }
-            for (std::size_t t = 0; t < used.size(); ++t) {
-                used[t] += pattern[t];
-            }
-            chosen.push_back(pattern);
-            if (dfs(rank + 1, p, used, chosen)) {
-                return true;
-            }
-            chosen.pop_back();
-            for (std::size_t t = 0; t < used.size(); ++t) {
-                used[t] -= pattern[t];
-            }
-            if (exhausted) {
-                return false;
-            }
-        }
-        failed.insert(std::move(key));
-        return false;
-    }
-};
-}  // namespace detail
-
-// Find a rank-by-weight allocation under target_peak. Returns false when the
-// target is infeasible, the type count is outside the supported small range,
-// or the bounded search exhausts its node budget. It never mutates input.
-// Search is bounded to <=4 weight types, P<=32, per_rank<=32 and the supplied
-// node budget. For other shapes, retain the caller's existing MAP.
-inline bool find_at_peak(const std::vector<i128>& slots, int P, int per_rank, i128 target_peak,
-                         Plan& out, std::uint64_t node_budget = limits::kDefaultNodeBudget) {
-    if (P < 1 || P > limits::kMaxRanks || per_rank < 1 || per_rank > limits::kMaxSlotsPerRank ||
-        slots.size() != static_cast<std::size_t>(P) * per_rank || target_peak < 0 ||
-        node_budget == 0) {
-        return false;
-    }
-
-    std::vector<i128> values = slots;
-    if (std::any_of(values.begin(), values.end(), [](i128 x) { return x < 0; })) {
-        return false;
-    }
-    std::sort(values.begin(), values.end());
-    values.erase(std::unique(values.begin(), values.end()), values.end());
-    if (values.empty() || values.size() > limits::kMaxWeightTypes) {
-        return false;
-    }
-
-    std::vector<int> available(values.size(), 0);
-    for (i128 x : slots) {
-        int t =
-            static_cast<int>(std::lower_bound(values.begin(), values.end(), x) - values.begin());
-        ++available[t];
-    }
-
-    detail::Search search(P, per_rank, target_peak, values, available, node_budget);
-    if (!search.solve()) {
-        return false;
-    }
-
-    Plan result;
-    result.values = std::move(values);
-    result.rank_counts = search.take_solution();
-    result.peak = target_peak;
-    out = std::move(result);
-    return true;
-}
-
-// Convert a cached type-count plan back to expert-index ranks for this layer.
-// This explicitly re-buckets the current slots, so plans can safely be reused
-// across layers with the same value histogram but different expert ordering.
-inline bool materialize(const std::vector<i128>& slots, const Plan& plan, std::vector<int>& row) {
-    const int P = static_cast<int>(plan.rank_counts.size());
-    if (P < 1 || plan.values.empty() || plan.values.size() > limits::kMaxWeightTypes) {
-        return false;
-    }
-    const std::size_t K = plan.values.size();
-    std::vector<std::vector<int>> experts(K);
-    for (int e = 0; e < static_cast<int>(slots.size()); ++e) {
-        auto it = std::lower_bound(plan.values.begin(), plan.values.end(), slots[e]);
-        if (it == plan.values.end() || *it != slots[e]) {
-            return false;
-        }
-        experts[static_cast<std::size_t>(it - plan.values.begin())].push_back(e);
-    }
-    std::vector<int> expected(K, 0);
-    for (const auto& rank : plan.rank_counts) {
-        if (rank.size() != K) {
-            return false;
-        }
-        for (std::size_t t = 0; t < K; ++t) {
-            if (rank[t] < 0) {
-                return false;
-            }
-            expected[t] += rank[t];
-        }
-    }
-    for (std::size_t t = 0; t < K; ++t) {
-        if (expected[t] != static_cast<int>(experts[t].size())) {
-            return false;
-        }
-    }
-
-    std::vector<int> result(slots.size(), -1);
-    std::vector<std::size_t> cursor(K, 0);
-    for (int r = 0; r < P; ++r) {
-        int rank_size = 0;
-        for (std::size_t t = 0; t < K; ++t) {
-            rank_size += plan.rank_counts[r][t];
-            for (int n = 0; n < plan.rank_counts[r][t]; ++n) {
-                if (cursor[t] >= experts[t].size()) {
-                    return false;
-                }
-                result[experts[t][cursor[t]++]] = r;
-            }
-        }
-        if (rank_size != static_cast<int>(slots.size() / P)) {
-            return false;
-        }
-    }
-    if (std::any_of(result.begin(), result.end(), [](int r) { return r < 0; })) {
-        return false;
-    }
-    row = std::move(result);
-    return true;
-}
-
-}  // namespace grouped_placement
-// END MODULE: src/placement/grouped_placement.hpp
+// END MODULE: src/search/list_search.cpp
+// END TRANSLATION UNIT: src/search/list_search.cpp
+// BEGIN TRANSLATION UNIT: src/search/wave_search.cpp
+// BEGIN MODULE: src/search/wave_search.cpp
+// Scale-v8 wave strategy and validation.
 namespace solver {
 using namespace std;
-ScheduleResult run_alt_placement(const InputData& x, ScheduleResult best,
-                                 const ScheduleResult& v5_base, bool serial, const string& borrow) {
-    if (!serial && (borrow == "placement" || borrow == "ac" || borrow == "all")) {
-        Candidate alt = v5_base.c;
-        const int P = alt.P, per = x.E / P;
-        bool changed = false;
-        int improved_layers = 0;
-        map<vector<i128>, grouped_placement::Plan> cache;
-        for (int l = 0; l < x.L; l++) {
-            vector<i128> slots = x.load[l], key = slots;
-            sort(key.begin(), key.end());
-            vector<i128> base_load(P);
-            for (int e = 0; e < x.E; e++) {
-                base_load[alt.map[l][e]] += slots[e];
-            }
-            i128 cur = *max_element(base_load.begin(), base_load.end()),
-                 total = accumulate(slots.begin(), slots.end(), (i128)0),
-                 heavy = *max_element(slots.begin(), slots.end());
-            i128 lower = max(ceil_div(total, P), heavy);
-            if (cur <= lower) {
+void run_scale_v8_search(const InputData& x, const vector<PartitionCandidate>& pcs,
+                         const ScheduleResult& v7_incumbent, ScheduleResult& best, bool serial,
+                         bool do_wave, chrono::steady_clock::time_point main_start) {
+    vector<ScheduleResult> scale_alt_seeds;
+    if (!serial && do_wave && x.mb <= search_limits::kExtraLayoutMicrobatchLimit &&
+        (i128)x.mb * x.L * operation::kCount <= search_limits::kExtraLayoutNodeLimit &&
+        x.L > best.G &&
+        chrono::steady_clock::now() - main_start <
+            chrono::milliseconds(search_limits::kWaveWarmupMs)) {
+        const int incumbent_p = best.c.P;
+        vector<int> order(pcs.size());
+        iota(order.begin(), order.end(), 0);
+        sort(order.begin(), order.end(),
+             [&](int a, int b) { return pcs[a].probe_time < pcs[b].probe_time; });
+        int used = 0;
+        auto alt_deadline = main_start + chrono::milliseconds(search_limits::kWaveDeadlineMs);
+        for (int pi : order) {
+            const Candidate& c = pcs[pi].best_v.P ? pcs[pi].best_v : pcs[pi].max_v;
+            if (!c.P || c.P == incumbent_p) {
                 continue;
             }
-            grouped_placement::Plan plan;
-            bool found = false;
-            auto it = cache.find(key);
-            if (it != cache.end()) {
-                plan = it->second;
-                found = true;
-            } else {
-                i128 lo = lower, hi = cur - 1;
-                grouped_placement::Plan best_plan;
-                for (int z = 0; z < search_limits::kPlacementPeakSearchSteps && lo <= hi; z++) {
-                    i128 mid = lo + (hi - lo) / 2;
-                    grouped_placement::Plan trial;
-                    if (grouped_placement::find_at_peak(slots, P, per, mid, trial,
-                                                        search_limits::kPlacementSearchBudget)) {
-                        best_plan = move(trial);
-                        hi = mid - 1;
-                    } else {
-                        lo = mid + 1;
-                    }
-                }
-                if (best_plan.peak) {
-                    plan = move(best_plan);
-                    cache.emplace(key, plan);
-                    found = true;
-                }
+            if (used >= 2 || chrono::steady_clock::now() +
+                                     chrono::milliseconds(search_limits::kWaveExtensionReserveMs) >=
+                                 alt_deadline) {
+                break;
             }
-            if (!found) {
+            auto d_alt = compute_durations(x, c);
+            int max_v = max(1, min({x.L, search_limits::kMaximumPartitionCount, x.N * x.S / c.P}));
+            i128 max_c = 0, max_n = 0, total_c = 0, total_n = 0;
+            for (int l = 0; l < x.L; l++) {
+                i128 C = 0, N = 0;
+                for (int o = 0; o < operation::kCount; o++) {
+                    (list_sched::comm(o) ? N : C) += d_alt[l][o];
+                }
+                max_c = max(max_c, C);
+                max_n = max(max_n, N);
+                total_c += C;
+                total_n += N;
+            }
+            i128 lb =
+                max({(i128)x.mb * max_c, (i128)x.mb * max_n, ceil_div((i128)x.mb * total_c, max_v),
+                     ceil_div((i128)x.mb * total_n, max_v)});
+            if (lb >= best.time) {
                 continue;
             }
-            vector<int> row;
-            if (!grouped_placement::materialize(slots, plan, row)) {
+            ++used;
+            ScheduleResult alt = evaluate_layouts(x, c, true, true, alt_deadline);
+            if (alt.ops.empty()) {
                 continue;
             }
-            vector<i128> new_load(P);
-            for (int e = 0; e < x.E; e++) {
-                new_load[row[e]] += slots[e];
-            }
-            i128 nm = *max_element(new_load.begin(), new_load.end());
-            if (nm < cur) {
-                alt.map[l] = move(row);
-                changed = true;
-                ++improved_layers;
-            }
-        }
-        if (changed) {
-            ScheduleResult trial = v5_base;
-            trial.c = alt;
-            auto dur = compute_durations(x, alt);
-            vector<int> ng(trial.G);
-            for (int g : trial.group) {
-                ng[g]++;
-            }
-            for (int one = 0; one <= 1; one++) {
-                vector<int> caps(trial.G), buf(trial.G);
-                bool ok = true;
-                for (int g = 0; g < trial.G; g++) {
-                    bool zero = true;
-                    for (int l = 0; l < x.L; l++) {
-                        if (trial.group[l] == g &&
-                            (dur[l][operation::index(operation::kDispatchForward)] ||
-                             dur[l][operation::index(operation::kCombineForward)] ||
-                             dur[l][operation::index(operation::kCombineBackward)] ||
-                             dur[l][operation::index(operation::kDispatchBackward)])) {
-                            zero = false;
-                        }
-                    }
-                    int b = zero ? 0 : 1;
-                    if (!zero && !one) {
-                        i128 two = x.M - ng[g] * ((x.E / P) * x.Z + x.Zs) - 2 * x.U;
-                        if (two >= 0 && two / x.Ua >= ng[g]) {
-                            b = 2;
-                        }
-                    }
-                    i128 avail = x.M - ng[g] * ((x.E / P) * x.Z + x.Zs) - (zero ? 0 : b * x.U);
-                    if (avail < 0) {
-                        ok = false;
-                        break;
-                    }
-                    caps[g] = (int)min<i128>(avail / x.Ua, (i128)x.mb * ng[g]);
-                    buf[g] = b;
-                    if (caps[g] < ng[g]) {
-                        ok = false;
-                        break;
-                    }
-                }
-                if (!ok) {
-                    continue;
-                }
-                vector<event_sched::Op> ops;
-                i128 tm;
-                if (event_sched::schedule(x.mb, x.L, trial.G, trial.group, dur, ng, caps, buf, 0,
-                                          ops, tm, 0) &&
-                    tm < trial.time) {
-                    trial.time = tm;
-                    trial.ops.swap(ops);
-                }
-            }
-            if (borrow == "all" || borrow == "ac") {
-                vector<int> wins;
-                if (x.mb <= search_limits::kWindowExhaustiveMicrobatchLimit) {
-                    for (int w = 1; w <= x.mb; w++) {
-                        wins.push_back(w);
-                    }
-                } else {
-                    wins = {1,          2, 30,      31,          32,
-                            64,         0, trial.G, 2 * trial.G, max(1, trial.G - 1),
-                            trial.G + 1};
-                }
-                sort(wins.begin(), wins.end());
-                wins.erase(unique(wins.begin(), wins.end()), wins.end());
-                for (int one = 0; one <= 1; one++) {
-                    vector<int> caps(trial.G), buf(trial.G);
-                    bool ok = true;
-                    for (int g = 0; g < trial.G; g++) {
-                        bool zero = true;
-                        for (int l = 0; l < x.L; l++) {
-                            if (trial.group[l] == g &&
-                                (dur[l][operation::index(operation::kDispatchForward)] ||
-                                 dur[l][operation::index(operation::kCombineForward)] ||
-                                 dur[l][operation::index(operation::kCombineBackward)] ||
-                                 dur[l][operation::index(operation::kDispatchBackward)])) {
-                                zero = false;
-                            }
-                        }
-                        int b = zero ? 0 : 1;
-                        if (!zero && !one) {
-                            i128 two = x.M - ng[g] * ((x.E / P) * x.Z + x.Zs) - 2 * x.U;
-                            if (two >= 0 && two / x.Ua >= ng[g]) {
-                                b = 2;
-                            }
-                        }
-                        i128 avail = x.M - ng[g] * ((x.E / P) * x.Z + x.Zs) - (zero ? 0 : b * x.U);
-                        if (avail < 0) {
-                            ok = false;
-                            break;
-                        }
-                        caps[g] = (int)min<i128>(avail / x.Ua, (i128)x.mb * ng[g]);
-                        buf[g] = b;
-                        if (caps[g] < ng[g]) {
-                            ok = false;
-                            break;
-                        }
-                    }
-                    if (!ok) {
-                        continue;
-                    }
-                    for (int w : wins) {
-                        vector<event_sched::Op> ops;
-                        i128 tm;
-                        if (event_sched::schedule(x.mb, x.L, trial.G, trial.group, dur, ng, caps,
-                                                  buf, w, ops, tm, 0) &&
-                            tm < trial.time) {
-                            trial.time = tm;
-                            trial.ops.swap(ops);
-                        }
-                    }
-                }
-            }
-            if (trial.time < best.time) {
-                best = move(trial);
-                cerr << "BORROW_C P=" << P << " improved_MAP_layers=" << improved_layers
-                     << " Time=" << to_decimal(best.time) << "\n";
+            scale_alt_seeds.push_back(alt);
+            if (alt.time < best.time) {
+                cerr << "SCALE_ALT_P oldP=" << best.c.P << " newP=" << alt.c.P
+                     << " old=" << to_decimal(best.time) << " new=" << to_decimal(alt.time)
+                     << " LB=" << to_decimal(lb) << "\n";
+                best = alt;
             }
         }
     }
-    return best;
+    if (!serial && do_wave) {
+        vector<ScheduleResult> scale_seeds;
+        scale_seeds.push_back(v7_incumbent);
+        for (auto& alt : scale_alt_seeds) {
+            scale_seeds.push_back(alt);
+        }
+        for (ScheduleResult anchor : scale_seeds) {
+            if (chrono::steady_clock::now() - main_start >=
+                chrono::milliseconds(search_limits::kWaveDeadlineMs)) {
+                break;
+            }
+            ScheduleResult saved_best = best;
+            best = anchor;
+            const auto wave_start = chrono::steady_clock::now();
+            auto dur = compute_durations(x, anchor.c);
+            vector<int> ng(anchor.G);
+            for (int g : anchor.group) {
+                ng[g]++;
+            }
+            auto safe_wave = [&](const vector<event_sched::Op>& ops, i128& tm) {
+                int stride = x.L * operation::kCount, N = x.mb * stride;
+                vector<i128> st(N, -1), en(N, -1);
+                tm = 0;
+                for (auto& o : ops) {
+                    int id = (o.mb * x.L + o.l) * operation::kCount + o.op;
+                    st[id] = o.start;
+                    en[id] = o.start + dur[o.l][o.op];
+                    tm = max(tm, en[id]);
+                }
+                for (int i = 0; i < N; i++) {
+                    if (st[i] < 0) {
+                        return false;
+                    }
+                }
+                auto peak = [](vector<pair<i128, i128>>& a) {
+                    sort(a.begin(), a.end());
+                    multiset<i128> ends;
+                    int best = 0;
+                    for (size_t i = 0; i < a.size();) {
+                        size_t j = i;
+                        while (j < a.size() && a[j].first == a[i].first) {
+                            j++;
+                        }
+                        while (!ends.empty() && *ends.begin() < a[i].first) {
+                            ends.erase(ends.begin());
+                        }
+                        best = max(best, (int)ends.size() + (int)(j - i));
+                        for (size_t k = i; k < j; k++) {
+                            ends.insert(a[k].second);
+                        }
+                        i = j;
+                    }
+                    return best;
+                };
+                for (int g = 0; g < anchor.G; g++) {
+                    i128 mexp = (i128)ng[g] * ((x.E / anchor.c.P) * x.Z + x.Zs);
+                    vector<pair<i128, i128>> acts, comms;
+                    for (int l = 0; l < x.L; l++) {
+                        if (anchor.group[l] == g) {
+                            for (int m = 0; m < x.mb; m++) {
+                                int b = (m * x.L + l) * operation::kCount;
+                                acts.push_back(
+                                    {en[b + operation::index(operation::kCombineForward)],
+                                     st[b + operation::index(operation::kSharedBackward)]});
+                                for (int o : operation::kCommunicationOperations) {
+                                    if (dur[l][o] > 0) {
+                                        comms.push_back({st[b + o], en[b + o]});
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (mexp + x.U * peak(comms) + x.Ua * peak(acts) > x.M) {
+                        return false;
+                    }
+                }
+                return true;
+            };
+            struct Trial {
+                i128 tm;
+                int mode, A, B, phase, pn, pd, W, head, desc, dw;
+            };
+            vector<Trial> top;
+            Trial winner{anchor.time, 0, 0, 0, 0, 0, 0, x.mb, 0, 0, 0};
+            auto run_wave = [&](int mode, int A, int B, int phase, int pn, int pd, int head,
+                                bool desc, int dw, int W) {
+                if (chrono::steady_clock::now() - main_start >
+                    chrono::milliseconds(search_limits::kWaveDeadlineMs)) {
+                    return;
+                }
+                vector<list_sched::Op> lo;
+                i128 tm;
+                if (!list_sched::schedule(x.mb, x.L, anchor.G, anchor.group, dur, ng, W, 0, false,
+                                          0, 0, 0, 0, 0, false, lo, tm, nullptr, nullptr, false,
+                                          true, mode, A, B, phase, pn, pd, head, desc, dw)) {
+                    return;
+                }
+                vector<event_sched::Op> ops;
+                ops.reserve(lo.size());
+                for (auto& o : lo) {
+                    ops.push_back({o.start, o.mb, o.l, o.op});
+                }
+                i128 checked;
+                if (!safe_wave(ops, checked)) {
+                    return;
+                }
+                if (W == x.mb) {
+                    Trial t{checked, mode, A, B, phase, pn, pd, W, head, 0, dw};
+                    top.push_back(t);
+                    sort(top.begin(), top.end(), [](auto& a, auto& b) { return a.tm < b.tm; });
+                    if (top.size() > 2) {
+                        top.pop_back();
+                    }
+                }
+                if (checked < best.time) {
+                    winner = {checked, mode, A, B, phase, pn, pd, W, head, 0, dw};
+                    sort(ops.begin(), ops.end(), [](auto& a, auto& b) {
+                        return tie(a.start, a.mb, a.l, a.op) < tie(b.start, b.mb, b.l, b.op);
+                    });
+                    best.time = checked;
+                    best.ops = move(ops);
+                }
+            };
+            vector<int> pitches = {1, 2, 4};
+            run_wave(1, 2, 1, 0, 1, 1, 0, false, 0, x.mb);
+            for (int pn : pitches) {
+                for (int head : {1, 2}) {
+                    run_wave(2, 1, 1, 0, pn, 4, head, false, 0, x.mb);
+                }
+            }
+            run_wave(2, 1, 1, 0, 2, 4, 2, false, 1, x.mb);
+            run_wave(2, 1, 1, 0, 2, 4, 2, false, 2, x.mb);
+            vector<int> ws = {anchor.G, 2 * anchor.G, max(1, x.mb / 2), x.mb};
+            sort(ws.begin(), ws.end());
+            ws.erase(unique(ws.begin(), ws.end()), ws.end());
+            for (size_t i = 0; i < top.size() && i < 2; i++) {
+                for (int w : ws) {
+                    if (w != x.mb) {
+                        auto t = top[i];
+                        run_wave(t.mode, t.A, t.B, t.phase, t.pn, t.pd, t.head, t.desc, t.dw, w);
+                    }
+                }
+            }
+            cerr << "WAVE_V8 anchor=" << to_decimal(anchor.time)
+                 << " best=" << to_decimal(best.time)
+                 << " improvement=" << to_decimal(anchor.time - best.time)
+                 << " mode=" << winner.mode << " A=" << winner.A << " B=" << winner.B
+                 << " phase=" << winner.phase << " pitch=" << winner.pn << "/" << winner.pd
+                 << " head="
+                 << (winner.head == 1   ? "ES"
+                     : winner.head == 2 ? "EF"
+                                        : "layerMean")
+                 << " dw=" << winner.dw << " W=" << winner.W << " top=" << top.size() << " elapsed="
+                 << chrono::duration<double>(chrono::steady_clock::now() - wave_start).count()
+                 << " total="
+                 << chrono::duration<double>(chrono::steady_clock::now() - main_start).count()
+                 << "\n";
+            ScheduleResult wave_result = best;
+            best = move(saved_best);
+            if (wave_result.time < best.time) {
+                best = move(wave_result);
+            }
+        }
+    }
 }
 
 }  // namespace solver
-// END MODULE: src/search/placement_search.hpp
-// BEGIN MODULE: src/search/polish_driver.hpp
-// Coordinate bounded local-polish passes and report their results.
+// END MODULE: src/search/wave_search.cpp
+// END TRANSLATION UNIT: src/search/wave_search.cpp
+// BEGIN TRANSLATION UNIT: src/search/local_engine_polish.cpp
+// BEGIN MODULE: src/search/local_engine_polish.cpp
 // BEGIN MODULE: src/search/local_engine_polish.hpp
+namespace local_engine_polish {
+using i128 = __int128_t;
+struct Stats {
+    long long evaluated = 0, accepted = 0, strict_improve = 0, tie_moves = 0;
+    int memory_fast_groups = 0;
+    int rounds = 0;
+    bool exhausted = true;
+};
+bool polish(int mb, int L, int G, const std::vector<int>& group,
+            const std::vector<std::array<i128, operation::kCount>>& dur,
+            const std::vector<event_sched::Op>& input, i128 memory, i128 U, i128 Ua,
+            i128 resident_per_layer, std::vector<event_sched::Op>& output, i128& best_time,
+            Stats& stats, std::chrono::steady_clock::time_point deadline,
+            long long eval_limit = 12000, int pass = 0, bool retime_auto = true);
+}  // namespace local_engine_polish
+// END MODULE: src/search/local_engine_polish.hpp
 
 // ===== local_engine_polish =====
 
@@ -2861,12 +3441,7 @@ inline constexpr int kVariantDistanceStep2 = 24;
 inline constexpr int kVariantDistanceStep3 = 32;
 }  // namespace limits
 using i128 = __int128_t;
-struct Stats {
-    long long evaluated = 0, accepted = 0, strict_improve = 0, tie_moves = 0;
-    int memory_fast_groups = 0;
-    int rounds = 0;
-    bool exhausted = true;
-};
+
 inline int engine(int o) {
     return (o == operation::kDispatchForward || o == operation::kCombineForward ||
             o == operation::kCombineBackward || o == operation::kDispatchBackward)
@@ -2880,12 +3455,12 @@ inline int id(int m, int l, int o, int L) {
 // Fixed-layout local search. Each positive-duration operation occupies exactly
 // one (group, engine) sequence. DAG and resource constraints are retimed by a
 // longest-path pass after each trial ordering.
-inline bool polish(int mb, int L, int G, const std::vector<int>& group,
+bool polish(int mb, int L, int G, const std::vector<int>& group,
                    const std::vector<std::array<i128, operation::kCount>>& dur,
                    const std::vector<event_sched::Op>& input, i128 M, i128 U, i128 Ua,
                    i128 resident_per_layer, std::vector<event_sched::Op>& output, i128& best_time,
                    Stats& stats, std::chrono::steady_clock::time_point deadline,
-                   long long max_evaluations = 12000, int variant = 0, bool retime_auto = true) {
+                   long long max_evaluations, int variant, bool retime_auto) {
     if (std::chrono::steady_clock::now() >= deadline) {
         output = input;
         return true;
@@ -3529,238 +4104,11 @@ inline bool polish(int mb, int L, int G, const std::vector<int>& group,
     return true;
 }
 }  // namespace local_engine_polish
-// END MODULE: src/search/local_engine_polish.hpp
-// BEGIN MODULE: src/search/wave_search.hpp
-// Scale-v8 wave strategy and validation.
-namespace solver {
-using namespace std;
-void run_scale_v8_search(const InputData& x, const vector<PartitionCandidate>& pcs,
-                         const ScheduleResult& v7_incumbent, ScheduleResult& best, bool serial,
-                         bool do_wave, chrono::steady_clock::time_point main_start) {
-    vector<ScheduleResult> scale_alt_seeds;
-    if (!serial && do_wave && x.mb <= search_limits::kExtraLayoutMicrobatchLimit &&
-        (i128)x.mb * x.L * operation::kCount <= search_limits::kExtraLayoutNodeLimit &&
-        x.L > best.G &&
-        chrono::steady_clock::now() - main_start <
-            chrono::milliseconds(search_limits::kWaveWarmupMs)) {
-        const int incumbent_p = best.c.P;
-        vector<int> order(pcs.size());
-        iota(order.begin(), order.end(), 0);
-        sort(order.begin(), order.end(),
-             [&](int a, int b) { return pcs[a].probe_time < pcs[b].probe_time; });
-        int used = 0;
-        auto alt_deadline = main_start + chrono::milliseconds(search_limits::kWaveDeadlineMs);
-        for (int pi : order) {
-            const Candidate& c = pcs[pi].best_v.P ? pcs[pi].best_v : pcs[pi].max_v;
-            if (!c.P || c.P == incumbent_p) {
-                continue;
-            }
-            if (used >= 2 || chrono::steady_clock::now() +
-                                     chrono::milliseconds(search_limits::kWaveExtensionReserveMs) >=
-                                 alt_deadline) {
-                break;
-            }
-            auto d_alt = compute_durations(x, c);
-            int max_v = max(1, min({x.L, search_limits::kMaximumPartitionCount, x.N * x.S / c.P}));
-            i128 max_c = 0, max_n = 0, total_c = 0, total_n = 0;
-            for (int l = 0; l < x.L; l++) {
-                i128 C = 0, N = 0;
-                for (int o = 0; o < operation::kCount; o++) {
-                    (list_sched::comm(o) ? N : C) += d_alt[l][o];
-                }
-                max_c = max(max_c, C);
-                max_n = max(max_n, N);
-                total_c += C;
-                total_n += N;
-            }
-            i128 lb =
-                max({(i128)x.mb * max_c, (i128)x.mb * max_n, ceil_div((i128)x.mb * total_c, max_v),
-                     ceil_div((i128)x.mb * total_n, max_v)});
-            if (lb >= best.time) {
-                continue;
-            }
-            ++used;
-            ScheduleResult alt = evaluate_layouts(x, c, true, true, alt_deadline);
-            if (alt.ops.empty()) {
-                continue;
-            }
-            scale_alt_seeds.push_back(alt);
-            if (alt.time < best.time) {
-                cerr << "SCALE_ALT_P oldP=" << best.c.P << " newP=" << alt.c.P
-                     << " old=" << to_decimal(best.time) << " new=" << to_decimal(alt.time)
-                     << " LB=" << to_decimal(lb) << "\n";
-                best = alt;
-            }
-        }
-    }
-    if (!serial && do_wave) {
-        vector<ScheduleResult> scale_seeds;
-        scale_seeds.push_back(v7_incumbent);
-        for (auto& alt : scale_alt_seeds) {
-            scale_seeds.push_back(alt);
-        }
-        for (ScheduleResult anchor : scale_seeds) {
-            if (chrono::steady_clock::now() - main_start >=
-                chrono::milliseconds(search_limits::kWaveDeadlineMs)) {
-                break;
-            }
-            ScheduleResult saved_best = best;
-            best = anchor;
-            const auto wave_start = chrono::steady_clock::now();
-            auto dur = compute_durations(x, anchor.c);
-            vector<int> ng(anchor.G);
-            for (int g : anchor.group) {
-                ng[g]++;
-            }
-            auto safe_wave = [&](const vector<event_sched::Op>& ops, i128& tm) {
-                int stride = x.L * operation::kCount, N = x.mb * stride;
-                vector<i128> st(N, -1), en(N, -1);
-                tm = 0;
-                for (auto& o : ops) {
-                    int id = (o.mb * x.L + o.l) * operation::kCount + o.op;
-                    st[id] = o.start;
-                    en[id] = o.start + dur[o.l][o.op];
-                    tm = max(tm, en[id]);
-                }
-                for (int i = 0; i < N; i++) {
-                    if (st[i] < 0) {
-                        return false;
-                    }
-                }
-                auto peak = [](vector<pair<i128, i128>>& a) {
-                    sort(a.begin(), a.end());
-                    multiset<i128> ends;
-                    int best = 0;
-                    for (size_t i = 0; i < a.size();) {
-                        size_t j = i;
-                        while (j < a.size() && a[j].first == a[i].first) {
-                            j++;
-                        }
-                        while (!ends.empty() && *ends.begin() < a[i].first) {
-                            ends.erase(ends.begin());
-                        }
-                        best = max(best, (int)ends.size() + (int)(j - i));
-                        for (size_t k = i; k < j; k++) {
-                            ends.insert(a[k].second);
-                        }
-                        i = j;
-                    }
-                    return best;
-                };
-                for (int g = 0; g < anchor.G; g++) {
-                    i128 mexp = (i128)ng[g] * ((x.E / anchor.c.P) * x.Z + x.Zs);
-                    vector<pair<i128, i128>> acts, comms;
-                    for (int l = 0; l < x.L; l++) {
-                        if (anchor.group[l] == g) {
-                            for (int m = 0; m < x.mb; m++) {
-                                int b = (m * x.L + l) * operation::kCount;
-                                acts.push_back(
-                                    {en[b + operation::index(operation::kCombineForward)],
-                                     st[b + operation::index(operation::kSharedBackward)]});
-                                for (int o : operation::kCommunicationOperations) {
-                                    if (dur[l][o] > 0) {
-                                        comms.push_back({st[b + o], en[b + o]});
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    if (mexp + x.U * peak(comms) + x.Ua * peak(acts) > x.M) {
-                        return false;
-                    }
-                }
-                return true;
-            };
-            struct Trial {
-                i128 tm;
-                int mode, A, B, phase, pn, pd, W, head, desc, dw;
-            };
-            vector<Trial> top;
-            Trial winner{anchor.time, 0, 0, 0, 0, 0, 0, x.mb, 0, 0, 0};
-            auto run_wave = [&](int mode, int A, int B, int phase, int pn, int pd, int head,
-                                bool desc, int dw, int W) {
-                if (chrono::steady_clock::now() - main_start >
-                    chrono::milliseconds(search_limits::kWaveDeadlineMs)) {
-                    return;
-                }
-                vector<list_sched::Op> lo;
-                i128 tm;
-                if (!list_sched::schedule(x.mb, x.L, anchor.G, anchor.group, dur, ng, W, 0, false,
-                                          0, 0, 0, 0, 0, false, lo, tm, nullptr, nullptr, false,
-                                          true, mode, A, B, phase, pn, pd, head, desc, dw)) {
-                    return;
-                }
-                vector<event_sched::Op> ops;
-                ops.reserve(lo.size());
-                for (auto& o : lo) {
-                    ops.push_back({o.start, o.mb, o.l, o.op});
-                }
-                i128 checked;
-                if (!safe_wave(ops, checked)) {
-                    return;
-                }
-                if (W == x.mb) {
-                    Trial t{checked, mode, A, B, phase, pn, pd, W, head, 0, dw};
-                    top.push_back(t);
-                    sort(top.begin(), top.end(), [](auto& a, auto& b) { return a.tm < b.tm; });
-                    if (top.size() > 2) {
-                        top.pop_back();
-                    }
-                }
-                if (checked < best.time) {
-                    winner = {checked, mode, A, B, phase, pn, pd, W, head, 0, dw};
-                    sort(ops.begin(), ops.end(), [](auto& a, auto& b) {
-                        return tie(a.start, a.mb, a.l, a.op) < tie(b.start, b.mb, b.l, b.op);
-                    });
-                    best.time = checked;
-                    best.ops = move(ops);
-                }
-            };
-            vector<int> pitches = {1, 2, 4};
-            run_wave(1, 2, 1, 0, 1, 1, 0, false, 0, x.mb);
-            for (int pn : pitches) {
-                for (int head : {1, 2}) {
-                    run_wave(2, 1, 1, 0, pn, 4, head, false, 0, x.mb);
-                }
-            }
-            run_wave(2, 1, 1, 0, 2, 4, 2, false, 1, x.mb);
-            run_wave(2, 1, 1, 0, 2, 4, 2, false, 2, x.mb);
-            vector<int> ws = {anchor.G, 2 * anchor.G, max(1, x.mb / 2), x.mb};
-            sort(ws.begin(), ws.end());
-            ws.erase(unique(ws.begin(), ws.end()), ws.end());
-            for (size_t i = 0; i < top.size() && i < 2; i++) {
-                for (int w : ws) {
-                    if (w != x.mb) {
-                        auto t = top[i];
-                        run_wave(t.mode, t.A, t.B, t.phase, t.pn, t.pd, t.head, t.desc, t.dw, w);
-                    }
-                }
-            }
-            cerr << "WAVE_V8 anchor=" << to_decimal(anchor.time)
-                 << " best=" << to_decimal(best.time)
-                 << " improvement=" << to_decimal(anchor.time - best.time)
-                 << " mode=" << winner.mode << " A=" << winner.A << " B=" << winner.B
-                 << " phase=" << winner.phase << " pitch=" << winner.pn << "/" << winner.pd
-                 << " head="
-                 << (winner.head == 1   ? "ES"
-                     : winner.head == 2 ? "EF"
-                                        : "layerMean")
-                 << " dw=" << winner.dw << " W=" << winner.W << " top=" << top.size() << " elapsed="
-                 << chrono::duration<double>(chrono::steady_clock::now() - wave_start).count()
-                 << " total="
-                 << chrono::duration<double>(chrono::steady_clock::now() - main_start).count()
-                 << "\n";
-            ScheduleResult wave_result = best;
-            best = move(saved_best);
-            if (wave_result.time < best.time) {
-                best = move(wave_result);
-            }
-        }
-    }
-}
-
-}  // namespace solver
-// END MODULE: src/search/wave_search.hpp
+// END MODULE: src/search/local_engine_polish.cpp
+// END TRANSLATION UNIT: src/search/local_engine_polish.cpp
+// BEGIN TRANSLATION UNIT: src/search/polish_driver.cpp
+// BEGIN MODULE: src/search/polish_driver.cpp
+// Coordinate bounded local-polish passes and report their results.
 namespace solver {
 using namespace std;
 void polish_final_schedule(const InputData& x, ScheduleResult& best, bool serial, bool do_wave,
@@ -3852,169 +4200,5 @@ void polish_final_schedule(const InputData& x, ScheduleResult& best, bool serial
 }
 
 }  // namespace solver
-// END MODULE: src/search/polish_driver.hpp
-// BEGIN MODULE: src/search/window_borrow.hpp
-// Window-limit borrowing from frozen initial incumbents.
-namespace solver {
-using namespace std;
-ScheduleResult run_window_borrow(const InputData& x, ScheduleResult best,
-                                 const ScheduleResult& probe_base, const ScheduleResult& v5_base,
-                                 bool serial, const string& borrow) {
-    if (!serial && (borrow == "windows" || borrow == "ac" || borrow == "all")) {
-        auto scan_windows = [&](const ScheduleResult& anchor) {
-            ScheduleResult trial = anchor;
-            auto dur = compute_durations(x, anchor.c);
-            vector<int> ng(anchor.G);
-            for (int g : anchor.group) {
-                ng[g]++;
-            }
-            vector<int> wins;
-            if (x.mb <= search_limits::kWindowExhaustiveMicrobatchLimit) {
-                for (int w = 1; w <= x.mb; w++) {
-                    wins.push_back(w);
-                }
-            } else {
-                wins = {1,
-                        2,
-                        30,  // sampled window value retained for large batches
-
-                        31,
-                        32,
-                        search_limits::kWindowExhaustiveMicrobatchLimit,
-                        0,
-                        anchor.G,
-                        2 * anchor.G,
-                        max(1, anchor.G - 1),
-                        anchor.G + 1,
-                        max(1, 2 * anchor.G - 1),
-                        2 * anchor.G + 1};
-            }
-            sort(wins.begin(), wins.end());
-            wins.erase(unique(wins.begin(), wins.end()), wins.end());
-            for (int one = 0; one <= 1; one++) {
-                vector<int> caps(anchor.G), buf(anchor.G);
-                bool ok = true;
-                for (int g = 0; g < anchor.G; g++) {
-                    bool zero = true;
-                    for (int l = 0; l < x.L; l++) {
-                        if (anchor.group[l] == g &&
-                            (dur[l][operation::index(operation::kDispatchForward)] ||
-                             dur[l][operation::index(operation::kCombineForward)] ||
-                             dur[l][operation::index(operation::kCombineBackward)] ||
-                             dur[l][operation::index(operation::kDispatchBackward)])) {
-                            zero = false;
-                        }
-                    }
-                    int b = zero ? 0 : 1;
-                    if (!zero && !one) {
-                        i128 two = x.M - ng[g] * ((x.E / anchor.c.P) * x.Z + x.Zs) - 2 * x.U;
-                        if (two >= 0 && two / x.Ua >= ng[g]) {
-                            b = 2;
-                        }
-                    }
-                    i128 avail =
-                        x.M - ng[g] * ((x.E / anchor.c.P) * x.Z + x.Zs) - (zero ? 0 : b * x.U);
-                    if (avail < 0) {
-                        ok = false;
-                        break;
-                    }
-                    caps[g] = (int)min<i128>(avail / x.Ua, (i128)x.mb * ng[g]);
-                    buf[g] = b;
-                    if (caps[g] < ng[g]) {
-                        ok = false;
-                        break;
-                    }
-                }
-                if (ok) {
-                    for (int w : wins) {
-                        vector<event_sched::Op> ops;
-                        i128 tm;
-                        if (event_sched::schedule(x.mb, x.L, anchor.G, anchor.group, dur, ng, caps,
-                                                  buf, w, ops, tm, 0) &&
-                            tm < trial.time) {
-                            trial.time = tm;
-                            trial.ops.swap(ops);
-                        }
-                    }
-                }
-            }
-            return trial;
-        };
-        ScheduleResult a = scan_windows(probe_base), b = scan_windows(v5_base);
-        ScheduleResult trial = (a.time <= b.time ? move(a) : move(b));
-        if (trial.time < best.time) {
-            best = move(trial);
-        }
-    }
-    return best;
-}
-
-}  // namespace solver
-// END MODULE: src/search/window_borrow.hpp
-namespace solver {
-using namespace std;
-int run(int argc, char** argv) {
-    try {
-        auto main_start = chrono::steady_clock::now();
-        ios::sync_with_stdio(false);
-        cin.tie(nullptr);
-        Options options = parse_options(argc, argv);
-        ifstream input_file;
-        istream* input = &cin;
-        if (!options.input_path.empty() && options.input_path != "-") {
-            input_file.open(options.input_path);
-            if (!input_file) {
-                throw runtime_error("cannot open input file: " + options.input_path);
-            }
-            input = &input_file;
-        }
-        InputData x = read_input(*input);
-        int force_p = options.force_p;
-        bool serial = options.serial, do_list = options.do_list, list_deep = options.list_deep,
-             list_deep_topos = options.list_deep_topos, force_wave = options.force_wave;
-        string borrow = options.borrow, diff = options.diff, scale = options.scale;
-        bool diff_enabled = !serial && (diff == "on" || (diff == "auto" && borrow == "ac"));
-        if (diff_enabled) {
-            do_list = true;
-        }
-        if (diff == "off") {
-            do_list = false;
-        }
-        bool do_wave = !serial && (force_wave || scale == "on" ||
-                                   (scale == "auto" && borrow == "ac" && diff == "auto"));
-        if (borrow == "none" || diff == "off" || scale == "off") {
-            do_wave = false;
-        }
-        vector<PartitionCandidate> pcs = generate_candidates(x, force_p);
-        if (pcs.empty()) {
-            cerr << "no feasible config\n";
-            return 2;
-        }
-        InitialResults initial = refine_initial_candidates(x, pcs, serial);
-        ScheduleResult best = move(initial.best);
-        ScheduleResult probe_base = move(initial.probe_base);
-        ScheduleResult v5_base = move(initial.v5_base);
-        best = run_window_borrow(x, move(best), probe_base, v5_base, serial, borrow);
-        best = run_boost_borrow(x, move(best), v5_base, serial, borrow);
-        best = run_alt_placement(x, move(best), v5_base, serial, borrow);
-        best = run_v7_list_search(x, move(best), serial, do_list, list_deep, list_deep_topos,
-                                  diff_enabled, main_start, borrow);
-        ScheduleResult v7_incumbent = best;
-        run_scale_v8_search(x, pcs, v7_incumbent, best, serial, do_wave, main_start);
-        polish_final_schedule(x, best, serial, do_wave, main_start, options.budget_ms,
-                              options.retime_mode, options.polish_pass_limit);
-        write_output(x, best, serial);
-    } catch (const exception& e) {
-        cerr << "input/options error: " << e.what() << "\n";
-        return 2;
-    }
-    return 0;
-}
-
-}  // namespace solver
-// END MODULE: src/app/solver.hpp
-
-int main(int argc, char** argv) {
-    return solver::run(argc, argv);
-}
-// END MODULE: src/solver.cpp
+// END MODULE: src/search/polish_driver.cpp
+// END TRANSLATION UNIT: src/search/polish_driver.cpp

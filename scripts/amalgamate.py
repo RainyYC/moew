@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""Expand src/solver.cpp and project headers into a deterministic submission."""
+"""Expand the ordered multi-translation-unit source set into one submission."""
 import argparse
 import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC_ROOT = (ROOT / "src").resolve()
-ENTRY = SRC_ROOT / "solver.cpp"
+MANIFEST = SRC_ROOT / "sources.mk"
 INCLUDE_DIRECTIVE = re.compile(r'^\s*#\s*include\b(.*)$')
 LOCAL_INCLUDE = re.compile(
     r'^\s*#\s*include\s+"([^"]+)"\s*'
@@ -17,6 +17,28 @@ SYSTEM_INCLUDE = re.compile(r'^\s*#\s*include\s*<[^>]+>\s*(?://.*|/\*.*\*/\s*)?$
 
 class IncludeError(RuntimeError):
     pass
+
+
+def source_paths() -> list[Path]:
+    text = MANIFEST.read_text()
+    match = re.search(r"^SOLVER_SOURCES\s*:=\s*\\\n(?P<body>(?:.*\\\n)*.*)$", text, re.M)
+    if not match:
+        raise IncludeError("src/sources.mk has no readable SOLVER_SOURCES list")
+    paths = []
+    for item in match.group("body").splitlines():
+        item = item.strip().removesuffix("\\").strip()
+        if item:
+            path = (ROOT / item).resolve()
+            if not path.is_file():
+                raise IncludeError(f"listed source does not exist: {item}")
+            try:
+                path.relative_to(SRC_ROOT)
+            except ValueError as exc:
+                raise IncludeError(f"source escapes src/: {item}") from exc
+            paths.append(path)
+    if not paths:
+        raise IncludeError("source list is empty")
+    return paths
 
 
 def expand(path: Path, emitted: set[Path]) -> str:
@@ -51,7 +73,7 @@ def expand(path: Path, emitted: set[Path]) -> str:
         elif INCLUDE_DIRECTIVE.match(line):
             if SYSTEM_INCLUDE.match(line):
                 chunks.append(line + "\n")
-            elif re.match(r"^\s*#\s*include\s*\"", line):
+            elif re.match(r'^\s*#\s*include\s*"', line):
                 raise IncludeError(
                     f"{relative}:{line_number}: unsupported or malformed local include: {line.strip()}"
                 )
@@ -71,7 +93,13 @@ def main() -> int:
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
     try:
-        content = expand(ENTRY, set())
+        emitted: set[Path] = set()
+        chunks = []
+        for source in source_paths():
+            chunks.append(f"// BEGIN TRANSLATION UNIT: src/{source.relative_to(SRC_ROOT).as_posix()}\n")
+            chunks.append(expand(source, emitted))
+            chunks.append(f"// END TRANSLATION UNIT: src/{source.relative_to(SRC_ROOT).as_posix()}\n")
+        content = "".join(chunks)
     except (IncludeError, OSError) as exc:
         parser.error(str(exc))
     if args.check:
