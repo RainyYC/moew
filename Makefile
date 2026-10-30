@@ -37,7 +37,7 @@ lint:
 six:
 	@for c in ex1 ex2 ex3 ex4 ex5 ex6; do \
 	  printf "%-4s " $$c; \
-	  $(PY) src/solver/solve_all.py cases/$$c.in /tmp/$$c.out 2>&1 | tail -1 | grep -oE 'Time=[0-9]+'; \
+	  $(PY) src/solver/solve_all.py cases/$$c.in /tmp/$$c.out 2>&1 | grep -oE 'Time=[0-9]+' | tail -1; \
 	done
 
 fast:
