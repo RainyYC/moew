@@ -1,0 +1,13 @@
+{
+  "argv": [
+    "/usr/bin/python3",
+    "-u",
+    "/home/rainy/hackathon/data/official/Problem/run_all.py",
+    "--cmd",
+    "/home/rainy/hackathon/build/solver",
+    "--timeout",
+    "10"
+  ],
+  "stdin": "open empty pipe held by parent; no input redirection",
+  "source": "src/solver.cpp"
+}

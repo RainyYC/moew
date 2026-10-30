@@ -4,6 +4,7 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstdlib>
+#include <fstream>
 #include <functional>
 #include <iostream>
 #include <map>
@@ -11,6 +12,7 @@
 #include <queue>
 #include <set>
 #include <sstream>
+#include <stdexcept>
 #include <string>
 #include <tuple>
 #include <unordered_set>
@@ -1733,19 +1735,27 @@ struct InputData {
     vector<i128> T;
     vector<vector<i128>> load;
 };
-InputData read_input() {
-    InputData x;
-    cin >> x.N >> x.S >> x.M >> x.Bi >> x.Bo;
-    cin >> x.L >> x.E >> x.Z >> x.Zs >> x.U >> x.Ua >> x.k >> x.mb >> x.Fs >> x.Fio >> x.Fin >>
-        x.ax >> x.bx;
-    cin >> x.d >> x.b;
+InputData read_input(istream& in) {
+    InputData x{};
+    if (!(in >> x.N >> x.S >> x.M >> x.Bi >> x.Bo)) {
+        throw runtime_error("failed to read input headers (line 1)");
+    }
+    if (!(in >> x.L >> x.E >> x.Z >> x.Zs >> x.U >> x.Ua >> x.k >> x.mb >> x.Fs >> x.Fio >> x.Fin >>
+          x.ax >> x.bx)) {
+        throw runtime_error("failed to read input headers (line 2)");
+    }
+    if (!(in >> x.d >> x.b)) {
+        throw runtime_error("failed to read input headers (line 3)");
+    }
     x.T.resize(x.L);
     x.load.resize(x.L);
     for (int l = 0; l < x.L; l++) {
-        cin >> x.T[l];
+        if (!(in >> x.T[l])) {
+            throw runtime_error("failed to read T for layer " + to_string(l));
+        }
         x.load[l].resize(x.E);
         string line;
-        getline(cin, line);
+        getline(in, line);
         stringstream ss(line);
         vector<i128> a;
         i128 z;
@@ -2145,13 +2155,24 @@ struct Options {
     bool serial = false, do_list = false, list_deep = false, list_deep_topos = false;
     bool force_wave = false;
     string borrow = "ac", diff = "auto", scale = "auto";
+    string input_path;
 };
 
 Options parse_options(int argc, char** argv) {
     Options options;
     for (int i = 1; i < argc; i++) {
         string a = argv[i];
-        if (a == "--baseline") {
+        if (a == "-") {
+            if (!options.input_path.empty()) {
+                throw runtime_error("multiple input paths");
+            }
+            options.input_path = a;
+        } else if (!a.empty() && a[0] != '-') {
+            if (!options.input_path.empty()) {
+                throw runtime_error("multiple input paths");
+            }
+            options.input_path = a;
+        } else if (a == "--baseline") {
             options.serial = true;
         } else if (a == "--list") {
             options.do_list = true;
@@ -3328,43 +3349,57 @@ void write_output(const InputData& x, const ScheduleResult& best, bool serial) {
 }
 
 int main(int argc, char** argv) {
-    auto main_start = chrono::steady_clock::now();
-    ios::sync_with_stdio(false);
-    cin.tie(nullptr);
-    InputData x = read_input();
-    Options options = parse_options(argc, argv);
-    int force_p = options.force_p;
-    bool serial = options.serial, do_list = options.do_list, list_deep = options.list_deep,
-         list_deep_topos = options.list_deep_topos, force_wave = options.force_wave;
-    string borrow = options.borrow, diff = options.diff, scale = options.scale;
-    bool diff_enabled = !serial && (diff == "on" || (diff == "auto" && borrow == "ac"));
-    if (diff_enabled) {
-        do_list = true;
-    }
-    if (diff == "off") {
-        do_list = false;
-    }
-    bool do_wave = !serial && (force_wave || scale == "on" ||
-                               (scale == "auto" && borrow == "ac" && diff == "auto"));
-    if (borrow == "none" || diff == "off" || scale == "off") {
-        do_wave = false;
-    }
-    vector<PartitionCandidate> pcs = generate_candidates(x, force_p);
-    if (pcs.empty()) {
-        cerr << "no feasible config\n";
+    try {
+        auto main_start = chrono::steady_clock::now();
+        ios::sync_with_stdio(false);
+        cin.tie(nullptr);
+        Options options = parse_options(argc, argv);
+        ifstream input_file;
+        istream* input = &cin;
+        if (!options.input_path.empty() && options.input_path != "-") {
+            input_file.open(options.input_path);
+            if (!input_file) {
+                throw runtime_error("cannot open input file: " + options.input_path);
+            }
+            input = &input_file;
+        }
+        InputData x = read_input(*input);
+        int force_p = options.force_p;
+        bool serial = options.serial, do_list = options.do_list, list_deep = options.list_deep,
+             list_deep_topos = options.list_deep_topos, force_wave = options.force_wave;
+        string borrow = options.borrow, diff = options.diff, scale = options.scale;
+        bool diff_enabled = !serial && (diff == "on" || (diff == "auto" && borrow == "ac"));
+        if (diff_enabled) {
+            do_list = true;
+        }
+        if (diff == "off") {
+            do_list = false;
+        }
+        bool do_wave = !serial && (force_wave || scale == "on" ||
+                                   (scale == "auto" && borrow == "ac" && diff == "auto"));
+        if (borrow == "none" || diff == "off" || scale == "off") {
+            do_wave = false;
+        }
+        vector<PartitionCandidate> pcs = generate_candidates(x, force_p);
+        if (pcs.empty()) {
+            cerr << "no feasible config\n";
+            return 2;
+        }
+        InitialResults initial = refine_initial_candidates(x, pcs, serial);
+        ScheduleResult best = move(initial.best);
+        ScheduleResult probe_base = move(initial.probe_base);
+        ScheduleResult v5_base = move(initial.v5_base);
+        best = run_window_borrow(x, move(best), probe_base, v5_base, serial, borrow);
+        best = run_boost_borrow(x, move(best), v5_base, serial, borrow);
+        best = run_alt_placement(x, move(best), v5_base, serial, borrow);
+        best = run_v7_list_search(x, move(best), serial, do_list, list_deep, list_deep_topos,
+                                  diff_enabled, main_start, borrow);
+        ScheduleResult v7_incumbent = best;
+        run_scale_v8_search(x, pcs, v7_incumbent, best, serial, do_wave, main_start);
+        polish_final_schedule(x, best, serial, do_wave, main_start);
+        write_output(x, best, serial);
+    } catch (const exception& e) {
+        cerr << "input/options error: " << e.what() << "\n";
         return 2;
     }
-    InitialResults initial = refine_initial_candidates(x, pcs, serial);
-    ScheduleResult best = move(initial.best);
-    ScheduleResult probe_base = move(initial.probe_base);
-    ScheduleResult v5_base = move(initial.v5_base);
-    best = run_window_borrow(x, move(best), probe_base, v5_base, serial, borrow);
-    best = run_boost_borrow(x, move(best), v5_base, serial, borrow);
-    best = run_alt_placement(x, move(best), v5_base, serial, borrow);
-    best = run_v7_list_search(x, move(best), serial, do_list, list_deep, list_deep_topos,
-                              diff_enabled, main_start, borrow);
-    ScheduleResult v7_incumbent = best;
-    run_scale_v8_search(x, pcs, v7_incumbent, best, serial, do_wave, main_start);
-    polish_final_schedule(x, best, serial, do_wave, main_start);
-    write_output(x, best, serial);
 }

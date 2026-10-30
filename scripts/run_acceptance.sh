@@ -23,9 +23,9 @@ for input in "$cases"/*.txt; do
   err="$outdir/$name.stderr"
   start=$(date +%s%N)
   if [ "$mode" = baseline ]; then
-    timeout 10 "$solver" --baseline --borrow="$borrow" --diff="$diff" --scale="$scale" < "$input" > "$output" 2> "$err"
+    timeout 10 "$solver" --baseline --borrow="$borrow" --diff="$diff" --scale="$scale" "$input" > "$output" 2> "$err"
   else
-    timeout 10 "$solver" --borrow="$borrow" --diff="$diff" --scale="$scale" < "$input" > "$output" 2> "$err"
+    timeout 10 "$solver" --borrow="$borrow" --diff="$diff" --scale="$scale" "$input" > "$output" 2> "$err"
   fi
   rc=$?
   end=$(date +%s%N)

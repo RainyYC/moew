@@ -1,0 +1,60 @@
+solver: /home/rainy/hackathon/build/solver
+cases:  /home/rainy/hackathon/data/official/Problem/cases (50 files)
+limit:  10.0 s per case (solver only; grader time excluded)
+
+case                                          status       TIME    CPU(s)   wall(s)
+------------------------------------------------------------------------------------
+r128_v4_c4a.txt                                   OK   22702165     1.438     1.439
+r128_v8_c4.txt                                    OK   24108480     1.885     1.886
+r128_v8_c8a.txt                                   OK   12128541     2.386     2.387
+r128_v8_c8b.txt                                   OK    5137220     7.418     7.419
+r16_p4_trap.txt                                   OK   17319480     3.020     3.021
+r20_p2_flat.txt                                   OK   27383327     3.455     3.455
+r24_p3_flat.txt                                   OK   22185686     8.434     8.435
+r24_p4_block.txt                                  OK   45134801     6.586     6.588
+r256_v4_c4.txt                                    OK   64598824     8.354     8.357
+r256_v8_c16.txt                                   OK   53017200     4.973     4.977
+r256_v8_c4.txt                                    OK   39678875     8.780     8.783
+r256_v8_c8a.txt                                   OK   29101860     4.891     4.893
+r32_p8_ramp.txt                                   OK   14159172     4.412     4.413
+r64_v2_c2.txt                                     OK    2504782     0.620     0.620
+r64_v2_c4.txt                                     OK    4959439     5.041     5.042
+r64_v4_c4a.txt                                    OK    2523010     1.851     1.851
+r64_v4_c4b.txt                                    OK    5508618     3.767     3.768
+r64_v4_c4c.txt                                    OK    9923947     1.207     1.207
+r64_v4_c4d.txt                                    OK   24301023     2.510     2.511
+r64_v4_c4e.txt                                    OK   36845200     1.613     1.614
+r64_v8_c16a.txt                                   OK    6278640     2.695     2.696
+r64_v8_c16b.txt                                   OK  106105860     4.642     4.643
+r64_v8_c16c.txt                                   OK   39679400     8.759     8.762
+r64_v8_c8a.txt                                    OK    5142294     2.610     2.611
+r64_v8_c8b.txt                                    OK    2772615     2.916     2.917
+r64_v8_c8c.txt                                    OK    7051060     6.280     6.281
+r64_v8_c8d.txt                                    OK    5216300     1.574     1.575
+r64_v8_c8e.txt                                    OK   15586512     2.168     2.169
+r64_v8_c8f.txt                                    OK   20094932     6.961     6.963
+r64_v8_c8g.txt                                    OK   39842852     8.762     8.766
+x01_lr_block_p2.txt                               OK    2421600     1.242     1.242
+x02_lr_ramp_c16.txt                               OK   17239516     2.296     2.298
+x03_lr_trap_p3.txt                                OK   10301160     4.681     4.682
+x04_lr_inter_p5.txt                               OK   25614240     2.705     2.714
+x05_lr_tight_p6.txt                               OK   13994164     6.008     6.009
+x06_lr_trap_p7.txt                                OK    8993324     5.834     5.836
+x07_lr_flat_p10.txt                               OK   16527300     4.282     4.283
+x08_lr_lowb_p4.txt                                OK    6764512     2.607     2.607
+x09_lr_skew_p6.txt                                OK   17192416     6.257     6.257
+x10_lr_tight_p8.txt                               OK   19034049     3.129     3.130
+x11_lr_deep_p3.txt                                OK   13238784     4.443     4.444
+x12_lr_close_p10.txt                              OK   28430790     4.596     4.597
+x13_lr_twochunk_p8.txt                            OK   12522092     2.985     2.986
+x14_lr_twochunk_p15.txt                           OK   81937428     1.724     1.724
+x15_lr_twochunk_p10.txt                           OK   14287328     3.414     3.415
+x16_vl_trap4_ramp.txt                             OK    4059438     1.253     1.253
+x17_vl_tight_block.txt                            OK    5879256     3.053     3.054
+x18_vl_tight_small.txt                            OK    1724136     0.193     0.193
+x19_vl_trap4_fs4.txt                              OK    6953091     1.148     1.149
+x20_vl_flat_control.txt                           OK    2254478     2.636     2.637
+
+summary: OK=50
+TIME: valid=50/50  mean=20407224.3  min=1724136  max=106105860
+CPU(s): mean=3.890  max=8.780

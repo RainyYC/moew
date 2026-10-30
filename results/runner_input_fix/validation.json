@@ -1,0 +1,24 @@
+{
+  "runner": "data/official/Problem/run_all.py",
+  "case_input": "positional filename; parent holds empty stdin pipe open",
+  "timeout_seconds": 10,
+  "cases": 50,
+  "valid": 50,
+  "timeouts": 0,
+  "mean_time": 20407224.34,
+  "time_equal_to_saved_50_case_records": 50,
+  "mean_wall_seconds": 3.89118,
+  "median_wall_seconds": 3.0919999999999996,
+  "max_wall_seconds": 8.783,
+  "max_wall_case": "r256_v8_c4",
+  "source_sha256": "a4aa9147a52d2399bcb6875193681a215fad5c484312eee3fbd5dcc0b0e42107",
+  "binary_sha256": "fd5ae80359032f0bd8a72b4b039ec86694c70ae55398f4a0379d6d86cff23ebf",
+  "grader_sha256": "c42d5f0675e33cbfc1d40bdcafbb8aa40b6d0a4e26377e69405cdbb2b167cfbc",
+  "reproduction": {
+    "before_fix_file_argument_open_stdin": "blocked in anon_pipe_read after 2 seconds; no output",
+    "before_fix_stdin_redirect_wall_seconds": 0.214,
+    "after_fix_file_argument_open_stdin_wall_seconds": 0.214,
+    "case": "x18_vl_tight_small",
+    "same_answer": true
+  }
+}

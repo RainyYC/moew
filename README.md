@@ -1,6 +1,6 @@
 # MoE 调度求解器（Scale v8）
 
-当前提交件为自包含的 C++17 单文件 [`src/solver.cpp`](src/solver.cpp)。官方 50 个用例全部通过，平均 `Time` 为 **20,407,224.34**，最长记录墙钟为 9.008 秒（官方单例限时 10 秒）。算法模型、完整搜索流程、复杂度、使用方式和逐例结果见[当前求解器完整报告](docs/reports/current-solver-report.md)，也可运行 `make report` 查看。验收汇总保存在 [`results/refactor_v8/`](results/refactor_v8/)。
+当前提交件为自包含的 C++17 单文件 [`src/solver.cpp`](src/solver.cpp)。官方 50 个用例全部通过，平均 `Time` 为 **20,407,224.34**，最长记录墙钟为 8.783 秒（官方单例限时 10 秒）。算法模型、完整搜索流程、复杂度、使用方式和逐例结果见[当前求解器完整报告](docs/reports/current-solver-report.md)，也可运行 `make report` 查看。官方 `run_all.py` 的文件参数验收记录保存在 [`results/runner_input_fix/`](results/runner_input_fix/)。
 
 ## 快速开始
 
@@ -8,7 +8,7 @@
 
 ```sh
 g++ -std=c++17 -O2 -pipe src/solver.cpp -o solver
-./solver < data/official/Problem/cases/x01_lr_block_p2.txt > answer.txt
+./solver data/official/Problem/cases/x01_lr_block_p2.txt > answer.txt
 python3 data/official/Problem/grader.py data/official/Problem/cases/x01_lr_block_p2.txt answer.txt
 ```
 
@@ -18,7 +18,15 @@ python3 data/official/Problem/grader.py data/official/Problem/cases/x01_lr_block
 ./scripts/build.sh
 ```
 
-官方验收 runner 的五个可选参数顺序为：`mode borrow diff case_filter scale`。默认等价于 `run_latest ac auto "" auto`；每例通过 `timeout 10` 运行，再由官方 grader 判分。`mode` 指定 `results/<mode>/`。如需复现旧 v7 搜索，可将第五个参数设为 `off`：
+直接使用官方批量验收脚本：
+
+```sh
+python3 data/official/Problem/run_all.py --cmd "./build/solver" --timeout 10
+```
+
+`run_all.py` 会把用例路径作为命令行参数追加给 solver，不会把用例送入标准输入。求解器同时支持 `solver case.txt`、`solver < case.txt` 和 `solver - < case.txt`；路径可以放在搜索选项之前或之后。文件无法打开、输入为空或缺少必要字段时会明确报错并退出。不要在 `--cmd` 中直接写 `< {case}`，该参数按程序参数列表解析，不经过 shell 重定向。
+
+仓库验收脚本 `scripts/run_acceptance.sh` 的五个可选参数顺序为：`mode borrow diff case_filter scale`。默认等价于 `run_latest ac auto "" auto`；同样以文件参数传入用例，每例通过 `timeout 10` 运行，再由官方 grader 判分。`mode` 指定 `results/<mode>/`。如需关闭扩展搜索，可将第五个参数设为 `off`：
 
 ```sh
 ./scripts/run_acceptance.sh v7_replay ac auto '' off
@@ -45,6 +53,6 @@ python3 data/official/Problem/grader.py data/official/Problem/cases/x01_lr_block
 
 当前默认运行启用 scale v8 搜索。`--scale=off` 可关闭扩展布局、波前和局部资源顺序搜索；默认 `--scale=auto` 在 `--borrow=ac`、`--diff=auto` 时启用这些阶段。更多细节、指标和限制见[当前求解器完整报告](docs/reports/current-solver-report.md)。
 
-GitHub 保留源码、报告、架构图和验收汇总；构建二进制及逐例原始输出按 `.gitignore` 留在本地，可通过构建和验收脚本生成。发布文件可用 `sha256sum -c results/refactor_v8/SOURCE_SHA256SUMS` 核对；完整验收的 `SHA256SUMS` 还包含本地二进制及逐例输出，用于保存该次运行的身份。
+GitHub 保留源码、报告、架构图和验收汇总；构建二进制及逐例原始输出按 `.gitignore` 留在本地，可通过构建和验收脚本生成。当前发布文件可用 `sha256sum -c results/runner_input_fix/SOURCE_SHA256SUMS` 核对。`results/refactor_v8/` 的校验清单保留对应验收身份，已变化的文件指向 `backup/before-runner-input-fix/` 中的快照；完整运行清单还包含本地二进制及逐例输出。
 
 整理前保存的 10 个顶层与 2 个嵌套 worktree（含未提交内容）位于 [`backup/worktrees/`](backup/worktrees/)，其路径映射见 [worktree 归档说明](backup/worktrees/README.md) 与 [manifest](backup/worktrees/archive_manifest.json)。普通文件迁移清单及校验记录见 [backup/MIGRATION_MANIFEST.json](backup/MIGRATION_MANIFEST.json)；归档目录导航见 [backup/README.md](backup/README.md)。
