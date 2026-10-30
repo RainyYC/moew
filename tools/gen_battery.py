@@ -5,7 +5,7 @@
 而 §6 允许的上限是 `R≤512, L≤64, E≤512, nmb≤10^3`，即**单次运行 64 万条 op**。
 本脚本按上限附近造用例，每组只变一个维度，便于定位求解器在哪类实例上吃力。
 
-产物：`bigcases/battery/*.in` + `MANIFEST.md`（每例变了哪个维度）。
+产物：`data/battery/*.in` + `MANIFEST.md`（每例变了哪个维度）。
 
 用法：
     python3 tools/gen_battery.py            # 生成
@@ -20,7 +20,7 @@ from pathlib import Path
 
 from gen_big import MIB, build_case, _layer_balanced, _layer_skew
 
-OUT = Path(__file__).resolve().parent.parent / "bigcases" / "battery"
+OUT = Path(__file__).resolve().parent.parent / "data" / "battery"
 T = 1_000_000_000  # §6：T_ℓ ≤ 1e9，且须是 k 的倍数
 T_LOW = 900_000_000  # §6：max T/min T ≤ 1.2
 

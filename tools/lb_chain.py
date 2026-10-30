@@ -28,7 +28,7 @@ from judge.core.evaluate import evaluate  # noqa: E402
 from judge.core.parse import parse_case, parse_output  # noqa: E402
 from solver import formula, solve  # noqa: E402
 
-CASES = ROOT / "official/extracted/Problem/cases"
+CASES = ROOT / "data/official/Problem/cases"
 OUTS = ROOT / "official/outs"
 
 

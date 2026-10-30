@@ -123,7 +123,7 @@ def main() -> int:
     args = ap.parse_args()
 
     rng = random.Random(args.seed)
-    out_dir = Path("bigcases/fuzz")
+    out_dir = Path("data/battery/fuzz")
     out_dir.mkdir(parents=True, exist_ok=True)
 
     rows = []

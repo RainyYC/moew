@@ -56,9 +56,9 @@ def sweep(path: str, budget: float = 2.0) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("cases", nargs="*", default=["bigcases/battery/b01-loose.in",
-                                                "bigcases/battery/b05-maxmb.in",
-                                                "bigcases/battery/b11-short-l.in"])
+    ap.add_argument("cases", nargs="*", default=["data/battery/b01-loose.in",
+                                                "data/battery/b05-maxmb.in",
+                                                "data/battery/b11-short-l.in"])
     ap.add_argument("--budget", type=float, default=2.0)
     args = ap.parse_args()
     for path in args.cases:

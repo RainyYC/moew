@@ -2,9 +2,9 @@
 """生成大规模（题面范围内）测试输入，用于压测判题器 / 服务层 / 求解器。
 
 用法：
-    python3 tools/gen_big.py --out bigcases
+    python3 tools/gen_big.py --out data/battery
 
-产物（都在 out 目录下，默认 bigcases/）：
+产物（都在 out 目录下，默认 data/battery/）：
     big-wide.in     N=32 S=16 (R=512), L=64, E=512, nmb=102, 负载均衡      → ops ≈ 65 280
     big-skew.in     同上规模，逐层 Zipf 偏斜（负载向量）                    → 同上
     big-mixed.in    同上规模，一半均衡一半偏斜 + T 取上限附近               → 同上
@@ -196,7 +196,7 @@ def gen_all(out_dir: Path) -> list[Path]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--out", default="bigcases", help="输出目录（默认 bigcases/）")
+    ap.add_argument("--out", default="data/battery", help="输出目录（默认 data/battery/）")
     args = ap.parse_args()
     out_dir = Path(args.out)
     paths = gen_all(out_dir)

@@ -29,7 +29,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-PKG = ROOT / "official/extracted/Problem"
+PKG = ROOT / "data/official/Problem"
 CASES = PKG / "cases"
 REPORT = PKG / "report_python.txt"
 
@@ -58,9 +58,11 @@ def run_case(name: str, solver: str, keep_dir: Path | None) -> dict:
     case = CASES / f"{name}.txt"
     out = (keep_dir / f"{name}.out") if keep_dir else Path(tempfile.mkstemp(suffix=".out")[1])
     started = time.monotonic()
+    env = dict(os.environ)
+    env["PYTHONPATH"] = str(ROOT / "src") + (os.pathsep + env["PYTHONPATH"] if env.get("PYTHONPATH") else "")
     proc = subprocess.run(
         [sys.executable, solver, str(case), str(out)],
-        capture_output=True, text=True, timeout=30,
+        capture_output=True, text=True, timeout=30, env=env,
     )
     wall = time.monotonic() - started
     if proc.returncode != 0 or not out.exists() or out.stat().st_size == 0:
@@ -81,7 +83,7 @@ def main(argv: list[str]) -> int:
     ap.add_argument("--jobs", type=int, default=min(8, (os.cpu_count() or 4)))
     ap.add_argument("--subset", choices=("all", "fast"), default="all")
     ap.add_argument("--cases", nargs="*", default=None)
-    ap.add_argument("--solver", default=str(ROOT / "solver/solve_all.py"))
+    ap.add_argument("--solver", default=str(ROOT / "src/solver/solve_all.py"))
     ap.add_argument("--keep", default=None, help="把输出留在这个目录（便于复核）")
     args = ap.parse_args(argv)
 
