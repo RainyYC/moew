@@ -1,0 +1,7 @@
+# Local engine-sequence experiment
+
+This directory is an isolated copy of the current v7 solver and headers with an optional fixed-layout local post-pass. Build with `./build.sh`; run the unchanged v7 path with `--local=off` (default), or enable the experiment with `--local=on`.
+
+The post-pass extracts each `(layer group, engine)` sequence from the incumbent schedule, then adds those order edges to the fixed operation DAG and retimes operations by longest path. The base DAG and indegrees are reused across candidate orderings. Zero-duration operations remain in the DAG and output; they do not occupy engine sequences. It tries communication-engine edge gaps 0 and 1, critical-path operation insertions by up to eight positions, and complete permutations of critical-path resource windows of lengths 4 through 7. A candidate must be acyclic and pass closed-interval resource and memory checks. Strict Time improvements are accepted; equal-Time candidates are accepted only when the sum of all operation end times decreases. Each pass has a 3,000-candidate cap, with at most four passes and a 9-second wall-clock guard.
+
+This is a fixed-layout local search, not a global optimality proof. `results/local_summary.tsv` records targeted comparisons against the v7 path. All tested outputs passed the official grader. The sanitizer run was clean with AddressSanitizer and UndefinedBehaviorSanitizer; leak detection was disabled because LeakSanitizer is unsupported in this environment.

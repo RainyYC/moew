@@ -1,0 +1,2 @@
+LIST_V7 anchor=2748000 plain=3363800 plainW=6 best=2748000 W=0 mode=incumbent variant=-1 gap=0 boost=0 fs=0 fm=0 ratio10=0 ramp=0 cutoff=0 main_seconds=0.14286 checked=closed-interval
+WAVE_V8 anchor=2748000 best=2425200 improvement=322800 mode=2 A=1 B=1 phase=0 pitch=4/4 head=ES dw=0 W=6 top=2 elapsed=0.00699831 total=0.149885

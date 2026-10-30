@@ -1,0 +1,8 @@
+case	v7_time	wave_time	saved	improvement_pct	old_placement_time	wave_vs_old_saved	grader_exit	solver_total_seconds	best_rank
+x01_lr_block_p2	2570180	2473530	96650	3.760	2824830	351300	0	0.869	B:pitch=1*busy,EFT,W=6
+x19_vl_trap4_fs4	7444533	7183407	261126	3.508	7764156	580749	0	0.874	B:pitch=1*busy,ES,W=12
+x20_vl_flat_control	2387218	2291770	95448	3.999	2435988	144218	0	1.945	B:pitch=1/2*busy,EFT,W=32
+r64_v2_c4	4964566	4960893	3673	0.074	5046076	85183	0	4.836	B:pitch=1/4*busy,ES,W=64
+r64_v4_c4e	36876336	36845200	31136	0.084	36876336	31136	0	1.566	B:pitch=1/4*busy,ES,W=512
+r64_v8_c8d	5239340	5216300	23040	0.440	5239340	23040	0	1.565	B:pitch=1/4*busy,EFT,W=64
+r128_v8_c4	24363545	24108480	255065	1.047	24363545	255065	0	1.856	B:pitch=1/2*busy,EFT,W=128

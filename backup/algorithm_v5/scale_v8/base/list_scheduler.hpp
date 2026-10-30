@@ -1,0 +1,28 @@
+#pragma once
+#include <bits/stdc++.h>
+namespace list_sched {
+using i128=__int128_t;
+struct Op { i128 start; int mb,l,op; };
+using Dur=std::vector<std::array<i128,10>>;
+using Variant=std::array<bool,4>; // fwd_first, mb_desc, l_desc, l_major
+static const std::array<Variant,8> VARIANTS={{{true,false,false,false},{true,false,true,false},{true,true,false,false},{true,true,true,false},{false,false,false,false},{false,true,true,false},{true,false,false,true},{false,true,false,true}}};
+inline bool comm(int o){return o==1||o==3||o==5||o==8;}
+struct Item { int id; i128 early; std::array<long long,4> rank; };
+struct Later { bool operator()(Item const&a,Item const&b)const {if(a.early!=b.early)return a.early>b.early;if(a.rank!=b.rank)return a.rank>b.rank;return a.id>b.id;} };
+inline bool schedule(int mb,int L,int G,const std::vector<int>& grp,const Dur& d,const std::vector<int>& ng,int W,int vi,bool early,int gap,int fs,int fm,i128 busy,int ratio10,bool ramp,std::vector<Op>& out,i128& tm,std::vector<i128>* starts=nullptr,std::vector<i128>* ends=nullptr,bool waveRank=false,bool fillGaps=false){
+ if(mb<1||L<1||G<1||vi<0||vi>=8)return false; W=std::max(1,std::min(W,mb)); int stride=L*10,N=mb*stride; if((int)grp.size()!=L||(int)d.size()!=L)return false;
+ auto id=[](int m,int l,int o,int L){return (m*L+l)*10+o;};using Topo=std::pair<std::vector<std::vector<int>>,std::vector<std::vector<int>>>;static std::map<std::pair<int,int>,Topo> cache;auto key=std::make_pair(mb,L);auto it=cache.find(key);if(it==cache.end()){Topo t;t.first.resize(N);t.second.resize(N);auto edge=[&](int a,int b){t.second[a].push_back(b);t.first[b].push_back(a);};for(int m=0;m<mb;m++)for(int l=0;l<L;l++){int b=id(m,l,0,L);edge(b+1,b+2);edge(b+2,b+3);edge(b,b+3);edge(b+3,b+4);edge(b+3,b+5);edge(b+5,b+6);edge(b+5,b+7);edge(b+5,b+9);edge(b+6,b+8);edge(b+4,b+8);if(l>0){int p=id(m,l-1,0,L);edge(p+3,b);edge(p+3,b+1);}if(l+1<L){int n=id(m,l+1,0,L);edge(n+8,b+4);edge(n+8,b+5);}}it=cache.emplace(key,std::move(t)).first;}auto const& pred=it->second.first;auto const& succ=it->second.second;
+ auto v=VARIANTS[vi];std::vector<int> rem(N);for(int i=0;i<N;i++)rem[i]=pred[i].size();std::vector<char> pushed(N);std::vector<i128> st(N,-1),en(N,-1),cf(G),mf(G);std::vector<int> bw(G*mb);std::vector<i128> rel(G*mb,-1);for(int g=0;g<G;g++)for(int m=0;m<mb;m++)bw[g*mb+m]=ng[g];
+ auto rank=[&](int x){int m=x/stride,z=x%stride,l=z/10,o=z%10;if(waveRank)return std::array<long long,4>{(o==7||o==9)?1:0,m+(o<4?l:2*L-l),o,0};long long head=((o<=3)==v[0])?0:1;long long mk=v[1]?-m:m,lk=v[2]?-l:l;return v[3]?std::array<long long,4>{head,lk,mk,o}:std::array<long long,4>{head,mk,lk,o};};
+ auto earliest=[&](int x){int m=x/stride,z=x%stride,l=z/10,o=z%10,g=grp[l];i128 t=0;for(int p:pred[x])t=std::max(t,en[p]);if(l==0&&pred[x].empty()&&m>=W)t=std::max(t,rel[g*mb+m-W]);return std::max(t,comm(o)?mf[g]:cf[g]);};
+ i128 den=early?(i128)10*(ramp?std::max(1,fs)*std::max(1,fm):1):1;auto keyof=[&](int x,i128 ready){int m=x/stride,l=(x%stride)/10,o=x%10;if(!early||o>3||m>=fm||grp[l]>=fs)return ready*den; i128 factor=ramp?(i128)(fs-grp[l])*(fm-m):1;return ready*den-busy*ratio10*factor;};
+ std::priority_queue<Item,std::vector<Item>,Later> q;auto push=[&](int x){if(pushed[x])return;int m=x/stride,l=(x%stride)/10;if(l==0&&pred[x].empty()&&m>=W&&bw[grp[l]*mb+m-W]>0)return;pushed[x]=1;q.push({x,early?keyof(x,earliest(x)):0,rank(x)});};for(int x=0;x<N;x++)if(pred[x].empty())push(x);
+ std::vector<std::array<std::vector<std::pair<i128,i128>>,2>> gaps(G);
+ out.clear();tm=0;int count=0;while(count<N){if(q.empty())return false;Item it=q.top();q.pop();int x=it.id,m=x/stride,z=x%stride,l=z/10,o=z%10,g=grp[l],eng=comm(o)?1:0;i128 ready=0;for(int p:pred[x])ready=std::max(ready,en[p]);if(l==0&&pred[x].empty()&&m>=W)ready=std::max(ready,rel[g*mb+m-W]);i128 key=keyof(x,ready);if(early&&!q.empty()&&key>q.top().early){q.push({x,key,it.rank});continue;}i128 free=comm(o)?mf[g]:cf[g];int slot=-1;if(fillGaps&&d[l][o]&&gap==0){auto& a=gaps[g][eng];auto itg=std::upper_bound(a.begin(),a.end(),std::make_pair(ready,(i128(1)<<126)));for(;itg!=a.end();++itg)if(std::max(ready,itg->second)+d[l][o]<=itg->first){slot=(int)(itg-a.begin());ready=std::max(ready,itg->second);break;}}if(slot<0&&free>ready)ready=free;key=keyof(x,ready);if(early&&!q.empty()&&key>q.top().early){q.push({x,key,it.rank});continue;}
+ st[x]=ready;en[x]=ready+d[l][o];tm=std::max(tm,en[x]);out.push_back({ready,m,l,o});if(d[l][o]){if(fillGaps&&gap==0){auto& a=gaps[g][eng];if(slot>=0){auto [stop,begin]=a[slot];a.erase(a.begin()+slot);int pos=slot;if(begin<ready){a.insert(a.begin()+pos,{ready,begin});pos++;}if(en[x]<stop)a.insert(a.begin()+pos,{stop,en[x]});}else if(free<ready){auto itg=std::lower_bound(a.begin(),a.end(),std::make_pair(ready,(i128)-1));a.insert(itg,{ready,free});}}if(comm(o))mf[g]=std::max(mf[g],en[x]+gap);else cf[g]=std::max(cf[g],en[x]);}else if(comm(o)&&gap)mf[g]=std::max(mf[g],en[x]+gap);count++;
+ for(int y:succ[x])if(--rem[y]==0)push(y);
+ if(o==4){rel[g*mb+m]=std::max(rel[g*mb+m],en[x]);if(--bw[g*mb+m]==0){int nm=m+W;if(nm<mb)for(int oo=0;oo<10;oo++){int y=id(nm,0,oo,L);if(pred[y].empty()&&rem[y]==0)push(y);}}}
+ }
+ if(starts)*starts=std::move(st);if(ends)*ends=std::move(en);return true;
+}
+}

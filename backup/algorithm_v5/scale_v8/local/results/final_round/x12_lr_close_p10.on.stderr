@@ -1,0 +1,2 @@
+LIST_V7 anchor=28510305 plain=32299611 plainW=10 best=28510305 W=0 mode=incumbent variant=-1 gap=0 boost=0 fs=0 fm=0 ratio10=0 ramp=0 cutoff=0 main_seconds=2.13513 checked=closed-interval
+LOCAL_ENGINE evaluated=12000 accepted=335 strict_improve=21 tie_moves=314 rounds=4 Time=28430790 exhausted=0 main_seconds=3.68796

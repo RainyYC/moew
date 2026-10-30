@@ -1,0 +1,21 @@
+# 运行产物
+out/
+runs/
+logs/
+
+# 数据：可用 tools/gen_battery.py 重新生成；官方包单独存放，不入库（体积大且版权归赛题方）
+data/battery/
+data/official/outs/
+data/official/*.zip
+
+# 依赖与缓存
+.pylibs/
+__pycache__/
+*.pyc
+
+# 团队运行时状态
+.agent-teams/
+
+# 编辑器/系统
+.DS_Store
+*.swp

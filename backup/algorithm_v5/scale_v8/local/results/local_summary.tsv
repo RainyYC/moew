@@ -1,0 +1,9 @@
+case	v7_time	local_time	relative_reduction_pct	candidate_evaluations	strict_improve	tie_moves	passes	local_wall_seconds	windows_exhausted	grader
+x01_lr_block_p2	2570180	2570180	0.000	12000	0	483	4	1.209	no	pass
+x10_lr_tight_p8	19158270	19034049	0.648	12000	34	181	4	2.316	no	pass
+x12_lr_close_p10	28510305	28430790	0.279	12000	21	314	4	3.688	no	pass
+x16_vl_trap4_ramp	4073166	4059438	0.337	12000	10	26	4	1.250	no	pass
+x17_vl_tight_block	5888770	5879256	0.162	12000	5	21	4	2.932	no	pass
+x18_vl_tight_small	1724136	1724136	0.000	9000	0	2	3	0.177	no	pass
+x19_vl_trap4_fs4	7444533	7249212	2.624	12000	9	201	4	1.157	no	pass
+x20_vl_flat_control	2387218	2366712	0.859	12000	2	284	4	2.700	no	pass

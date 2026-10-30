@@ -1,0 +1,3 @@
+BORROW_C P=2 improved_MAP_layers=30 Time=13825209
+LIST_V7 anchor=13825209 plain=15323398 plainW=12 best=13825209 W=0 mode=incumbent variant=-1 gap=0 boost=0 fs=0 fm=0 ratio10=0 ramp=0 cutoff=0 main_seconds=2.89499 checked=closed-interval
+LOCAL_ENGINE evaluated=10882 accepted=12 rounds=4 Time=13801432 exhausted=0 main_seconds=9.00061

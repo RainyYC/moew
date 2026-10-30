@@ -1,21 +1,46 @@
-# 运行产物
-out/
-runs/
-logs/
+# Build and fresh acceptance runs
+/build/
+/results/run_latest/
+/results/smoke/
+/results/official/
 
-# 数据：可用 tools/gen_battery.py 重新生成；官方包单独存放，不入库（体积大且版权归赛题方）
-data/battery/
-data/official/outs/
-data/official/*.zip
+# Legacy-generated data, runs, and logs
+/data/battery/
+/data/official/outs/
+/data/official/*.zip
+/runs/
+/logs/
+/out/
 
-# 依赖与缓存
+# Archived legacy Python dependencies
 .pylibs/
+
+# Team runtime state and Python caches
+.agent-teams/
 __pycache__/
 *.pyc
 
-# 团队运行时状态
-.agent-teams/
+# Nested Git worktrees are preserved separately from this repository
+/backup/worktrees/
 
-# 编辑器/系统
+# Local editor and OS files
 .DS_Store
 *.swp
+
+# ===== 2026-10-30 重组后新增 =====
+# 构建产物（scripts/build.sh 可重建）
+build/
+
+# 重组归档：worktree 快照与重跑产物体积过大（968M / 232M / 48M），
+# 需要时用 backup/MIGRATION_MANIFEST.json 里的 SHA256 从历史提交或重跑恢复
+backup/worktrees/
+backup/algorithm_v5/results/
+backup/algorithm_v5/diff_v7/
+backup/legacy_workspace/.pylibs/
+backup/**/__pycache__/
+
+# 逐例运行产物：只留汇总 TSV 与校验清单（结果可重跑）
+results/**/*.out
+results/**/*.stderr
+results/**/*.stdout
+results/**/*.stdin

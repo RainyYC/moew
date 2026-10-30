@@ -1,94 +1,38 @@
-# MoE 分块与重叠吞吐优化
+# MoE 调度求解器（Scale v8）
 
-赛题《满足内存约束的 MoE 分块与重叠吞吐优化》的完整实现：**判题核心 + 求解器 + 独立复算**，
-并在官方评分集上给出可复现的成绩。
-
-> **成绩（官方 50 用例，官方 `grader.py` 判分）**
-> - **50/50 全部合法**，均值 `TIME` 较官方样例解 **降低 31.9%**（31,765,363 → 21,627,400），
->   几何平均比值 **0.716**，逐例更优
-> - 官方 6 个样例**全部经 CP-SAT 证明为全局最优**（560 / 4880 / 6072 / 3200 / 416 / 1696）
-> - 判题核心与官方 `grader.py` 在 50 例上**逐例 `TIME` 完全一致**
-> - 墙钟：均值约 6.0 s、峰值 **7.6 s**（题面限 10 s），零超时
->
-> 调度内核（事件驱动就绪前沿）已合入并默认开启；放置与 fill_boost 三项优化合计约 −0.8%，见
-> [`docs/reports/report-placement-fillboost.md`](docs/reports/report-placement-fillboost.md)
-
-**先读 [`docs/reports/solution-report.md`](docs/reports/solution-report.md)** —— 完整解题报告
-（问题建模与 LaTeX 公式、搜索空间、调度内核、成绩、**被否决方案单独一章**）。
-
-配套：
-[`docs/reports/report-placement-fillboost.md`](docs/reports/report-placement-fillboost.md)（放置与 fill_boost 的细节）、
-[`docs/reviews/eval-opt-placement-partition-20261030.md`](docs/reviews/eval-opt-placement-partition-20261030.md)（分支合入评估）、
-[`docs/reports/reference-v5-and-python-port.md`](docs/reports/reference-v5-and-python-port.md)（C++ 参考实现
-[`algorithm_v5/`](algorithm_v5/) 与它的 [Python 移植](py5/) 的对照实验）。
-旧版报告已归档至 [`docs/reports/archive/`](docs/reports/archive/)。
-
-## 目录
-
-```
-src/                  代码（注意：包在 src/ 下，命令都要带 PYTHONPATH=src，或用 make）
-  judge/              判题核心 + HTTP 服务
-    core/             解析 → 时长 → 依赖/引擎 → 内存 → makespan
-    service/          队列、账本、SSE、自检
-    tests/            66 个单测
-  solver/             求解器（formula / psi / place / sched / solve / solve_all）
-    selftests/        9 条回归（紧内存、空隙回填、窗口上限…）
-  ui/                 只读视图（纯渲染，有自己的 lint）
-tools/                脚本：CP-SAT 证明、独立穷举、下界分析、并行评测、用例生成
-scripts/              e2e（起服务 + 浏览器 dump-dom 全链路）
-cases/                七个官方样例（ex1–ex6 + mini）与期望值
-data/
-  official/           官方包：50 个用例、grader.py、题面、官方样例解、参考报告
-  battery/            13 个自造大用例（最大 64 万 op，可用 tools/gen_battery.py 重新生成）
-  opt/                CP-SAT 落盘的最优解
-  refs/               题面引用的论文
-docs/
-  reports/            解题报告、方案、验收报告
-  reviews/            判题/服务/求解器/UI 各层评审
-  problem/            历版题面与样例输出
-  patches/            已合入与已否决的补丁
-  design/             UI 设计稿
-  CONTRACT.md         三层契约（数据口径、错误分类、部署）
-  rule-change-1029.md 2026-10-29 规则变更记录（含一处代价很大的坑）
-  optimality.md       最优性证明与大用例残差分析
-  BACKUP-NOTE.md      历史快照说明
-Makefile              常用命令（见下）
-```
+当前默认版本为已验收的 v8。官方 50 个用例全部通过：相对冻结 v7 有 31 例改善、19 例持平、无退步；平均 Time 从 20,589,369.80 降至 20,407,224.34，几何平均加速 1.01340×。最长记录墙钟为 8.811 秒，官方单例限时为 10 秒。完整逐例结果见 [`results/scale_v8_default/`](results/scale_v8_default/)，分析见[中文验收报告](docs/reports/scale-v8.md)。
 
 ## 快速开始
 
-```bash
-make six        # 六个官方样例：560 / 4880 / 6072 / 3200 / 416 / 1696
-make check      # 全部校验：判题 7/7、求解器、服务自检、UI lint、独立复算 7/7
-make test       # 单测：judge 66 + solver 9
-make fast       # 官方 50 例的 12 例冒烟子集（并行，约 15 s）
-make official   # 官方 50 例全量（并行，约 45 s）
-make official-serial   # 同上但串行（约 6 分钟）—— 对外报成绩用这个
+```sh
+make                 # 编译到 build/solver
+make smoke            # 官方 grader 验收 x01 与 x18
+make official-serial  # 串行验收全部 50 例，结果写入 results/run_latest/
 ```
 
-单例求解：
+单例求解从标准输入读取题目，向标准输出写答案：
 
-```bash
-PYTHONPATH=src python3 src/solver/solve_all.py data/official/Problem/cases/x13_lr_twochunk_p8.txt out.txt
-PYTHONPATH=src python3 -m judge eval data/official/Problem/cases/x13_lr_twochunk_p8.txt out.txt
+```sh
+./scripts/build.sh
+./build/solver < data/official/Problem/cases/x01_lr_block_p2.txt > answer.txt
+python3 data/official/Problem/grader.py data/official/Problem/cases/x01_lr_block_p2.txt answer.txt
 ```
 
-> 代码放在 `src/` 下，所以要么带 `PYTHONPATH=src`，要么直接用 `make`。
-> `src/solver/solve_all.py` 这类脚本自己能找到仓库根，单独跑也 OK。
+验收 runner 的五个可选参数顺序为：`mode borrow diff case_filter scale`。默认等价于 `run_latest ac auto "" auto`；每例通过 `timeout 10` 运行，再由 `data/official/Problem/grader.py` 判分。`mode` 指定 `results/<mode>/`。若需复现旧 v7 搜索，可将第五个参数设为 `off`，例如：
 
-## 六个官方样例的最优性
-
-```bash
-pip install --target .pylibs ortools          # 只有 CP-SAT 相关工具需要
-PYTHONPATH=.pylibs:src python3 tools/cpsat_global.py cases/ex3.in    # → 6072 · OPTIMAL
-PYTHONPATH=src python3 tools/ex3_verify.py                            # 不用 OR-Tools 的独立穷举复核
+```sh
+./scripts/run_acceptance.sh v7_replay ac auto '' off
 ```
 
-## 环境
+## 当前源码与归档
 
-Python 3.13+，**无第三方依赖**（`ortools` 只用于 `tools/cpsat_*`，装在 `.pylibs/`）。
+- `src/` 仅含当前五个 C++ 源文件与头文件；构建输出为 `build/solver`。
+- `scripts/build.sh` 和 `scripts/run_acceptance.sh` 提供构建与官方验收入口。
+- `results/scale_v8_default/` 保存已验收的 50 例结果；`SHA256SUMS.pre-reorganization` 是整理前原样校验清单，`SHA256SUMS` 是新路径校验清单。
+- `data/` 与 `docs/problem/` 保留在原位置。
+- 完整原 `algorithm_v5` 目录及历史报告在 `backup/algorithm_v5/`；旧工作区代码、脚本、工具和文档按原相对路径归入 `backup/legacy_workspace/`。历史资料按原样保留，个别脚本可能需要根据归档后的路径调整。
+- `backup/MIGRATION_MANIFEST.json` 记录迁移前后的路径及正式源码、验收程序和结果文件的 SHA256。
 
-## 说明
+当前默认运行启用 scale v8 搜索。`--scale=off` 可回放 v7；默认 `--scale=auto` 在 `--borrow=ac`、`--diff=auto` 时启用 v8 阶段。更多细节、指标和限制见[验收报告](docs/reports/scale-v8.md)。
 
-`data/official/` 下是赛题提供的评测材料（题面、50 个用例、官方 `grader.py`、官方样例解），
-仅用于本地验证与复现，版权归赛题方所有。
+整理前保存的 10 个顶层与 2 个嵌套 worktree（含未提交内容）位于 [`backup/worktrees/`](backup/worktrees/)，其路径映射见 [worktree 归档说明](backup/worktrees/README.md) 与 [manifest](backup/worktrees/archive_manifest.json)。普通文件迁移清单及校验记录见 [backup/MIGRATION_MANIFEST.json](backup/MIGRATION_MANIFEST.json)；归档目录导航见 [backup/README.md](backup/README.md)。

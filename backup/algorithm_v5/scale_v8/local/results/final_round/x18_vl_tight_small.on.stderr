@@ -1,0 +1,2 @@
+LIST_V7 anchor=1792964 plain=1792964 plainW=8 best=1724136 W=8 mode=early variant=4 gap=0 boost=53580 fs=1 fm=2 ratio10=5 ramp=1 cutoff=0 main_seconds=0.113885 checked=closed-interval
+LOCAL_ENGINE evaluated=9000 accepted=2 strict_improve=0 tie_moves=2 rounds=3 Time=1724136 exhausted=0 main_seconds=0.177056
