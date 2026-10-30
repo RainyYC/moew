@@ -1,0 +1,13 @@
+{
+  "revision": "00d80084d19856eacee497eec91198a97ef97288",
+  "files": {
+    "src/solver.cpp": "7c58b4cfdcc65f9fbb917aa8bcfc142ae6409dc4337a2a210a9d60144fdd1a49",
+    "README.md": "a2c5a32a5cc5ca889dfbab5cbc6d7eed04cc84c65f70f69cb873803e1909a253",
+    "docs/reports/current-solver-report.md": "1a5ef798a7d67f98ee4177075d76e64b131532a26af048a268147d264fbcafe9",
+    "docs/coding-style.md": "baaa64dc7cd6fb442fd25232c3d71b99058dc88e9f4ceab82bac274e2f41c232",
+    "Makefile": "2be67c9fda55630cf5aa078f0a9cfa6f5e53e984828d05851ce3ba3e45d60323",
+    "scripts/build.sh": "65d879f16bddb69bccb72d2f68ab62af0c8dc6cc1933e4ef63cbf0e6bde7810d"
+  },
+  "baseline_binary": "build/solver_before_module_split",
+  "baseline_results": "results/retiming_speed/full50/summary.tsv"
+}

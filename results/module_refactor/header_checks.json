@@ -1,0 +1,127 @@
+[
+  {
+    "header": "src/app/solver.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/common.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/core/operation_graph.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/io/input.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/io/numeric.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/io/options.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/io/output.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/model/problem.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/model/scheduled_operation.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/placement/expert_mapping.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/placement/grouped_placement.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/scheduling/event_scheduler.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/scheduling/list_scheduler.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/search/boost_search.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/search/candidate_search.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/search/initial_search.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/search/layout_search.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/search/limits.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/search/list_search.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/search/local_engine_polish.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/search/placement_search.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/search/polish_driver.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/search/wave_search.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/search/window_borrow.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  },
+  {
+    "header": "src/search/window_search.hpp",
+    "exit": 0,
+    "diagnostics": ""
+  }
+]

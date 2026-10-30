@@ -1,0 +1,23 @@
+{
+  "cases": 6,
+  "repeats": 2,
+  "runs": 24,
+  "pass_limit": 24,
+  "all_outputs_and_counters_identical": true,
+  "grader_valid_cases": 6,
+  "cpu_totals": {
+    "baseline": 42.24434299999998,
+    "modular": 41.99757099999999
+  },
+  "cpu_change_pct": -0.5841539540571983,
+  "binaries": {
+    "baseline": {
+      "path": "/home/rainy/hackathon/build/solver_before_module_split",
+      "sha256": "61ce0ceedb62f18cd277b5f8b34c3dd771542049aa0fb649c78acfde305656d6"
+    },
+    "modular": {
+      "path": "/home/rainy/hackathon/build/solver_modular_candidate",
+      "sha256": "09a283409f48c7c06bb8e9d7f3fc2ac62c7ce7cf3f69628cb083e5f1235475b8"
+    }
+  }
+}
