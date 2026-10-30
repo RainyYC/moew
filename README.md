@@ -32,14 +32,14 @@ python3 data/official/Problem/run_all.py --cmd "./build/solver" --timeout 10
 ./scripts/run_acceptance.sh v7_replay ac auto '' off
 ```
 
-## 归档验收与架构图
+## 当前架构与工作流
+
+架构图展示单个 `src/solver.cpp` 内的搜索控制、调度内核和输入输出职责；工作流图展示默认搜索阶段、规模条件与累计时间预算。两张图均包含小规模局部搜索前缀之后的全规模预算扩展，以及显存上界快路径，并以已提交源码为证据。
+
+- [当前搜索架构图](.archify/architecture-moe-budget-20261030-211601/moe-budget-architecture.html)
+- [当前算法工作流图](.archify/workflow-moe-budget-20261030-211601/moe-budget-workflow.html)
 
 此前的单文件重构验收记录保存在 `results/refactor_v8/`，其中 50 例通过且 `Time` 与当时冻结的 v8 逐例相同；它不代表当前预算扩展后的成绩。对应文件身份见 [`results/refactor_v8/SHA256SUMS`](results/refactor_v8/SHA256SUMS)。旧验收校验清单 [`results/scale_v8_default/SHA256SUMS`](results/scale_v8_default/SHA256SUMS) 继续指向 `backup/pre-refactor-v8/` 中的原始源码和二进制，作为历史证据保留。
-
-下面两张图描述已验收的 v8 算法和调度工作流，且均已通过自动浏览器检查。图中证据锁定于图示对应的源码与报告，不包含当前新增的按时间扩展局部搜索阶段；无需把图示解释为该阶段的流程图。额外 P/V 扩宽实验另见下文及实验报告，不属于图示范围。
-
-- [v8 搜索架构图](.archify/architecture-moe-v8-20261030-183058/moe-v8-architecture.html)
-- [v8 调度工作流图](.archify/workflow-moe-v8-20261030-183058/moe-v8-workflow.html)
 
 ## 当前源码与归档
 

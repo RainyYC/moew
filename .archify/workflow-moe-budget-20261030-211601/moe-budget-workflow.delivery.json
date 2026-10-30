@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "badcfae3-46ca-46a1-bcbe-9afc17b4d632",
+  "status": "current",
+  "command": "deliver",
+  "type": "workflow",
+  "input": "/home/rainy/hackathon/.archify/workflow-moe-budget-20261030-211601/candidate.json",
+  "output": "/home/rainy/hackathon/.archify/workflow-moe-budget-20261030-211601/moe-budget-workflow.html",
+  "specification": {
+    "sha256": "9392e844b59327e109caae6f5498535f7a92cee400ada83225dd2620077c85fa",
+    "bytes": 9222
+  },
+  "artifact": {
+    "sha256": "388d7e519e632e9e694cff09a2b100376f6929745f7e2589e01339cc72bf0a55",
+    "bytes": 850724
+  }
+}

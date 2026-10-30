@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "c7aefaaf-617f-4995-ab09-26a6a3378301",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/home/rainy/hackathon/.archify/architecture-moe-budget-20261030-211601/candidate.json",
+  "output": "/home/rainy/hackathon/.archify/architecture-moe-budget-20261030-211601/moe-budget-architecture.html",
+  "specification": {
+    "sha256": "dd6b25cce13e6209c002c76caa3896ead6287059ea5aac39b498d679ccd1b2c2",
+    "bytes": 5520
+  },
+  "artifact": {
+    "sha256": "95746d15d1a5a47843e3158e950bf9dc3c8cab6945a3846e9528f0f7a0865904",
+    "bytes": 845406
+  }
+}

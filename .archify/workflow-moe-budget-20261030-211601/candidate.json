@@ -1,0 +1,386 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "MoE 求解器：默认搜索与时间预算",
+    "locale": "zh-CN",
+    "output": ".archify/workflow-moe-budget-20261030-211601/moe-budget-workflow.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "git@github.com:RainyYC/moew.git",
+      "revision": "fe08882a482dde147dc996a67a3b08901f941f28",
+      "link_mode": "local-only"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "求解器逻辑"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "intake",
+      "label": "输入与初始候选"
+    },
+    {
+      "id": "search",
+      "label": "主搜索策略"
+    },
+    {
+      "id": "polish",
+      "label": "局部精化与输出"
+    },
+    {
+      "id": "verify",
+      "label": "外部官方验收"
+    }
+  ],
+  "phases": [],
+  "groups": [],
+  "nodes": [
+    {
+      "id": "input",
+      "lane": "intake",
+      "col": 0,
+      "type": "external",
+      "label": "输入",
+      "sublabel": "文件名 / stdin",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 3550,
+          "end_line": 3565
+        }
+      ]
+    },
+    {
+      "id": "configs",
+      "lane": "intake",
+      "col": 1,
+      "type": "backend",
+      "label": "合法配置",
+      "sublabel": "合法 P；枚举 V 与 DP",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 2359,
+          "end_line": 2369
+        },
+        {
+          "path": "src/solver.cpp",
+          "line": 2383,
+          "end_line": 2405
+        }
+      ]
+    },
+    {
+      "id": "probe",
+      "lane": "intake",
+      "col": 2,
+      "type": "backend",
+      "label": "P 探测",
+      "sublabel": "全部 P 快速评估",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 3168,
+          "end_line": 3184
+        }
+      ]
+    },
+    {
+      "id": "refine",
+      "lane": "intake",
+      "col": 3,
+      "type": "backend",
+      "label": "候选精化",
+      "sublabel": "Top 2；Top 1 deep",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 3185,
+          "end_line": 3206
+        }
+      ]
+    },
+    {
+      "id": "borrow",
+      "lane": "search",
+      "col": 3,
+      "type": "backend",
+      "label": "借用搜索",
+      "sublabel": "窗口、boost、placement",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 3591,
+          "end_line": 3594
+        }
+      ]
+    },
+    {
+      "id": "list",
+      "lane": "search",
+      "col": 2,
+      "type": "backend",
+      "label": "List 搜索",
+      "sublabel": "默认 8 秒软门控",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 2813,
+          "end_line": 2825
+        }
+      ]
+    },
+    {
+      "id": "extra_p",
+      "lane": "search",
+      "col": 1,
+      "type": "backend",
+      "label": "额外 P",
+      "sublabel": "J≤8000、mb≤16；最多 2 个",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 3211,
+          "end_line": 3228
+        },
+        {
+          "path": "src/solver.cpp",
+          "line": 3243,
+          "end_line": 3259
+        }
+      ]
+    },
+    {
+      "id": "wave",
+      "lane": "search",
+      "col": 0,
+      "type": "backend",
+      "label": "Wave（默认）",
+      "sublabel": "全规模；累计至 9 秒",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 3263,
+          "end_line": 3283
+        },
+        {
+          "path": "src/solver.cpp",
+          "line": 3342,
+          "end_line": 3379
+        },
+        {
+          "path": "src/solver.cpp",
+          "line": 3577,
+          "end_line": 3579
+        }
+      ]
+    },
+    {
+      "id": "prefix",
+      "lane": "polish",
+      "col": 0,
+      "type": "backend",
+      "label": "局部前缀",
+      "sublabel": "J≤8000；最多 4×3000",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 3425,
+          "end_line": 3462
+        }
+      ]
+    },
+    {
+      "id": "extension",
+      "lane": "polish",
+      "col": 1,
+      "type": "backend",
+      "label": "时间扩展",
+      "sublabel": "所有规模；默认预算 9.2 秒",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 2303,
+          "end_line": 2309
+        },
+        {
+          "path": "src/solver.cpp",
+          "line": 3464,
+          "end_line": 3490
+        },
+        {
+          "path": "src/solver.cpp",
+          "line": 1324,
+          "end_line": 1394
+        }
+      ]
+    },
+    {
+      "id": "emit",
+      "lane": "polish",
+      "col": 2,
+      "type": "backend",
+      "label": "输出解",
+      "sublabel": "输出当前最好解",
+      "sources": [
+        {
+          "path": "src/solver.cpp",
+          "line": 3596,
+          "end_line": 3600
+        }
+      ]
+    },
+    {
+      "id": "runner",
+      "lane": "verify",
+      "col": 3,
+      "type": "external",
+      "label": "官方验收",
+      "sublabel": "外部 10 秒 runner",
+      "sources": [
+        {
+          "path": "data/official/Problem/run_all.py",
+          "line": 82,
+          "end_line": 95
+        },
+        {
+          "path": "data/official/Problem/grader.py",
+          "line": 12,
+          "end_line": 24
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "read",
+      "from": "input",
+      "to": "configs",
+      "label": "读入",
+      "variant": "default",
+      "role": "main"
+    },
+    {
+      "id": "all_p",
+      "from": "configs",
+      "to": "probe",
+      "label": "候选集",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "quick",
+      "from": "probe",
+      "to": "refine",
+      "label": "排序取前二",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "initial_search",
+      "from": "refine",
+      "to": "borrow",
+      "label": "当前最好",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "list_first",
+      "from": "borrow",
+      "to": "list",
+      "label": "更新最好",
+      "variant": "default",
+      "role": "main"
+    },
+    {
+      "id": "list_extra",
+      "from": "list",
+      "to": "extra_p",
+      "label": "满足门槛",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "list_wave",
+      "from": "list",
+      "to": "wave",
+      "label": "开启时",
+      "variant": "dashed",
+      "role": "branch"
+    },
+    {
+      "id": "extra_wave",
+      "from": "extra_p",
+      "to": "wave",
+      "label": "候选 seed",
+      "variant": "default"
+    },
+    {
+      "id": "to_prefix",
+      "from": "wave",
+      "to": "prefix",
+      "label": "J≤8000 且前缀时间足",
+      "variant": "default",
+      "role": "main"
+    },
+    {
+      "id": "prefix_extension",
+      "from": "prefix",
+      "to": "extension",
+      "label": "前缀结束 / 跳过",
+      "variant": "default",
+      "role": "main"
+    },
+    {
+      "id": "large_bypass",
+      "from": "wave",
+      "to": "extension",
+      "label": "J>8000 或无前缀预算",
+      "variant": "emphasis",
+      "role": "branch"
+    },
+    {
+      "id": "emit_result",
+      "from": "extension",
+      "to": "emit",
+      "label": "≤30ms 或 Time=0",
+      "variant": "emphasis",
+      "role": "main"
+    },
+    {
+      "id": "external_grade",
+      "from": "emit",
+      "to": "runner",
+      "label": "输出后验收",
+      "variant": "dashed",
+      "role": "async"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Extension 每轮如何推进",
+      "items": [
+        "规模记号：B=mb（微批次数），L=层数；J=10×L×B，表示操作数；G 表示卡组数。",
+        "每轮最多评估 700 个候选；variant 轮换候选次序、插入距离 1–8 与 12/16/24/32。另对 4–7 个操作的窗口枚举排列，并轮换排列起点。",
+        "即使本轮没有合法改进，下一轮也会换 variant 继续；默认累计预算前剩余不足 30 ms 或 Time=0 时停止。",
+        "局部改进按 (Time, sum_end) 字典序下降。固定 layout 后对完整 DAG 重定时；显存上界证明通过则走快路，否则做闭区间峰值检查。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "预算与门控",
+      "items": [
+        "8 秒 List、9 秒额外 P / Wave、9 秒前缀边界、默认 9.2 秒累计预算，均从求解器启动计时，是分支门控而非全局硬 deadline；阶段也可能因条件或候选耗尽提前停。",
+        "额外 P 需同时满足：非 serial 且 Wave 启用、mb≤16、J≤8000、L>当前最好 G、累计未到 8 秒；最多试两个不同 P，且每次启动时距 9 秒截止至少还有 1 秒。",
+        "Wave 默认全规模尝试，累计 9 秒为截止门控；有限候选耗尽可提前结束。CLI 关闭相关搜索时，局部前缀和 extension 也会关闭。默认预算 --budget-ms 可设 9000–9500 ms。",
+        "官方 run_all 的 solver 子进程默认 10 秒超时；grader 在 solver 完成后独立验收，不是 solver 内部阶段。"
+      ]
+    }
+  ]
+}

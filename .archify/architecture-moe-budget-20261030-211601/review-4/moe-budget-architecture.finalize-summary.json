@@ -1,0 +1,81 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "architecture",
+  "quality": "showcase",
+  "specification": {
+    "path": "/home/rainy/hackathon/.archify/architecture-moe-budget-20261030-211601/candidate.json",
+    "sha256": "dd6b25cce13e6209c002c76caa3896ead6287059ea5aac39b498d679ccd1b2c2",
+    "bytes": 5520
+  },
+  "artifact": {
+    "path": "/home/rainy/hackathon/.archify/architecture-moe-budget-20261030-211601/moe-budget-architecture.html",
+    "sha256": "95746d15d1a5a47843e3158e950bf9dc3c8cab6945a3846e9528f0f7a0865904",
+    "bytes": 845406
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/rainy/hackathon/.archify/architecture-moe-budget-20261030-211601/review-4/moe-budget-architecture.finalize.json",
+    "summaryReceipt": "/home/rainy/hackathon/.archify/architecture-moe-budget-20261030-211601/review-4/moe-budget-architecture.finalize-summary.json",
+    "browserCheckReceipt": "/home/rainy/hackathon/.archify/architecture-moe-budget-20261030-211601/review-4/moe-budget-architecture.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-30T10:32:30.103Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 2470,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  },
+  "visualReviewRecommendation": {
+    "action": "inspect-route-readability",
+    "signals": {
+      "routesOverSuggestedBends": 1
+    },
+    "reason": "Automated gates passed, but crossings or detours still need perceptual review before claiming visual quality.",
+    "affectedRoutes": {
+      "crossings": [],
+      "detours": [
+        {
+          "relationship": {
+            "id": "event-evaluation",
+            "from": "main",
+            "to": "event",
+            "label": "布局 · 耗时 · window",
+            "collectionIndex": 3,
+            "artifactIndex": 4
+          },
+          "bends": 3,
+          "stretch": 1
+        }
+      ],
+      "truncated": false
+    },
+    "hints": [
+      "main has 5 relationships facing its right side, which fits 4 ports: make that side at least 88px, or move some of those neighbours so they face another side of main.",
+      "main → event needs 3 bends: move node main or event so they share a row or column with matching centers, or sit diagonally with a clear corner."
+    ],
+    "repair": "Trace these relationships at the desktop viewport. For Architecture, use references/architecture-layout-repair.md: reflow a blocked main path or tangled connected scene, and repair an isolated defect locally only when the surrounding composition is accepted. Preserve all semantic content and user-fixed geometry. Rerun finalize once after the edit."
+  }
+}

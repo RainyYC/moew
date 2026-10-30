@@ -163,6 +163,8 @@ $$
 
 ## 4. 总体流水线
 
+交互图：[整体架构](../../.archify/architecture-moe-budget-20261030-211601/moe-budget-architecture.html)与[算法工作流](../../.archify/workflow-moe-budget-20261030-211601/moe-budget-workflow.html)。架构图说明单文件内部职责与调用关系，工作流图说明默认搜索次序、规模分支和累计时间预算。
+
 默认参数为 `--borrow=ac --diff=auto --scale=auto`。主流程如下：
 
 ~~~mermaid

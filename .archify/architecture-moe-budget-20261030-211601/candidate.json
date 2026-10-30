@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "MoE 预算搜索架构",
+    "locale": "zh-CN",
+    "output": ".archify/architecture-moe-budget-20261030-211601/moe-budget-architecture.html",
+    "quality_profile": "showcase",
+    "legend": {
+      "mode": "auto",
+      "entries": {
+        "backend": {"label": "求解器逻辑"}
+      }
+    },
+    "repository": {
+      "url": "git@github.com:RainyYC/moew.git",
+      "link_mode": "local-only",
+      "revision": "fe08882a482dde147dc996a67a3b08901f941f28"
+    }
+  },
+  "components": [
+    {
+      "id": "input",
+      "type": "external",
+      "label": "问题输入",
+      "sublabel": "stdin 或可选输入文件",
+      "pos": [40, 310],
+      "size": [140, 68],
+      "sources": [{"path": "src/solver.cpp", "line": 3555, "end_line": 3565}]
+    },
+    {
+      "id": "main",
+      "type": "backend",
+      "label": "主搜索驱动",
+      "sublabel": "解析输入 · 模式门控 · 维护当前最优 · 共享时限",
+      "pos": [500, 310],
+      "size": [190, 76],
+      "sources": [
+        {"path": "src/solver.cpp", "line": 3550, "end_line": 3599},
+        {"path": "src/solver.cpp", "line": 3168, "end_line": 3207}
+      ]
+    },
+    {
+      "id": "partition",
+      "type": "backend",
+      "label": "P/V 可行性与放置",
+      "sublabel": "枚举候选 P · 连续层 DP 求 V 与 cuts",
+      "pos": [500, 140],
+      "size": [190, 76],
+      "sources": [
+        {"path": "src/solver.cpp", "line": 2359, "end_line": 2438},
+        {"path": "src/solver.cpp", "line": 2630, "end_line": 2694},
+        {"path": "src/solver.cpp", "line": 740, "end_line": 837}
+      ]
+    },
+    {
+      "id": "event",
+      "type": "backend",
+      "label": "事件 / window 评估器",
+      "sublabel": "就绪 DAG · 资源与 activation 约束",
+      "pos": [810, 140],
+      "size": [205, 76],
+      "sources": [
+        {"path": "src/solver.cpp", "line": 22, "end_line": 88},
+        {"path": "src/solver.cpp", "line": 2045, "end_line": 2121}
+      ]
+    },
+    {
+      "id": "list",
+      "type": "backend",
+      "label": "List / wave 搜索",
+      "sublabel": "限时尝试优先级、window 与拓扑变体",
+      "pos": [240, 500],
+      "size": [205, 76],
+      "sources": [
+        {"path": "src/solver.cpp", "line": 2813, "end_line": 3091},
+        {"path": "src/solver.cpp", "line": 3209, "end_line": 3423}
+      ]
+    },
+    {
+      "id": "polish",
+      "type": "backend",
+      "label": "固定布局局部优化",
+      "sublabel": "调整资源顺序 → 完整 DAG 重定时 → 合法性检查",
+      "pos": [760, 500],
+      "size": [215, 76],
+      "sources": [
+        {"path": "src/solver.cpp", "line": 1231, "end_line": 1256},
+        {"path": "src/solver.cpp", "line": 1324, "end_line": 1347},
+        {"path": "src/solver.cpp", "line": 3425, "end_line": 3503}
+      ]
+    },
+    {
+      "id": "result",
+      "type": "external",
+      "label": "调度结果",
+      "sublabel": "P / cuts / MAP / 操作起始时间",
+      "pos": [1030, 310],
+      "size": [190, 76],
+      "sources": [{"path": "src/solver.cpp", "line": 3505, "end_line": 3548}]
+    }
+  ],
+  "connections": [
+    {"id": "read-input", "from": "input", "to": "main", "label": "stdin / 文件流"},
+    {"id": "build-candidates", "from": "main", "to": "partition", "label": "调用候选生成"},
+    {"id": "seed-search", "from": "partition", "to": "main", "label": "返回可行 P/V 候选"},
+    {"id": "event-evaluation", "from": "main", "to": "event", "label": "布局 · 耗时 · window"},
+    {"id": "event-incumbent", "from": "event", "to": "main", "label": "合法调度 / Time"},
+    {"id": "list-search", "from": "main", "to": "list", "label": "可选 incumbent 搜索"},
+    {"id": "list-incumbent", "from": "list", "to": "main", "label": "返回改进的 incumbent"},
+    {"id": "local-polish", "from": "main", "to": "polish", "label": "当前最优；固定 P/V/布局"},
+    {"id": "polished-incumbent", "from": "polish", "to": "main", "label": "合法改进返回"},
+    {"id": "emit-result", "from": "main", "to": "result", "label": "write_output：最终输出"}
+  ],
+  "cards": [
+    {"dot": "cyan", "title": "有界搜索", "items": ["小实例前缀条件为 mb × L × 10 ≤ 8,000：9 秒前缀时限内最多 4 轮，每轮最多 3,000 次评估。", "前缀之后，各规模都可继续扩展搜索至 main_start + 默认 9,200 ms；每个扩展 pass 最多评估 700 个候选。", "不同 variant 会轮换资源/window 顺序、加入更长插入距离并改变排列起点。这是结构化局部搜索，不是全局暴力搜索，也不保证全局最优。"]},
+    {"dot": "emerald", "title": "合法性与搜索分支", "items": ["局部优化固定选定布局；操作顺序变化后会对完整操作 DAG 重定时。保守内存上界能证明某组始终安全时跳过重复内存检查，否则执行精确闭区间检查。", "负载不均时，main 可选触发 run_alt_placement 的专家 DFS 备选放置；P/V 初筛也会对排名靠前的候选做更深布局评估（首选候选深评，最多再评估一个）。", "可行候选需满足依赖、资源与内存约束，才可更新 incumbent；List / wave 和专家 DFS 都是可选搜索分支。"]},
+    {"dot": "rose", "title": "输出与验收边界", "items": ["main 最后调用 write_output，将 schedule 写到 stdout。官方 grader/checker 是 solver 运行时之外的验收边界，不由 solver 调用。"]}
+  ]
+}
