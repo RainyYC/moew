@@ -44,14 +44,17 @@ python3 data/official/Problem/run_all.py --cmd "./build/solver" --timeout 10
 
 求解器公开 `--mode=full|list|event|serial`、`--force-p=N`、`--retime-mode=auto|wide`、`--polish-pass-limit=N` 和 `--help`。不带模式时等价于 `full`；输入路径仍可放在选项前后，也可用 `-` 表示标准输入。未知或不合法参数会报错退出。
 
-## 当前架构与工作流
+## 当前架构、工作流与 4+1 视图
 
-原搜索架构图和工作流图展示算法运行阶段、搜索控制及累计时间预算，不表示 C++ 文件布局。源代码模块职责见[模块设计说明](docs/module-design.md)，调度接口和模式参与者见[设计模式说明](docs/design-patterns.md)。现有图分别呈现模块调用顺序、返回与预算边界，以及一个实例内 operation 的调度和依赖关系；模块调用时序按函数/模块层级展示，operation dataflow 按任务/DAG 层级展示，两者粒度不同。
+从[浅色交互图集](.archify/architecture-suite-20261031-030904/index.html)进入当前七张图。整体架构图展示求解门面、搜索控制、参数对象与静态调度策略，流水线展示算法阶段、四种搜索模式和累计预算；4+1 从逻辑、开发、进程、物理部署四个角度描述系统，并用场景串联。具体解释见[4+1 视图说明](docs/architecture-4-plus-1.md)。
 
-- [当前搜索架构图](.archify/architecture-moe-budget-20261030-211601/moe-budget-architecture.html)
-- [当前算法工作流图](.archify/workflow-moe-budget-20261030-211601/moe-budget-workflow.html)
-- [模块调用时序图（浅色）](.archify/sequence-solver-runtime-20261030-222608/index.html)
+- [当前整体架构图](.archify/architecture-suite-20261031-030904/architecture/index.html)
+- [当前算法流水线图](.archify/architecture-suite-20261031-030904/pipeline/index.html)
+- [逻辑视图](.archify/architecture-suite-20261031-030904/logical/index.html) · [开发视图](.archify/architecture-suite-20261031-030904/development/index.html)
+- [进程视图与调用时序](.archify/architecture-suite-20261031-030904/process/index.html) · [物理部署视图](.archify/architecture-suite-20261031-030904/deployment/index.html) · [场景视图（+1）](.archify/architecture-suite-20261031-030904/scenarios/index.html)
 - [operation 时间线与依赖 DAG 全 trace](docs/visualizations/case-flow-r64-v4-c4b/index.html)
+
+求解器内部同步、串行搜索；题目中的计算/通信引擎并行属于输出调度的模型。官方 runner 在求解子进程结束后启动 grader。进程视图与 operation trace 的粒度不同；源文件职责与设计模式细节分别见[模块设计说明](docs/module-design.md)和[设计模式说明](docs/design-patterns.md)。
 
 全 trace 对应 `r64_v4_c4b`：4,480 个操作、6,016 条模型 DAG 依赖边、14 条 group/engine 泳道。颜色表示操作方向与引擎：前向计算为蓝色 C、前向通信为青色 N、反向计算为橙色 C、反向通信为紫色 N；7 个 group 的平均利用率为 C 82.85%、N 82.30%。
 

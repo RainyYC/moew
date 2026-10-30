@@ -1,0 +1,293 @@
+{
+  "schema_version": 1,
+  "diagram_type": "tree",
+  "meta": {
+    "title": "开发视图 · 模块职责与构建交付",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "output": ".archify/architecture-suite-20261031-030904/development/development.html",
+    "repository": {
+      "url": "git@github.com:RainyYC/moew.git",
+      "revision": "e18822f8a3e1f91ea4227d0ffd4138d444c7c829",
+      "link_mode": "local-only"
+    }
+  },
+  "layout": {
+    "direction": "right",
+    "nodeW": 150,
+    "nodeMaxW": 220,
+    "gapX": 55,
+    "gapY": 26
+  },
+  "nodes": [
+    {
+      "id": "project",
+      "label": "求解器工程",
+      "sublabel": "按职责划分模块",
+      "sources": [
+        {
+          "path": "src/sources.mk",
+          "line": 1,
+          "end_line": 23
+        }
+      ]
+    },
+    {
+      "id": "boundary",
+      "label": "入口与领域模型",
+      "sublabel": "解析、数据、依赖",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 46,
+          "end_line": 82
+        },
+        {
+          "path": "src/model/problem.hpp",
+          "line": 8,
+          "end_line": 30
+        },
+        {
+          "path": "src/core/operation_graph.hpp",
+          "line": 29,
+          "end_line": 51
+        }
+      ],
+      "parent": "project"
+    },
+    {
+      "id": "algorithm",
+      "label": "搜索与调度",
+      "sublabel": "候选评估和改进",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 17,
+          "end_line": 43
+        },
+        {
+          "path": "src/scheduling/schedule_api.hpp",
+          "line": 9,
+          "end_line": 87
+        }
+      ],
+      "parent": "project"
+    },
+    {
+      "id": "delivery",
+      "label": "构建与验证",
+      "sublabel": "源清单连接两种交付",
+      "sources": [
+        {
+          "path": "Makefile",
+          "line": 5,
+          "end_line": 48
+        }
+      ],
+      "parent": "project"
+    },
+    {
+      "id": "app",
+      "label": "src/app + solver.cpp",
+      "sublabel": "入口与 Solver 门面",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 17,
+          "end_line": 43
+        },
+        {
+          "path": "src/app/solver.cpp",
+          "line": 46,
+          "end_line": 82
+        },
+        {
+          "path": "src/solver.cpp",
+          "line": 1,
+          "end_line": 5
+        }
+      ],
+      "parent": "boundary"
+    },
+    {
+      "id": "io",
+      "label": "src/io",
+      "sublabel": "选项、输入、输出、数值",
+      "sources": [
+        {
+          "path": "src/io/options.cpp",
+          "line": 21,
+          "end_line": 65
+        },
+        {
+          "path": "src/io/output.cpp",
+          "line": 8,
+          "end_line": 51
+        },
+        {
+          "path": "src/sources.mk",
+          "line": 5,
+          "end_line": 8
+        }
+      ],
+      "parent": "boundary"
+    },
+    {
+      "id": "model",
+      "label": "src/model + core",
+      "sublabel": "值类型、操作码与 DAG",
+      "sources": [
+        {
+          "path": "src/model/problem.hpp",
+          "line": 8,
+          "end_line": 30
+        },
+        {
+          "path": "src/core/operation_graph.hpp",
+          "line": 29,
+          "end_line": 51
+        },
+        {
+          "path": "src/common.hpp",
+          "line": 27,
+          "end_line": 49
+        }
+      ],
+      "parent": "boundary"
+    },
+    {
+      "id": "placement",
+      "label": "src/placement",
+      "sublabel": "专家映射与时长模型",
+      "sources": [
+        {
+          "path": "src/placement/expert_mapping.cpp",
+          "line": 84,
+          "end_line": 110
+        },
+        {
+          "path": "src/sources.mk",
+          "line": 9,
+          "end_line": 10
+        }
+      ],
+      "parent": "algorithm"
+    },
+    {
+      "id": "search",
+      "label": "src/search",
+      "sublabel": "布局、事件、列表、局部搜索",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 17,
+          "end_line": 43
+        },
+        {
+          "path": "src/sources.mk",
+          "line": 13,
+          "end_line": 23
+        }
+      ],
+      "parent": "algorithm"
+    },
+    {
+      "id": "scheduling",
+      "label": "src/scheduling",
+      "sublabel": "参数对象、策略与内核",
+      "sources": [
+        {
+          "path": "src/scheduling/schedule_api.hpp",
+          "line": 9,
+          "end_line": 87
+        },
+        {
+          "path": "src/sources.mk",
+          "line": 11,
+          "end_line": 12
+        }
+      ],
+      "parent": "algorithm"
+    },
+    {
+      "id": "multi",
+      "label": "Makefile + sources.mk",
+      "sublabel": "21 个 cpp 联合编译 / LTO",
+      "sources": [
+        {
+          "path": "Makefile",
+          "line": 5,
+          "end_line": 24
+        },
+        {
+          "path": "src/sources.mk",
+          "line": 1,
+          "end_line": 23
+        }
+      ],
+      "parent": "delivery"
+    },
+    {
+      "id": "single",
+      "label": "submission/solver.cpp",
+      "sublabel": "可选单文件导出",
+      "sources": [
+        {
+          "path": "Makefile",
+          "line": 28,
+          "end_line": 32
+        },
+        {
+          "path": "scripts/amalgamate.py",
+          "line": 22,
+          "end_line": 63
+        }
+      ],
+      "parent": "delivery"
+    },
+    {
+      "id": "tests",
+      "label": "接口检查 + 官方验收",
+      "sublabel": "CLI、策略替身、50 用例",
+      "sources": [
+        {
+          "path": "Makefile",
+          "line": 37,
+          "end_line": 51
+        },
+        {
+          "path": "data/official/Problem/run_all.py",
+          "line": 122,
+          "end_line": 179
+        }
+      ],
+      "parent": "delivery"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "树边只表达职责归属",
+      "items": [
+        "本图按模块职责分解；每个叶节点给出实际源码路径。",
+        "运行调用关系见整体架构；本图不把文件包含关系当作运行消息。"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "依赖与扩展",
+      "items": [
+        "app 编排 search；搜索调用 placement 与 scheduling，内核使用 core 中的共享 DAG。",
+        "新增调度策略需实现 Config + schedule 约定，并在搜索模块中接入候选评估。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "构建约束",
+      "items": [
+        "src/sources.mk 同时驱动多文件编译和单文件导出；只在 src/solver.cpp 定义 main。",
+        "默认 C++17、O2、LTO；官方 run_all.py 与 grader.py 保持原样。"
+      ]
+    }
+  ]
+}

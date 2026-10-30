@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "2e73da6b-ccb1-4be1-b20a-9e7b8c9b0f68",
+  "status": "current",
+  "command": "deliver",
+  "type": "workflow",
+  "input": "/home/rainy/hackathon/.archify/architecture-suite-20261031-030904/scenarios/candidate.json",
+  "output": "/home/rainy/hackathon/.archify/architecture-suite-20261031-030904/scenarios/scenarios.html",
+  "specification": {
+    "sha256": "3e29d1634c8ca74369f05ff6b45e1b961513e324b01e14696dceb35ddd71f878",
+    "bytes": 7512
+  },
+  "artifact": {
+    "sha256": "fb22176a1ab1bfd09163f10c497f40e85feb30130d3e9a0c9ba4242ed5ed8bb3",
+    "bytes": 847281
+  }
+}

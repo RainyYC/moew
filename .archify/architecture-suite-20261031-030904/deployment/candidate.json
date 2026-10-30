@@ -1,0 +1,256 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "物理视图 · 本机执行与文件交付",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "output": ".archify/architecture-suite-20261031-030904/deployment/deployment.html",
+    "repository": {
+      "url": "git@github.com:RainyYC/moew.git",
+      "revision": "e18822f8a3e1f91ea4227d0ffd4138d444c7c829",
+      "link_mode": "local-only"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "本地进程"
+        },
+        "database": {
+          "label": "本地文件"
+        },
+        "external": {
+          "label": "终端输出"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "runner",
+      "type": "backend",
+      "label": "Python runner",
+      "sublabel": "官方 run_all.py",
+      "pos": [
+        40,
+        220
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "data/official/Problem/run_all.py",
+          "line": 82,
+          "end_line": 119
+        },
+        {
+          "path": "data/official/Problem/run_all.py",
+          "line": 57,
+          "end_line": 79
+        }
+      ]
+    },
+    {
+      "id": "solver",
+      "type": "backend",
+      "label": "C++ 求解进程",
+      "sublabel": "build/solver",
+      "pos": [
+        340,
+        220
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 46,
+          "end_line": 82
+        },
+        {
+          "path": "Makefile",
+          "line": 5,
+          "end_line": 24
+        }
+      ]
+    },
+    {
+      "id": "cases",
+      "type": "database",
+      "label": "用例文件",
+      "sublabel": "cases/*.txt",
+      "pos": [
+        640,
+        220
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "data/official/Problem/run_all.py",
+          "line": 128,
+          "end_line": 151
+        },
+        {
+          "path": "src/app/solver.cpp",
+          "line": 46,
+          "end_line": 82
+        }
+      ]
+    },
+    {
+      "id": "temporary",
+      "type": "database",
+      "label": "临时答案文件",
+      "sublabel": "runner 写入并回收",
+      "pos": [
+        40,
+        420
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "data/official/Problem/run_all.py",
+          "line": 57,
+          "end_line": 79
+        }
+      ]
+    },
+    {
+      "id": "grader",
+      "type": "backend",
+      "label": "Python grader",
+      "sublabel": "官方 grader.py",
+      "pos": [
+        340,
+        420
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "data/official/Problem/grader.py",
+          "line": 758,
+          "end_line": 771
+        }
+      ]
+    },
+    {
+      "id": "summary",
+      "type": "external",
+      "label": "验收输出",
+      "sublabel": "状态 / Time / CPU / wall",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "data/official/Problem/run_all.py",
+          "line": 145,
+          "end_line": 179
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "runner-to-solver",
+      "from": "runner",
+      "to": "solver",
+      "label": "启动并等待"
+    },
+    {
+      "id": "solver-to-cases",
+      "from": "solver",
+      "to": "cases",
+      "label": "读取"
+    },
+    {
+      "id": "runner-to-temporary",
+      "from": "runner",
+      "to": "temporary",
+      "label": "写 stdout"
+    },
+    {
+      "id": "runner-to-grader",
+      "from": "runner",
+      "to": "grader",
+      "label": "随后启动"
+    },
+    {
+      "id": "grader-to-temporary",
+      "from": "grader",
+      "to": "temporary",
+      "label": "读取"
+    },
+    {
+      "id": "grader-to-cases",
+      "from": "grader",
+      "to": "cases",
+      "label": "读取"
+    },
+    {
+      "id": "runner-to-summary",
+      "from": "runner",
+      "to": "summary",
+      "label": "汇总"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "本机文件系统与 CPU 进程",
+      "wraps": [
+        "runner",
+        "solver",
+        "cases",
+        "temporary",
+        "grader",
+        "summary"
+      ],
+      "pad": 24
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "实际部署形态",
+      "items": [
+        "默认构建将多个 C++ 翻译单元链接为一个可执行文件。",
+        "裁判需要单 cpp 时，从相同源清单导出 submission/solver.cpp 后独立编译。"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "I/O 归属",
+      "items": [
+        "solver 从路径或 stdin 读取题目，仅向 stdout 写答案。",
+        "runner 捕获 stdout，写临时文件；grader 读取题目与答案，runner 最后删除临时文件。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "运行依赖",
+      "items": [
+        "程序搜索在 CPU 与进程内存中完成；没有代码支持必须连接数据库、网络服务或真实 GPU。",
+        "官方 runner 分别统计求解 wall / CPU；Time 由 grader 模拟并计算。"
+      ]
+    }
+  ]
+}

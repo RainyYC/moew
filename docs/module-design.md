@@ -1,5 +1,7 @@
 # 模块结构与构建方式
 
+交互说明见[开发视图](../.archify/architecture-suite-20261031-030904/development/index.html)和[完整 4+1 视图说明](architecture-4-plus-1.md)。开发视图按职责分解模块；运行调用关系另见[整体架构](../.archify/architecture-suite-20261031-030904/architecture/index.html)。
+
 维护代码按职责拆分为多个 `.hpp` 接口/值类型和 `.cpp` 实现文件。日常构建按多个翻译单元编译并链接；全局 `main` 仅在 `src/solver.cpp`，搜索阶段的流程编排由 `src/app/solver.cpp` 中的 `Solver::solve` 负责。`solver::run` 负责计时起点、参数解析、输入读取、错误处理和输出。`make submission` 仍可选地导出自包含的单文件裁判提交件，但它不是日常构建入口。
 
 ## 文件职责与依赖

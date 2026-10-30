@@ -1,0 +1,378 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "算法流水线 · 搜索模式与累计预算",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "output": ".archify/architecture-suite-20261031-030904/pipeline/pipeline.html",
+    "repository": {
+      "url": "git@github.com:RainyYC/moew.git",
+      "revision": "e18822f8a3e1f91ea4227d0ffd4138d444c7c829",
+      "link_mode": "local-only"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "求解步骤"
+        },
+        "external": {
+          "label": "答案输出"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "seed",
+      "label": "候选与模式出口"
+    },
+    {
+      "id": "improve",
+      "label": "精评与局部搜索"
+    },
+    {
+      "id": "polish",
+      "label": "列表与独立波前"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "start",
+      "lane": "seed",
+      "col": 0,
+      "type": "backend",
+      "label": "读取与解析",
+      "sublabel": "记录统一计时起点",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 46,
+          "end_line": 82
+        }
+      ]
+    },
+    {
+      "id": "candidate",
+      "lane": "seed",
+      "col": 1,
+      "type": "backend",
+      "label": "枚举 P / V",
+      "sublabel": "专家映射 + 分段 DP",
+      "sources": [
+        {
+          "path": "src/search/candidate_search.cpp",
+          "line": 8,
+          "end_line": 90
+        }
+      ]
+    },
+    {
+      "id": "probe",
+      "lane": "seed",
+      "col": 2,
+      "type": "backend",
+      "label": "所有 P 探测",
+      "sublabel": "每个 P 的 max_v 布局",
+      "sources": [
+        {
+          "path": "src/search/initial_search.cpp",
+          "line": 9,
+          "end_line": 47
+        }
+      ]
+    },
+    {
+      "id": "refine",
+      "lane": "improve",
+      "col": 2,
+      "type": "backend",
+      "label": "前两名精评",
+      "sublabel": "第一名附加深布局",
+      "sources": [
+        {
+          "path": "src/search/initial_search.cpp",
+          "line": 9,
+          "end_line": 47
+        }
+      ]
+    },
+    {
+      "id": "event",
+      "lane": "improve",
+      "col": 3,
+      "type": "backend",
+      "label": "事件系列改进",
+      "sublabel": "窗口、填充、替代映射",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 17,
+          "end_line": 43
+        }
+      ]
+    },
+    {
+      "id": "list",
+      "lane": "polish",
+      "col": 3,
+      "type": "backend",
+      "label": "列表搜索",
+      "sublabel": "累计约 8 秒检查截止",
+      "sources": [
+        {
+          "path": "src/search/list_search.cpp",
+          "line": 13,
+          "end_line": 21
+        },
+        {
+          "path": "src/search/list_search.cpp",
+          "line": 108,
+          "end_line": 145
+        }
+      ]
+    },
+    {
+      "id": "wave",
+      "lane": "polish",
+      "col": 4,
+      "type": "backend",
+      "label": "独立波前搜索",
+      "sublabel": "额外 P 受规模条件限制",
+      "sources": [
+        {
+          "path": "src/search/wave_search.cpp",
+          "line": 14,
+          "end_line": 82
+        }
+      ]
+    },
+    {
+      "id": "prefix",
+      "lane": "improve",
+      "col": 4,
+      "type": "backend",
+      "label": "小例搜索前缀",
+      "sublabel": "有时间时至多 4 轮",
+      "sources": [
+        {
+          "path": "src/search/polish_driver.cpp",
+          "line": 13,
+          "end_line": 52
+        },
+        {
+          "path": "src/search/limits.hpp",
+          "line": 4,
+          "end_line": 23
+        }
+      ]
+    },
+    {
+      "id": "extend",
+      "lane": "improve",
+      "col": 5,
+      "type": "backend",
+      "label": "局部搜索扩展",
+      "sublabel": "9.2 秒目标 / 30 ms 余量",
+      "sources": [
+        {
+          "path": "src/search/polish_driver.cpp",
+          "line": 53,
+          "end_line": 83
+        },
+        {
+          "path": "src/search/limits.hpp",
+          "line": 4,
+          "end_line": 23
+        }
+      ]
+    },
+    {
+      "id": "serial",
+      "lane": "improve",
+      "col": 1,
+      "type": "backend",
+      "label": "串行生成并输出",
+      "sublabel": "serial：完整合法序列",
+      "sources": [
+        {
+          "path": "src/io/output.cpp",
+          "line": 24,
+          "end_line": 46
+        }
+      ]
+    },
+    {
+      "id": "answer",
+      "lane": "seed",
+      "col": 5,
+      "type": "external",
+      "label": "输出答案",
+      "sublabel": "完整布局、映射与调度",
+      "sources": [
+        {
+          "path": "src/io/output.cpp",
+          "line": 8,
+          "end_line": 51
+        },
+        {
+          "path": "src/app/solver.cpp",
+          "line": 46,
+          "end_line": 82
+        }
+      ]
+    },
+    {
+      "id": "event-answer",
+      "lane": "seed",
+      "col": 3,
+      "type": "external",
+      "label": "输出事件方案",
+      "sublabel": "event：完整答案",
+      "sources": [
+        {
+          "path": "src/io/output.cpp",
+          "line": 8,
+          "end_line": 51
+        },
+        {
+          "path": "src/app/solver.cpp",
+          "line": 46,
+          "end_line": 82
+        }
+      ]
+    },
+    {
+      "id": "list-answer",
+      "lane": "polish",
+      "col": 2,
+      "type": "external",
+      "label": "输出列表方案",
+      "sublabel": "list：完整答案",
+      "sources": [
+        {
+          "path": "src/io/output.cpp",
+          "line": 8,
+          "end_line": 51
+        },
+        {
+          "path": "src/app/solver.cpp",
+          "line": 46,
+          "end_line": 82
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "start-to-candidate",
+      "from": "start",
+      "to": "candidate"
+    },
+    {
+      "id": "candidate-to-probe",
+      "from": "candidate",
+      "to": "probe"
+    },
+    {
+      "id": "probe-to-refine",
+      "from": "probe",
+      "to": "refine",
+      "label": "非 serial"
+    },
+    {
+      "id": "refine-to-event",
+      "from": "refine",
+      "to": "event"
+    },
+    {
+      "id": "event-to-list",
+      "from": "event",
+      "to": "list",
+      "label": "full / list"
+    },
+    {
+      "id": "list-to-wave",
+      "from": "list",
+      "to": "wave",
+      "label": "full"
+    },
+    {
+      "id": "wave-to-prefix",
+      "from": "wave",
+      "to": "prefix"
+    },
+    {
+      "id": "prefix-to-extend",
+      "from": "prefix",
+      "to": "extend"
+    },
+    {
+      "id": "extend-to-answer",
+      "from": "extend",
+      "to": "answer"
+    },
+    {
+      "id": "probe-to-serial",
+      "from": "probe",
+      "to": "serial",
+      "role": "branch",
+      "label": "serial"
+    },
+    {
+      "id": "event-to-event-answer",
+      "from": "event",
+      "to": "event-answer",
+      "role": "branch",
+      "label": "event"
+    },
+    {
+      "id": "list-to-list-answer",
+      "from": "list",
+      "to": "list-answer",
+      "role": "branch",
+      "label": "list"
+    }
+  ],
+  "mainPath": [
+    "start",
+    "candidate",
+    "probe",
+    "refine",
+    "event",
+    "list",
+    "wave",
+    "prefix",
+    "extend",
+    "answer"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "先定义图中的概念",
+      "items": [
+        "沿箭头阅读阶段先后；行用于紧凑排布，不是执行线程。",
+        "P 是每组 rank 数；V 是初始连续层分段数。探测通过实际调度 Time 比较候选。",
+        "调度模式是选取可执行操作的优先规则；命令行 --mode 决定参加哪些搜索阶段。"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "模式边界",
+      "items": [
+        "full 走完整路径；list 在列表阶段后输出；event 在事件系列后输出。",
+        "list 的快速路径仍可使用波前排序填隙；图中的独立波前阶段仅 full 启用。",
+        "serial 也先探测布局，最后由输出模块生成完全串行序列。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "预算与条件",
+      "items": [
+        "所有阶段共享 run 的绝对计时起点；图中秒数是累计检查点，不是阶段独享预算。",
+        "搜索前缀要求 J = 10 × L × mb ≤ 8000；扩展 pass 上限只限制扩展调用次数。",
+        "full 的波前阶段累计约 9 秒截止；9.2 秒是协作式搜索截止目标，官方 10 秒限时独立生效。"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,122 @@
+{
+  "source_revision": "e18822f8a3e1f91ea4227d0ffd4138d444c7c829",
+  "scope": "Documentation and diagrams only; solver, official runner/grader, and formal scores unchanged.",
+  "views": [
+    {
+      "view": "architecture",
+      "artifact": ".archify/architecture-suite-20261031-030904/architecture/architecture.html",
+      "sha256": "e55200dd863675ec1f1eb0feae4cb5be56c0e09d13d2000e62faf07cebfdb99c",
+      "finalize": ".archify/architecture-suite-20261031-030904/architecture/review-2/architecture.finalize-summary.json",
+      "visual_capture": ".archify/architecture-suite-20261031-030904/architecture/review-2/visual-check/architecture.visual-check.json",
+      "automated_gates": "pass",
+      "perceptual_review": {
+        "light_1440x900": "inspected",
+        "light_2048x1320": "not-inspected",
+        "notes": "节点、连线与图例可读。"
+      }
+    },
+    {
+      "view": "pipeline",
+      "artifact": ".archify/architecture-suite-20261031-030904/pipeline/pipeline.html",
+      "sha256": "658360a1d452b951a087268a1df1c59de1c4a41f81d41b6a85f588c5bef93418",
+      "finalize": ".archify/architecture-suite-20261031-030904/pipeline/review-3/pipeline.finalize-summary.json",
+      "visual_capture": ".archify/architecture-suite-20261031-030904/pipeline/review-3/visual-check/pipeline.visual-check.json",
+      "automated_gates": "pass",
+      "perceptual_review": {
+        "light_1440x900": "inspected",
+        "light_2048x1320": "not-inspected",
+        "notes": "节点、连线与图例可读。"
+      }
+    },
+    {
+      "view": "logical",
+      "artifact": ".archify/architecture-suite-20261031-030904/logical/logical.html",
+      "sha256": "b802fb167b50598fadeed56d66259a67e6b09f1a861c15e71b6c81d3a1ee29eb",
+      "finalize": ".archify/architecture-suite-20261031-030904/logical/review-2/logical.finalize-summary.json",
+      "visual_capture": ".archify/architecture-suite-20261031-030904/logical/review-2/visual-check/logical.visual-check.json",
+      "automated_gates": "pass",
+      "perceptual_review": {
+        "light_1440x900": "inspected",
+        "light_2048x1320": "not-inspected",
+        "notes": "节点、连线与图例可读。"
+      }
+    },
+    {
+      "view": "development",
+      "artifact": ".archify/architecture-suite-20261031-030904/development/development.html",
+      "sha256": "b71217f9573e08282ceb24bacff3c464d609c53937e93754b130602a18c4d395",
+      "finalize": ".archify/architecture-suite-20261031-030904/development/development.finalize-summary.json",
+      "visual_capture": ".archify/architecture-suite-20261031-030904/development/visual-check/development.visual-check.json",
+      "automated_gates": "pass",
+      "perceptual_review": {
+        "light_1440x900": "inspected",
+        "light_2048x1320": "not-inspected",
+        "notes": "节点、连线与图例可读。"
+      }
+    },
+    {
+      "view": "process",
+      "artifact": ".archify/architecture-suite-20261031-030904/process/process.html",
+      "sha256": "fa51f3fa1fe4f99f0f9d36f92947ab1aa672a247d34682811f3bf63b740ea37a",
+      "finalize": ".archify/architecture-suite-20261031-030904/process/process.finalize-summary.json",
+      "visual_capture": ".archify/architecture-suite-20261031-030904/process/visual-check/process.visual-check.json",
+      "automated_gates": "pass",
+      "perceptual_review": {
+        "light_1440x900": "inspected",
+        "light_2048x1320": "inspected",
+        "notes": "内容与路由可读；进程视图在较小视口可纵向滚动。"
+      }
+    },
+    {
+      "view": "deployment",
+      "artifact": ".archify/architecture-suite-20261031-030904/deployment/deployment.html",
+      "sha256": "5f93d5c342dfa5318f7ef0d9b691d8de31d262d73847b9da4b5127b56890d838",
+      "finalize": ".archify/architecture-suite-20261031-030904/deployment/review-3/deployment.finalize-summary.json",
+      "visual_capture": ".archify/architecture-suite-20261031-030904/deployment/review-3/visual-check/deployment.visual-check.json",
+      "automated_gates": "pass",
+      "perceptual_review": {
+        "light_1440x900": "inspected",
+        "light_2048x1320": "not-inspected",
+        "notes": "节点、连线与图例可读。"
+      }
+    },
+    {
+      "view": "scenarios",
+      "artifact": ".archify/architecture-suite-20261031-030904/scenarios/scenarios.html",
+      "sha256": "fb22176a1ab1bfd09163f10c497f40e85feb30130d3e9a0c9ba4242ed5ed8bb3",
+      "finalize": ".archify/architecture-suite-20261031-030904/scenarios/review-3/scenarios.finalize-summary.json",
+      "visual_capture": ".archify/architecture-suite-20261031-030904/scenarios/review-3/visual-check/scenarios.visual-check.json",
+      "automated_gates": "pass",
+      "perceptual_review": {
+        "light_1440x900": "inspected",
+        "light_2048x1320": "not-inspected",
+        "notes": "节点、连线与图例可读。"
+      }
+    }
+  ],
+  "entry_browser_checks": {
+    "commands": 27,
+    "all_passed": true,
+    "seven_light_entry_points": true,
+    "overview_390px_no_horizontal_overflow": true,
+    "receipt": ".archify/architecture-suite-20261031-030904/entry-browser-check.json"
+  },
+  "interaction_review": {
+    "process_solver_node": "Opened through the native viewer; connected calls and verified source-reference count visible."
+  },
+  "overview_visual_review": "Desktop full-page capture inspected; four operation categories use separate colors and text labels.",
+  "document_links_checked": 118,
+  "chapter_13_unchanged": true,
+  "formal_solver_binary_sha256": "95f571a647143f76a779584c4c953ccad3a45dc0f20f2a997bd6dbb2ca416447",
+  "protected_paths_unchanged": [
+    "src",
+    "submission",
+    "Makefile",
+    "scripts",
+    "data/official/Problem",
+    "results/design_patterns/full50",
+    "results/design_patterns/official-run-all.txt"
+  ],
+  "official_runner_sha256": "4ae700dcd19f0794d5f1067f1e59b3ed3066214e86ea641da0d9b6b09ee71c53",
+  "official_grader_sha256": "c42d5f0675e33cbfc1d40bdcafbb8aa40b6d0a4e26377e69405cdbb2b167cfbc"
+}

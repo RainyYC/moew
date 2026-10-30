@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "c02d6c5f-071a-41d4-8a31-c741f6031388",
+  "status": "current",
+  "command": "deliver",
+  "type": "workflow",
+  "input": "/home/rainy/hackathon/.archify/architecture-suite-20261031-030904/pipeline/candidate.json",
+  "output": "/home/rainy/hackathon/.archify/architecture-suite-20261031-030904/pipeline/pipeline.html",
+  "specification": {
+    "sha256": "b7a873377cd8185ecc5ed900010a7a7d18ee42e75ccd990efbedf921880a6dbd",
+    "bytes": 8479
+  },
+  "artifact": {
+    "sha256": "658360a1d452b951a087268a1df1c59de1c4a41f81d41b6a85f588c5bef93418",
+    "bytes": 848459
+  }
+}

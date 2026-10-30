@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "workflow",
+  "quality": "showcase",
+  "specification": {
+    "path": "/home/rainy/hackathon/.archify/architecture-suite-20261031-030904/scenarios/candidate.json",
+    "sha256": "3e29d1634c8ca74369f05ff6b45e1b961513e324b01e14696dceb35ddd71f878",
+    "bytes": 7512
+  },
+  "artifact": {
+    "path": "/home/rainy/hackathon/.archify/architecture-suite-20261031-030904/scenarios/scenarios.html",
+    "sha256": "fb22176a1ab1bfd09163f10c497f40e85feb30130d3e9a0c9ba4242ed5ed8bb3",
+    "bytes": 847281
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/rainy/hackathon/.archify/architecture-suite-20261031-030904/scenarios/review-3/scenarios.finalize.json",
+    "summaryReceipt": "/home/rainy/hackathon/.archify/architecture-suite-20261031-030904/scenarios/review-3/scenarios.finalize-summary.json",
+    "browserCheckReceipt": "/home/rainy/hackathon/.archify/architecture-suite-20261031-030904/scenarios/review-3/scenarios.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-30T10:32:30.103Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 3872,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  }
+}

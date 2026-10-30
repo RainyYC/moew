@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "784c93c2-deb8-465b-82ac-ed023015a101",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/home/rainy/hackathon/.archify/architecture-suite-20261031-030904/deployment/candidate.json",
+  "output": "/home/rainy/hackathon/.archify/architecture-suite-20261031-030904/deployment/deployment.html",
+  "specification": {
+    "sha256": "443e1f417d7035bba63f93da3ed966d4b5b8b47c12045ae059d015ef9e4d5c8c",
+    "bytes": 5327
+  },
+  "artifact": {
+    "sha256": "5f93d5c342dfa5318f7ef0d9b691d8de31d262d73847b9da4b5127b56890d838",
+    "bytes": 840381
+  }
+}

@@ -1,0 +1,340 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "场景视图 · 正常求解、诊断与提前退出",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "output": ".archify/architecture-suite-20261031-030904/scenarios/scenarios.html",
+    "repository": {
+      "url": "git@github.com:RainyYC/moew.git",
+      "revision": "e18822f8a3e1f91ea4227d0ffd4138d444c7c829",
+      "link_mode": "local-only"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "处理步骤"
+        },
+        "security": {
+          "label": "异常结果"
+        },
+        "external": {
+          "label": "调用者 / 验收输出"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "normal",
+      "label": "正常用例"
+    },
+    {
+      "id": "judge",
+      "label": "官方验收"
+    },
+    {
+      "id": "exit",
+      "label": "提前退出",
+      "variant": "exception"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "invoke",
+      "lane": "normal",
+      "col": 0,
+      "type": "external",
+      "label": "调用求解器",
+      "sublabel": "文件路径 / stdin / -",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 46,
+          "end_line": 82
+        }
+      ]
+    },
+    {
+      "id": "parse",
+      "lane": "normal",
+      "col": 1,
+      "type": "backend",
+      "label": "参数与输入解析",
+      "sublabel": "五个选项 / 输入读取",
+      "sources": [
+        {
+          "path": "src/io/options.cpp",
+          "line": 21,
+          "end_line": 65
+        },
+        {
+          "path": "src/app/solver.cpp",
+          "line": 46,
+          "end_line": 82
+        }
+      ]
+    },
+    {
+      "id": "solve",
+      "lane": "normal",
+      "col": 2,
+      "type": "backend",
+      "label": "构造并改进答案",
+      "sublabel": "按模式和条件执行",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 17,
+          "end_line": 43
+        },
+        {
+          "path": "data/official/Problem/run_all.py",
+          "line": 82,
+          "end_line": 119
+        }
+      ]
+    },
+    {
+      "id": "serialize",
+      "lane": "normal",
+      "col": 3,
+      "type": "backend",
+      "label": "输出完整答案",
+      "sublabel": "布局 + 专家映射 + 操作",
+      "sources": [
+        {
+          "path": "src/io/output.cpp",
+          "line": 8,
+          "end_line": 51
+        }
+      ]
+    },
+    {
+      "id": "grade",
+      "lane": "judge",
+      "col": 3,
+      "type": "backend",
+      "label": "官方合法性检查",
+      "sublabel": "runner 捕获并交给 grader",
+      "sources": [
+        {
+          "path": "data/official/Problem/run_all.py",
+          "line": 82,
+          "end_line": 119
+        },
+        {
+          "path": "data/official/Problem/grader.py",
+          "line": 758,
+          "end_line": 771
+        }
+      ]
+    },
+    {
+      "id": "score",
+      "lane": "judge",
+      "col": 4,
+      "type": "external",
+      "label": "合法：记录 Time",
+      "sublabel": "同时记录 CPU 与 wall",
+      "sources": [
+        {
+          "path": "data/official/Problem/run_all.py",
+          "line": 101,
+          "end_line": 118
+        },
+        {
+          "path": "data/official/Problem/run_all.py",
+          "line": 145,
+          "end_line": 179
+        }
+      ]
+    },
+    {
+      "id": "invalid",
+      "lane": "judge",
+      "col": 2,
+      "type": "security",
+      "label": "答案不合法",
+      "sublabel": "INVALID",
+      "sources": [
+        {
+          "path": "data/official/Problem/run_all.py",
+          "line": 82,
+          "end_line": 119
+        }
+      ]
+    },
+    {
+      "id": "help",
+      "lane": "exit",
+      "col": 0,
+      "type": "backend",
+      "label": "帮助后退出 0",
+      "sublabel": "无需读取题目输入",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 51,
+          "end_line": 60
+        }
+      ]
+    },
+    {
+      "id": "bad-option",
+      "lane": "exit",
+      "col": 1,
+      "type": "security",
+      "label": "错误后退出 2",
+      "sublabel": "非法参数或输入错误",
+      "sources": [
+        {
+          "path": "src/io/options.cpp",
+          "line": 21,
+          "end_line": 65
+        },
+        {
+          "path": "src/app/solver.cpp",
+          "line": 62,
+          "end_line": 80
+        }
+      ]
+    },
+    {
+      "id": "no-config",
+      "lane": "exit",
+      "col": 2,
+      "type": "security",
+      "label": "无可行配置退出 2",
+      "sublabel": "候选集合为空",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 17,
+          "end_line": 43
+        },
+        {
+          "path": "src/app/solver.cpp",
+          "line": 71,
+          "end_line": 76
+        }
+      ]
+    },
+    {
+      "id": "run-failure",
+      "lane": "exit",
+      "col": 3,
+      "type": "security",
+      "label": "进程错误或超时",
+      "sublabel": "ERROR / TO",
+      "sources": [
+        {
+          "path": "data/official/Problem/run_all.py",
+          "line": 82,
+          "end_line": 110
+        }
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "id": "invoke-to-parse",
+      "from": "invoke",
+      "to": "parse"
+    },
+    {
+      "id": "parse-to-solve",
+      "from": "parse",
+      "to": "solve",
+      "label": "有效输入"
+    },
+    {
+      "id": "solve-to-serialize",
+      "from": "solve",
+      "to": "serialize",
+      "label": "有方案"
+    },
+    {
+      "id": "serialize-to-grade",
+      "from": "serialize",
+      "to": "grade",
+      "label": "官方验收时"
+    },
+    {
+      "id": "grade-to-score",
+      "from": "grade",
+      "to": "score",
+      "label": "合法"
+    },
+    {
+      "id": "grade-to-invalid",
+      "from": "grade",
+      "to": "invalid",
+      "role": "error",
+      "label": "不合法"
+    },
+    {
+      "id": "parse-to-help",
+      "from": "parse",
+      "to": "help",
+      "role": "branch",
+      "label": "--help"
+    },
+    {
+      "id": "parse-to-bad-option",
+      "from": "parse",
+      "to": "bad-option",
+      "role": "error",
+      "label": "解析失败"
+    },
+    {
+      "id": "solve-to-no-config",
+      "from": "solve",
+      "to": "no-config",
+      "role": "error",
+      "label": "无可行配置"
+    },
+    {
+      "id": "solve-to-run-failure",
+      "from": "solve",
+      "to": "run-failure",
+      "label": "runner 判定",
+      "role": "error"
+    }
+  ],
+  "mainPath": [
+    "invoke",
+    "parse",
+    "solve",
+    "serialize",
+    "grade",
+    "score"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "S1：最终验收",
+      "items": [
+        "官方 runner 逐例将路径追加到 solver 命令；默认 full 生成完整答案。",
+        "grader 判断依赖、资源和内存是否合法并计算 Time。"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "S2：可控诊断",
+      "items": [
+        "--mode 选择阶段；--force-p 限定 P；--retime-mode 选择 auto / wide。",
+        "--polish-pass-limit 限制 full 的局部扩展次数，0 仍受时间预算约束。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "S3：提前退出与失败",
+      "items": [
+        "--help / -h 无需等待 stdin；未知选项、错误输入与无可行配置以错误码 2 退出。",
+        "TO 来自 runner 外部超时；ERROR 来自进程错误；INVALID 来自答案判定。"
+      ]
+    }
+  ]
+}

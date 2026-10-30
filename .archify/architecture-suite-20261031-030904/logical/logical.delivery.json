@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "55f2259d-79bb-4440-b4d7-466e6bb64164",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/home/rainy/hackathon/.archify/architecture-suite-20261031-030904/logical/candidate.json",
+  "output": "/home/rainy/hackathon/.archify/architecture-suite-20261031-030904/logical/logical.html",
+  "specification": {
+    "sha256": "d0dccf1429c1f31a4f1d5bfbbbf3705ed3c3093c17699257cf4fcd92377d2852",
+    "bytes": 6181
+  },
+  "artifact": {
+    "sha256": "b802fb167b50598fadeed56d66259a67e6b09f1a861c15e71b6c81d3a1ee29eb",
+    "bytes": 842361
+  }
+}

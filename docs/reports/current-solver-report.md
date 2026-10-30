@@ -247,7 +247,7 @@ $$
 
 阶段之间传递完整解：并行规模、块切点、层到组映射、专家映射、开始时刻以及 Time。作为后续搜索起点保留的方案称为**种子**，一个种子可以暂时差于全局当前最佳解；分支搜索完成后，仍按完整方案的 Time 决定是否更新全局答案。常规候选只在 Time 严格下降时替换当前解；局部资源重排还允许 Time 相等、全部操作结束时刻之和下降的移动。
 
-交互图：[整体架构](../../.archify/architecture-moe-budget-20261030-211601/moe-budget-architecture.html)、[算法工作流](../../.archify/workflow-moe-budget-20261030-211601/moe-budget-workflow.html)、[模块调用时序（浅色）](../../.archify/sequence-solver-runtime-20261030-222608/index.html)和[operation 时间线与依赖 DAG 全 trace](../visualizations/case-flow-r64-v4-c4b/index.html)。前两图展示算法阶段和搜索运行关系，不代表源文件布局；模块调用时序展示调用顺序、返回与预算边界，operation trace 按任务/DAG 层级展示依赖与资源顺序，二者粒度不同。
+交互图：[整体架构](../../.archify/architecture-suite-20261031-030904/architecture/index.html)、[算法流水线](../../.archify/architecture-suite-20261031-030904/pipeline/index.html)、[进程与调用时序](../../.archify/architecture-suite-20261031-030904/process/index.html)和[operation 时间线与依赖 DAG 全 trace](../visualizations/case-flow-r64-v4-c4b/index.html)。整体架构对应当前门面、搜索和策略接口；流水线显示模式分支与累计预算。完整[浅色图集](../../.archify/architecture-suite-20261031-030904/index.html)还包含第 11.6 节定义的 4+1 视图。进程图描述程序调用及判题边界，operation trace 描述题目模型中的任务依赖与资源顺序，两者粒度不同。
 
 全 trace 实例 `r64_v4_c4b` 含 4,480 个操作、6,016 条模型 DAG 依赖边和 14 条 group/engine 泳道。颜色为前向计算 C 蓝、前向通信 N 青、反向计算 C 橙、反向通信 N 紫；七个 group 的平均利用率为 C 82.85%、N 82.30%。
 
@@ -816,6 +816,22 @@ make official
 
 三个位置参数依次为：结果目录名、搜索模式（`full|list|event|serial`）和用例正则过滤器。结果写入 `results/<目录名>/`；每例保留答案、诊断、checker 诊断和汇总行。该辅助脚本用位置参数向求解器传递用例路径，先用 10 秒限时运行求解器，再调用官方 grader；它不替代官方全量 runner。
 
+### 11.6 4+1 架构视图
+
+**4+1** 用四个结构视角和一个场景视角解释同一系统：逻辑视图关注领域概念与功能，开发视图关注模块与构建，进程视图关注运行时协作，物理视图关注部署位置；“+1”通过具体用例把前四者连接起来。
+
+| 视图 | 当前程序中需要说明的关系 |
+|---|---|
+| [逻辑视图](../../.archify/architecture-suite-20261031-030904/logical/index.html) | 输入与候选确定布局、映射及操作时长；DAG、引擎和内存约束共同决定可行调度，Time 衡量调度质量。 |
+| [开发视图](../../.archify/architecture-suite-20261031-030904/development/index.html) | 入口、I/O、模型、专家映射、调度内核和搜索模块按职责组织；共同源清单支持多文件编译与可选单文件导出。 |
+| [进程视图](../../.archify/architecture-suite-20261031-030904/process/index.html) | `run → Solver → 搜索/内核` 在同一求解进程内同步执行；官方 runner 等求解结束后再启动 grader。 |
+| [物理视图](../../.archify/architecture-suite-20261031-030904/deployment/index.html) | C++ 可执行文件与 Python 验收程序在本机运行；题目和临时答案通过本机文件系统交接。 |
+| [场景视图（+1）](../../.archify/architecture-suite-20261031-030904/scenarios/index.html) | 默认求解、限定候选、帮助、输入错误、无解、进程超时和答案不合法分别经过对应模块与边界。 |
+
+这里的**进程**是实际运行的程序实例，与题目中的计算/通信引擎不同。求解器在 CPU 上串行搜索，输出可以安排多组引擎并行的调度表，但不实际运行 GPU 训练。进程图的纵向位置只表示先后顺序，不表示测量时长；Time、求解 CPU 和墙钟的区别仍按第 1.3 节解释。
+
+四种命令行搜索模式决定哪些阶段参加；事件内核的数字调度模式决定操作优先级；软件设计中的静态策略则决定调用哪种调度实现。这三个层次分别对应第 4.1、2.3 和 11.1 节。完整场景对应表、模块依据与部署解释见[4+1 视图说明](../architecture-4-plus-1.md)。
+
 ## 12. 正式验收与结果
 
 最终全 50 例由未修改的官方 `data/official/Problem/run_all.py` 执行，每例限时 10 秒；50/50 通过官方 grader，0 失败、0 超时。完整逐例结果见[full50汇总](../../results/design_patterns/full50/summary.tsv)，官方原始运行输出见[official-run-all.txt](../../results/design_patterns/official-run-all.txt)。完整构建参数与源文件身份见[command.json](../../results/design_patterns/command.json)和[SOURCE_SHA256SUMS](../../results/design_patterns/SOURCE_SHA256SUMS)。
@@ -913,7 +929,8 @@ make official
 | [构建源清单](../../src/sources.mk) | 多翻译单元构建与 amalgamate 共用的实现文件清单 |
 | [官方验收器](../../data/official/Problem/grader.py) | 独立合法性检查和 Time 计算 |
 | [官方 Python 样例成绩](../../data/official/Problem/report_python.txt) | 第 13 节参考 Time 来源 |
-| [模块调用时序图](../../.archify/sequence-solver-runtime-20261030-222608/index.html) | 函数调用顺序、返回与预算边界 |
+| [算法与 4+1 交互图集](../../.archify/architecture-suite-20261031-030904/index.html) | 当前架构、流水线、逻辑、开发、进程、物理部署与场景 |
+| [进程与调用时序图](../../.archify/architecture-suite-20261031-030904/process/index.html) | 同步调用、返回、累计预算与官方验收进程边界 |
 | [operation 全 trace 图](../visualizations/case-flow-r64-v4-c4b/index.html) | operation 时间线、依赖 DAG 与引擎利用率 |
 | [题目定义](../problem/problem-v5.md) | 输入输出、operation、依赖和内存模型 |
 
