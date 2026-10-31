@@ -1,0 +1,4 @@
+$ make submission
+python3 scripts/amalgamate.py
+
+exit=0

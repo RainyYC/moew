@@ -1,0 +1,15 @@
+{
+  "cases": 50,
+  "valid": 50,
+  "improved": 11,
+  "tied": 39,
+  "regressed": 0,
+  "baseline_mean": 20327058.04,
+  "best_mean": 20224564.9,
+  "total_drop": 5124657,
+  "mean_case_drop_pct": 0.579368737270092,
+  "fixed_headroom_le_half_pct": 20,
+  "global_headroom_le_half_pct": 16,
+  "only_one_viable_P": 37,
+  "mean_drop_pct": 0.5042202358959792
+}

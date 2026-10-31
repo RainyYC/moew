@@ -45,6 +45,10 @@ results/**/*.stderr
 results/**/*.stdout
 results/**/*.stdin
 
+# Integration acceptance keeps summaries and source identities, not local snapshots.
+/results/optimization_integration/checkpoint/
+/results/optimization_integration/full50/raw/
+
 # Archived experiment artifacts are reproducible from its source and runner
 /backup/wide_search_experiment/solver
 /backup/wide_search_experiment/results/**/*.out

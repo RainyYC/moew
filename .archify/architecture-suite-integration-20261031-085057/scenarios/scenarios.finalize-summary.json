@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "ok": true,
+  "command": "finalize",
+  "status": "pass",
+  "type": "workflow",
+  "quality": "showcase",
+  "specification": {
+    "path": "/home/rainy/hackathon/.archify/architecture-suite-integration-20261031-085057/scenarios/candidate.json",
+    "sha256": "5c3a448f0b9eb4fcfeded6426364252b7e6abce1e5b5346836f06431dc475af1",
+    "bytes": 7967
+  },
+  "artifact": {
+    "path": "/home/rainy/hackathon/.archify/architecture-suite-integration-20261031-085057/scenarios/scenarios.html",
+    "sha256": "e09cd9e6e7a65c904c532b55ff4d8ba6c16ba9587476d69e684ebf0389fe3ba8",
+    "bytes": 847842
+  },
+  "gates": {
+    "validate": "pass",
+    "deliver": "pass",
+    "check": "pass",
+    "browser-check": "pass"
+  },
+  "diagnostics": [],
+  "diagnosticSummary": {
+    "total": 0,
+    "shown": 0,
+    "truncated": false
+  },
+  "evidence": {
+    "receipt": "/home/rainy/hackathon/.archify/architecture-suite-integration-20261031-085057/scenarios/review-2/scenarios.finalize.json",
+    "summaryReceipt": "/home/rainy/hackathon/.archify/architecture-suite-integration-20261031-085057/scenarios/review-2/scenarios.finalize-summary.json",
+    "browserCheckReceipt": "/home/rainy/hackathon/.archify/architecture-suite-integration-20261031-085057/scenarios/review-2/scenarios.browser-check.json"
+  },
+  "update": {
+    "status": "current",
+    "installedVersion": "3.2.0",
+    "availableVersion": "3.2.0",
+    "releaseNotes": null,
+    "checkedAt": "2026-10-30T10:32:30.103Z",
+    "source": "cache",
+    "noticeRequired": false,
+    "noticeText": null
+  },
+  "visualReview": "not-requested",
+  "durationMs": 3525,
+  "browserCheck": {
+    "requested": true,
+    "ran": true
+  }
+}

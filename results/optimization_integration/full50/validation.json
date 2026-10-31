@@ -1,0 +1,77 @@
+{
+  "success": true,
+  "expected_cases": 50,
+  "official_run_all_summary_OK": 50,
+  "all_cases_OK": true,
+  "official_report_all_OK": true,
+  "official_report_summary_OK": 50,
+  "all_sources_case_sets_match": true,
+  "case_set_mismatches": {},
+  "aggregate": {
+    "case_count": 50,
+    "status_counts": {
+      "ERROR": 0,
+      "INVALID": 0,
+      "MISSING": 0,
+      "OK": 50,
+      "TO": 0
+    },
+    "Time_sum": 1012395513,
+    "Time_mean": 20247910.26,
+    "Time_min": 1724136,
+    "Time_max": 106105860,
+    "Time_median": 14008897.0,
+    "mean_cpu_seconds": 9.22782,
+    "mean_wall_seconds": 9.23112,
+    "max_wall_seconds": 9.262,
+    "max_wall_cases": [
+      "r64_v8_c16c",
+      "r64_v8_c8g"
+    ],
+    "official_Time_sum": 1588268152,
+    "official_Time_mean": 31765363.04,
+    "total_official_drop": 575872639,
+    "mean_official_drop": 11517452.78,
+    "mean_per_case_official_drop_pct": 31.479148753976137,
+    "official_mean_drop_pct": 36.25789752661363,
+    "vs_offline_20327": {
+      "comparison_mean_Time": 20327058.04,
+      "total_drop": 3957389,
+      "improved": 12,
+      "tied": 25,
+      "regressed": 13,
+      "mean_case_drop": 79147.78,
+      "max_case_drop": 1099700,
+      "min_case_drop": -766410
+    },
+    "vs_offline_20224": {
+      "comparison_mean_Time": 20224564.9,
+      "total_drop": -1167268,
+      "improved": 10,
+      "tied": 25,
+      "regressed": 15,
+      "mean_case_drop": -23345.36,
+      "max_case_drop": 580640,
+      "min_case_drop": -1424925
+    },
+    "vs_online_baseline": {
+      "comparison_mean_Time": 20369802.98,
+      "total_drop": 6094636,
+      "improved": 13,
+      "tied": 32,
+      "regressed": 5,
+      "mean_case_drop": 121892.72,
+      "max_case_drop": 1364055,
+      "min_case_drop": -505870
+    }
+  },
+  "sources": {
+    "official_run_all": "results/optimization_integration/full50/official-run-all.txt",
+    "online_baseline": "results/design_patterns/full50/summary.tsv",
+    "checker_summary": "results/design_patterns/full50/summary.tsv",
+    "offline_20327": "results/optimization_integration/offline_20327.tsv",
+    "offline_20224": "results/optimization_integration/offline_20224.tsv",
+    "official_report": "data/official/Problem/report_python.txt"
+  },
+  "note": "Read-only summary; does not invoke solver, grader, or official runner."
+}

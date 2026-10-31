@@ -1,0 +1,13 @@
+{
+  "tag": "20327",
+  "tagged_commit": "c4d0fc33c5575a47bf7d03a581dc17dd92e6a0fe",
+  "baseline_online_reference": "results/design_patterns/full50/summary.tsv",
+  "baseline_online_recorded_mean": 20369802.98,
+  "offline_20327_mean": 20327058.04,
+  "offline_20224_mean": 20224564.9,
+  "note": "The tag marks the prior production source. Its name refers to an independently assembled offline answer set, not a guaranteed online solver score. Offline files are comparison evidence only; the production solver never reads saved answers.",
+  "protected_sha256": {
+    "data/official/Problem/run_all.py": "4ae700dcd19f0794d5f1067f1e59b3ed3066214e86ea641da0d9b6b09ee71c53",
+    "data/official/Problem/grader.py": "c42d5f0675e33cbfc1d40bdcafbb8aa40b6d0a4e26377e69405cdbb2b167cfbc"
+  }
+}

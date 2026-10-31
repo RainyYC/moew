@@ -1,0 +1,9 @@
+$ make options-check
+g++ -Isrc -std=c++17 -O2 -pipe -Wall -Wextra -flto -MMD -MP -c src/search/layout_bound_search.cpp -o build/obj/search/layout_bound_search.o
+g++ -std=c++17 -O2 -pipe -Wall -Wextra -flto -flto build/obj/solver.o build/obj/app/solver.o build/obj/io/numeric.o build/obj/io/input.o build/obj/io/options.o build/obj/io/output.o build/obj/placement/expert_mapping.o build/obj/placement/grouped_placement.o build/obj/scheduling/event_scheduler.o build/obj/scheduling/list_scheduler.o build/obj/search/schedule_validation.o build/obj/search/candidate_search.o build/obj/search/layout_search.o build/obj/search/layout_bound_search.o build/obj/search/priority_search.o build/obj/search/window_search.o build/obj/search/initial_search.o build/obj/search/window_borrow.o build/obj/search/boost_search.o build/obj/search/placement_search.o build/obj/search/list_search.o build/obj/search/wave_search.o build/obj/search/local_engine_polish.o build/obj/search/polish_driver.o -o build/solver
+lto-wrapper: warning: using serial compilation of 7 LTRANS jobs
+lto-wrapper: note: see the ‘-flto’ option documentation for more information
+python3 scripts/test_options.py ./build/solver
+command-line parser checks passed
+
+exit=0

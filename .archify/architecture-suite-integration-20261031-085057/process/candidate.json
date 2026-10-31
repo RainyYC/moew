@@ -1,0 +1,256 @@
+{
+  "schema_version": 1,
+  "diagram_type": "sequence",
+  "meta": {
+    "title": "进程视图 · 单例求解与官方验收",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "output": ".archify/architecture-suite-integration-20261031-085057/process/process.html",
+    "repository": {
+      "url": "git@github.com:RainyYC/moew.git",
+      "revision": "7ce6bc426515cf275adbf2ca9962e79939752196",
+      "link_mode": "local-only"
+    }
+  },
+  "participants": [
+    {
+      "id": "runner",
+      "label": "官方 runner",
+      "sublabel": "父进程",
+      "type": "external",
+      "sources": [
+        {
+          "path": "data/official/Problem/run_all.py",
+          "line": 82,
+          "end_line": 119
+        },
+        {
+          "path": "data/official/Problem/run_all.py",
+          "line": 57,
+          "end_line": 79
+        },
+        {
+          "path": "data/official/Problem/run_all.py",
+          "line": 149,
+          "end_line": 159
+        }
+      ]
+    },
+    {
+      "id": "entry",
+      "label": "run",
+      "sublabel": "求解器入口",
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 106,
+          "end_line": 142
+        }
+      ]
+    },
+    {
+      "id": "solver",
+      "label": "Solver",
+      "sublabel": "同一求解进程",
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 20,
+          "end_line": 103
+        }
+      ]
+    },
+    {
+      "id": "search",
+      "label": "搜索与内核",
+      "sublabel": "同一线程",
+      "type": "backend",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 28,
+          "end_line": 101
+        },
+        {
+          "path": "src/search/polish_driver.cpp",
+          "line": 13,
+          "end_line": 83
+        },
+        {
+          "path": "src/search/list_search.cpp",
+          "line": 108,
+          "end_line": 145
+        }
+      ]
+    },
+    {
+      "id": "grader",
+      "label": "官方 grader",
+      "sublabel": "独立子进程",
+      "type": "security",
+      "sources": [
+        {
+          "path": "data/official/Problem/grader.py",
+          "line": 758,
+          "end_line": 771
+        },
+        {
+          "path": "data/official/Problem/grader.py",
+          "line": 729,
+          "end_line": 732
+        }
+      ]
+    }
+  ],
+  "messages": [
+    {
+      "id": "launch",
+      "from": "runner",
+      "to": "entry",
+      "y": 165,
+      "label": "启动并传入用例路径",
+      "note": "runner 逐例执行；每例外部限时 10 秒。"
+    },
+    {
+      "id": "solve",
+      "from": "entry",
+      "to": "solver",
+      "y": 230,
+      "label": "solve(input, options)",
+      "note": "run 已记录起点、解析选项并读取输入。"
+    },
+    {
+      "id": "initial",
+      "from": "solver",
+      "to": "search",
+      "y": 295,
+      "label": "生成并精评初始候选"
+    },
+    {
+      "id": "initial-return",
+      "from": "search",
+      "to": "solver",
+      "y": 335,
+      "label": "返回初始方案与锚点",
+      "variant": "return"
+    },
+    {
+      "id": "phases",
+      "from": "solver",
+      "to": "search",
+      "y": 380,
+      "label": "按模式执行改进阶段",
+      "note": "事件 → 列表 → 独立波前；按条件跳过阶段。"
+    },
+    {
+      "id": "best-return",
+      "from": "search",
+      "to": "solver",
+      "y": 450,
+      "label": "返回当前最优解",
+      "variant": "return"
+    },
+    {
+      "id": "local",
+      "from": "solver",
+      "to": "search",
+      "y": 495,
+      "label": "full：局部前缀与扩展",
+      "note": "共享入口起点；内部检查 9.2 秒目标与 pass 上限。"
+    },
+    {
+      "id": "polished",
+      "from": "search",
+      "to": "solver",
+      "y": 565,
+      "label": "返回完整结果",
+      "variant": "return"
+    },
+    {
+      "id": "result",
+      "from": "solver",
+      "to": "entry",
+      "y": 605,
+      "label": "移动 ScheduleResult",
+      "variant": "return"
+    },
+    {
+      "id": "stdout",
+      "from": "entry",
+      "to": "runner",
+      "y": 650,
+      "label": "stdout 答案 / 进程结束",
+      "variant": "return",
+      "note": "run 负责序列化；stderr 单独携带搜索诊断。"
+    },
+    {
+      "id": "grade",
+      "from": "runner",
+      "to": "grader",
+      "y": 720,
+      "label": "输入路径 + 临时答案路径",
+      "note": "仅求解成功后判题；grader 耗时不计入求解 wall。"
+    },
+    {
+      "id": "score",
+      "from": "grader",
+      "to": "runner",
+      "y": 790,
+      "label": "Time 或 INVALID",
+      "variant": "return"
+    }
+  ],
+  "activations": [
+    {
+      "participant": "entry",
+      "from": 165,
+      "to": 650
+    },
+    {
+      "participant": "solver",
+      "from": 230,
+      "to": 605
+    },
+    {
+      "participant": "search",
+      "from": 295,
+      "to": 335
+    },
+    {
+      "participant": "search",
+      "from": 380,
+      "to": 450
+    },
+    {
+      "participant": "search",
+      "from": 495,
+      "to": 565
+    },
+    {
+      "participant": "grader",
+      "from": 720,
+      "to": 790,
+      "type": "security"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "并发边界",
+      "items": [
+        "run、Solver 与搜索内核是同一 C++ 进程内的同步调用。",
+        "runner 先等求解进程结束，再启动 grader；50 用例逐个执行。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "图轴的含义",
+      "items": [
+        "纵向只表达先后顺序和调用占用，不按真实毫秒绘制。",
+        "题目中的计算/通信并行发生在输出的调度模型里，不表示本图有 GPU 执行进程。"
+      ]
+    }
+  ]
+}

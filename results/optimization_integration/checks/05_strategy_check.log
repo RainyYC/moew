@@ -1,0 +1,5 @@
+$ make strategy-check
+g++ -std=c++17 -O2 -Wall -Wextra -Isrc scripts/test_strategy_api.cpp -o build/test_strategy_api
+./build/test_strategy_api
+
+exit=0

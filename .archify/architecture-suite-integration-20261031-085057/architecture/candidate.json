@@ -1,0 +1,419 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "当前求解器：资源下界布局与优先级搜索架构",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "output": ".archify/architecture-suite-integration-20261031-085057/architecture/architecture.html",
+    "repository": {
+      "url": "git@github.com:RainyYC/moew.git",
+      "revision": "7ce6bc426515cf275adbf2ca9962e79939752196",
+      "link_mode": "local-only"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "功能模块"
+        },
+        "external": {
+          "label": "输入 / 输出"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "input",
+      "type": "external",
+      "label": "输入入口",
+      "sublabel": "文件路径 / stdin",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 124,
+          "end_line": 133
+        }
+      ]
+    },
+    {
+      "id": "entry",
+      "type": "backend",
+      "label": "命令行入口",
+      "sublabel": "run：解析、计时、输出",
+      "pos": [
+        340,
+        40
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 106,
+          "end_line": 142
+        }
+      ]
+    },
+    {
+      "id": "output",
+      "type": "external",
+      "label": "答案输出",
+      "sublabel": "PSI / MAP / SCHEDULE",
+      "pos": [
+        640,
+        40
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/io/output.cpp",
+          "line": 8,
+          "end_line": 51
+        }
+      ]
+    },
+    {
+      "id": "facade",
+      "type": "backend",
+      "label": "求解门面",
+      "sublabel": "Solver::solve",
+      "pos": [
+        340,
+        220
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 20,
+          "end_line": 103
+        }
+      ]
+    },
+    {
+      "id": "search",
+      "type": "backend",
+      "label": "搜索阶段",
+      "sublabel": "候选竞争与当前最优解",
+      "pos": [
+        640,
+        220
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 39,
+          "end_line": 101
+        },
+        {
+          "path": "src/search/initial_search.cpp",
+          "line": 9,
+          "end_line": 47
+        }
+      ]
+    },
+    {
+      "id": "context",
+      "type": "backend",
+      "label": "静态调度策略",
+      "sublabel": "Scheduler<Strategy>",
+      "pos": [
+        340,
+        420
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/scheduling/schedule_api.hpp",
+          "line": 27,
+          "end_line": 74
+        },
+        {
+          "path": "src/scheduling/list_scheduler.cpp",
+          "line": 145,
+          "end_line": 229
+        }
+      ]
+    },
+    {
+      "id": "event",
+      "type": "backend",
+      "label": "事件调度内核",
+      "sublabel": "EventConfig → ready 队列",
+      "pos": [
+        40,
+        420
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/scheduling/event_scheduler.cpp",
+          "line": 630,
+          "end_line": 641
+        }
+      ]
+    },
+    {
+      "id": "list",
+      "type": "backend",
+      "label": "列表调度内核",
+      "sublabel": "ListConfig → 顺序与填隙",
+      "pos": [
+        340,
+        620
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/scheduling/list_scheduler.cpp",
+          "line": 380,
+          "end_line": 409
+        }
+      ]
+    },
+    {
+      "id": "local",
+      "type": "backend",
+      "label": "局部搜索内核",
+      "sublabel": "重排、重计时、合法性检查",
+      "pos": [
+        640,
+        420
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/search/polish_driver.cpp",
+          "line": 13,
+          "end_line": 83
+        },
+        {
+          "path": "src/search/local_engine_polish.cpp",
+          "line": 233,
+          "end_line": 295
+        }
+      ]
+    },
+    {
+      "id": "layout",
+      "type": "backend",
+      "label": "资源下界布局搜索",
+      "sublabel": "小 full：DP / 镜像 / 插值多种布局",
+      "pos": [
+        940,
+        220
+      ],
+      "size": [
+        220,
+        72
+      ],
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 57,
+          "end_line": 73
+        },
+        {
+          "path": "src/search/layout_bound_search.cpp",
+          "line": 353,
+          "end_line": 538
+        },
+        {
+          "path": "src/search/layout_bound_search.cpp",
+          "line": 634,
+          "end_line": 743
+        }
+      ]
+    },
+    {
+      "id": "priority",
+      "type": "backend",
+      "label": "优先级搜索",
+      "sublabel": "DAG-ready rank + random key / 单调 MB offsets",
+      "pos": [
+        940,
+        420
+      ],
+      "size": [
+        220,
+        72
+      ],
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 75,
+          "end_line": 98
+        },
+        {
+          "path": "src/search/priority_search.cpp",
+          "line": 66,
+          "end_line": 166
+        },
+        {
+          "path": "src/search/priority_search.cpp",
+          "line": 204,
+          "end_line": 443
+        }
+      ]
+    },
+    {
+      "id": "validator",
+      "type": "backend",
+      "label": "共同可行性校验",
+      "sublabel": "完整 DAG、引擎互斥、闭区间内存",
+      "pos": [
+        940,
+        620
+      ],
+      "size": [
+        220,
+        72
+      ],
+      "sources": [
+        {
+          "path": "src/search/schedule_validation.cpp",
+          "line": 41,
+          "end_line": 217
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "input-to-entry",
+      "from": "input",
+      "to": "entry",
+      "label": "读入"
+    },
+    {
+      "id": "entry-to-output",
+      "from": "entry",
+      "to": "output",
+      "label": "写出"
+    },
+    {
+      "id": "entry-to-facade",
+      "from": "entry",
+      "to": "facade",
+      "label": "调用"
+    },
+    {
+      "id": "facade-to-search",
+      "from": "facade",
+      "to": "search",
+      "label": "编排"
+    },
+    {
+      "id": "search-to-context",
+      "from": "search",
+      "to": "context",
+      "label": "评估候选"
+    },
+    {
+      "id": "context-to-event",
+      "from": "context",
+      "to": "event",
+      "label": "事件策略"
+    },
+    {
+      "id": "context-to-list",
+      "from": "context",
+      "to": "list",
+      "label": "列表策略"
+    },
+    {
+      "id": "search-to-local",
+      "from": "search",
+      "to": "local",
+      "label": "仅 full"
+    },
+    {
+      "from": "search",
+      "to": "layout",
+      "label": "规模门控 / 下界候选"
+    },
+    {
+      "from": "layout",
+      "to": "priority",
+      "label": "固定布局候选"
+    },
+    {
+      "from": "priority",
+      "to": "validator",
+      "label": "校验每个新排程"
+    },
+    {
+      "from": "validator",
+      "to": "local",
+      "label": "可行 best 进入最终 polish"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "三个职责边界",
+      "items": [
+        "run 在解析参数前记录计时起点，并负责输入、错误与输出。",
+        "Solver::solve 编排搜索并返回完整结果；搜索模块持有候选和当前最优解。"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "参数对象、策略、适配器",
+      "items": [
+        "ProblemView 与 ScheduleOutput 借用已有数据；EventConfig / ListConfig 表达具名配置。",
+        "策略在编译期选择；具体策略适配完整调度调用，不为每个 operation 增加虚调用。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "同一算法模型",
+      "items": [
+        "事件、列表与局部搜索共用十操作 DAG 和操作值类型。",
+        "局部搜索直接重排资源序列，不经过 Scheduler<Strategy>。"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "小规模 full 的两段增强",
+      "items": [
+        "仅 full、非 serial、mb≤16、节点数≤8000 且 L>G 时进入额外阶段。",
+        "资源下界布局搜索最多占用 2.0 秒，累计截止 6.1 秒；优先级搜索最多 1.6 秒，累计截止 7.8 秒。",
+        "通过共同 validator 的严格改进才更新 best；最终 polish 仍受入口后 9.2 秒目标约束。"
+      ]
+    }
+  ]
+}

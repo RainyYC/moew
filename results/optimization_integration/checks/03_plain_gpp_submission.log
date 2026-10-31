@@ -1,0 +1,3 @@
+$ g++ -std=c++17 -O2 submission/solver.cpp -o build/solver-submission
+
+exit=0

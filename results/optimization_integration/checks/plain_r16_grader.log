@@ -1,0 +1,5 @@
+command: build/solver-submission data/official/Problem/cases/r16_p4_trap.txt
+wall_seconds: 9.200059
+solver_exit: 0
+grader_exit: 0
+grader: 16210140

@@ -1,0 +1,496 @@
+{
+  "schema_version": 2,
+  "diagram_type": "workflow",
+  "meta": {
+    "title": "当前求解器的搜索流水线与累计预算",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "output": ".archify/architecture-suite-integration-20261031-085057/pipeline/pipeline.html",
+    "repository": {
+      "url": "git@github.com:RainyYC/moew.git",
+      "revision": "7ce6bc426515cf275adbf2ca9962e79939752196",
+      "link_mode": "local-only"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "求解步骤"
+        },
+        "external": {
+          "label": "答案输出"
+        }
+      }
+    }
+  },
+  "lanes": [
+    {
+      "id": "seed",
+      "label": "候选与模式出口"
+    },
+    {
+      "id": "improve",
+      "label": "精评与局部搜索"
+    },
+    {
+      "id": "polish",
+      "label": "列表与独立波前"
+    },
+    {
+      "id": "extra",
+      "label": "仅小规模 full：布局与优先级搜索"
+    }
+  ],
+  "nodes": [
+    {
+      "id": "start",
+      "lane": "seed",
+      "col": 0,
+      "type": "backend",
+      "label": "读取与解析",
+      "sublabel": "统一计时起点",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 106,
+          "end_line": 133
+        }
+      ],
+      "width": 108
+    },
+    {
+      "id": "candidate",
+      "lane": "seed",
+      "col": 1,
+      "type": "backend",
+      "label": "枚举 P / V",
+      "sublabel": "映射与分段 DP",
+      "sources": [
+        {
+          "path": "src/search/candidate_search.cpp",
+          "line": 8,
+          "end_line": 90
+        }
+      ],
+      "width": 108
+    },
+    {
+      "id": "probe",
+      "lane": "seed",
+      "col": 2,
+      "type": "backend",
+      "label": "所有 P 探测",
+      "sublabel": "比较 max_v 布局",
+      "sources": [
+        {
+          "path": "src/search/initial_search.cpp",
+          "line": 9,
+          "end_line": 47
+        }
+      ],
+      "width": 108
+    },
+    {
+      "id": "refine",
+      "lane": "improve",
+      "col": 2,
+      "type": "backend",
+      "label": "P 前两名精评",
+      "sublabel": "探测候选的前两 P",
+      "sources": [
+        {
+          "path": "src/search/initial_search.cpp",
+          "line": 9,
+          "end_line": 47
+        }
+      ],
+      "width": 108
+    },
+    {
+      "id": "event",
+      "lane": "improve",
+      "col": 3,
+      "type": "backend",
+      "label": "事件系列改进",
+      "sublabel": "窗口与映射改进",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 28,
+          "end_line": 38
+        }
+      ],
+      "width": 108
+    },
+    {
+      "id": "list",
+      "lane": "polish",
+      "col": 3,
+      "type": "backend",
+      "label": "列表搜索",
+      "sublabel": "小full 3.4s / 其他8s",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 39,
+          "end_line": 50
+        },
+        {
+          "path": "src/search/limits.hpp",
+          "line": 22,
+          "end_line": 30
+        }
+      ],
+      "width": 108
+    },
+    {
+      "id": "wave",
+      "lane": "polish",
+      "col": 4,
+      "type": "backend",
+      "label": "独立波前搜索",
+      "sublabel": "小full 4.2s / 其他9s",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 51,
+          "end_line": 56
+        },
+        {
+          "path": "src/search/limits.hpp",
+          "line": 22,
+          "end_line": 30
+        }
+      ],
+      "width": 108
+    },
+    {
+      "id": "prefix",
+      "lane": "improve",
+      "col": 4,
+      "type": "backend",
+      "label": "局部前缀 polish",
+      "sublabel": "J≤8000（适用时）",
+      "sources": [
+        {
+          "path": "src/search/polish_driver.cpp",
+          "line": 13,
+          "end_line": 52
+        },
+        {
+          "path": "src/search/limits.hpp",
+          "line": 4,
+          "end_line": 30
+        }
+      ],
+      "width": 108
+    },
+    {
+      "id": "extend",
+      "lane": "improve",
+      "col": 5,
+      "type": "backend",
+      "label": "局部搜索扩展",
+      "sublabel": "full：累计目标 9.2 s",
+      "sources": [
+        {
+          "path": "src/search/polish_driver.cpp",
+          "line": 53,
+          "end_line": 83
+        },
+        {
+          "path": "src/search/limits.hpp",
+          "line": 4,
+          "end_line": 30
+        }
+      ],
+      "width": 108
+    },
+    {
+      "id": "serial",
+      "lane": "improve",
+      "col": 1,
+      "type": "backend",
+      "label": "串行生成并输出",
+      "sublabel": "完整串行序列",
+      "sources": [
+        {
+          "path": "src/io/output.cpp",
+          "line": 24,
+          "end_line": 46
+        }
+      ],
+      "width": 108
+    },
+    {
+      "id": "answer",
+      "lane": "seed",
+      "col": 5,
+      "type": "external",
+      "label": "输出答案",
+      "sublabel": "写出完整调度",
+      "sources": [
+        {
+          "path": "src/io/output.cpp",
+          "line": 8,
+          "end_line": 51
+        },
+        {
+          "path": "src/app/solver.cpp",
+          "line": 137,
+          "end_line": 142
+        }
+      ],
+      "width": 108
+    },
+    {
+      "id": "event-answer",
+      "lane": "seed",
+      "col": 3,
+      "type": "external",
+      "label": "输出事件方案",
+      "sublabel": "event 输出",
+      "sources": [
+        {
+          "path": "src/io/output.cpp",
+          "line": 8,
+          "end_line": 51
+        },
+        {
+          "path": "src/app/solver.cpp",
+          "line": 137,
+          "end_line": 142
+        }
+      ],
+      "width": 108
+    },
+    {
+      "id": "list-answer",
+      "lane": "polish",
+      "col": 2,
+      "type": "external",
+      "label": "输出列表方案",
+      "sublabel": "list 输出",
+      "sources": [
+        {
+          "path": "src/io/output.cpp",
+          "line": 8,
+          "end_line": 51
+        },
+        {
+          "path": "src/app/solver.cpp",
+          "line": 137,
+          "end_line": 142
+        }
+      ],
+      "width": 108
+    },
+    {
+      "id": "layout",
+      "lane": "extra",
+      "col": 0,
+      "type": "backend",
+      "label": "资源下界布局搜索",
+      "sublabel": "最多 2.0 秒，封顶 6.1 秒",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 57,
+          "end_line": 73
+        },
+        {
+          "path": "src/search/layout_bound_search.cpp",
+          "line": 906,
+          "end_line": 1128
+        }
+      ],
+      "width": 108
+    },
+    {
+      "id": "priority",
+      "lane": "extra",
+      "col": 1,
+      "type": "backend",
+      "label": "优先级重建",
+      "sublabel": "最多 1.6 秒，封顶 7.8 秒",
+      "sources": [
+        {
+          "path": "src/app/solver.cpp",
+          "line": 75,
+          "end_line": 98
+        },
+        {
+          "path": "src/search/priority_search.cpp",
+          "line": 328,
+          "end_line": 443
+        }
+      ],
+      "width": 108
+    },
+    {
+      "id": "validate",
+      "lane": "extra",
+      "col": 2,
+      "type": "backend",
+      "label": "共同可行性校验",
+      "sublabel": "DAG / 资源 / 内存",
+      "sources": [
+        {
+          "path": "src/search/schedule_validation.cpp",
+          "line": 41,
+          "end_line": 217
+        }
+      ],
+      "width": 108
+    }
+  ],
+  "edges": [
+    {
+      "id": "start-to-candidate",
+      "from": "start",
+      "to": "candidate"
+    },
+    {
+      "id": "candidate-to-probe",
+      "from": "candidate",
+      "to": "probe"
+    },
+    {
+      "id": "probe-to-refine",
+      "from": "probe",
+      "to": "refine",
+      "label": "非 serial"
+    },
+    {
+      "id": "refine-to-event",
+      "from": "refine",
+      "to": "event"
+    },
+    {
+      "id": "event-to-list",
+      "from": "event",
+      "to": "list",
+      "label": "full / list"
+    },
+    {
+      "id": "list-to-wave",
+      "from": "list",
+      "to": "wave",
+      "label": "full"
+    },
+    {
+      "id": "prefix-to-extend",
+      "from": "prefix",
+      "to": "extend"
+    },
+    {
+      "id": "extend-to-answer",
+      "from": "extend",
+      "to": "answer"
+    },
+    {
+      "id": "probe-to-serial",
+      "from": "probe",
+      "to": "serial",
+      "role": "branch",
+      "label": "serial"
+    },
+    {
+      "id": "event-to-event-answer",
+      "from": "event",
+      "to": "event-answer",
+      "role": "branch",
+      "label": "event"
+    },
+    {
+      "id": "list-to-list-answer",
+      "from": "list",
+      "to": "list-answer",
+      "role": "branch",
+      "label": "list"
+    },
+    {
+      "from": "wave",
+      "to": "layout",
+      "label": "符合 small-full 门槛"
+    },
+    {
+      "from": "wave",
+      "to": "prefix",
+      "label": "其他实例"
+    },
+    {
+      "from": "layout",
+      "to": "priority",
+      "label": "多个固定布局 seeds"
+    },
+    {
+      "from": "priority",
+      "to": "validate",
+      "label": "随机键 / 单调 offsets 重建"
+    },
+    {
+      "from": "validate",
+      "to": "prefix",
+      "label": "仅严格改进进入 best"
+    }
+  ],
+  "mainPath": [
+    "start",
+    "candidate",
+    "probe",
+    "refine",
+    "event",
+    "list",
+    "wave",
+    "prefix",
+    "extend",
+    "answer"
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "先定义图中的概念",
+      "items": [
+        "沿箭头阅读阶段先后；行用于紧凑排布，不是执行线程。",
+        "P 是每组 rank 数；V 是初始连续层分段数。探测通过实际调度 Time 比较候选。",
+        "调度模式是选取可执行操作的优先规则；命令行 --mode 决定参加哪些搜索阶段。"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "模式边界",
+      "items": [
+        "full 走完整路径；list 在列表阶段后输出；event 在事件系列后输出。",
+        "list 的快速路径仍可使用波前排序填隙；图中的独立波前阶段仅 full 启用。",
+        "serial 也先探测布局，最后由输出模块生成完全串行序列。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "预算与条件",
+      "items": [
+        "阶段共享 solver::run 的绝对计时起点；图中秒数是累计检查点，不是阶段独享预算。",
+        "small-full 路径的 list / wave 截止分别为 3.4 / 4.2 秒；其他 full 实例沿用 list 8 秒、wave 9 秒截止。list profile 不运行独立 wave 阶段。",
+        "前缀 polish 仅在 J = 10 × L × mb ≤ 8000 且 full 适用时运行；最终 full polish 目标为 9.2 秒，官方外部时限独立生效。"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "small-full 门槛与计时",
+      "items": [
+        "额外路径仅在 mode=full、非 serial、mb≤16、mb×L×10≤8000、且 L>当前 G 时启用。",
+        "从 solver::run 计时起点累计：list 3.4 秒、wave 4.2 秒；布局最多用时 2.0 秒且截止封顶于 6.1 秒，priority 最多用时 1.6 秒且截止封顶于 7.8 秒。",
+        "最终 polish 默认目标是从同一 solver::run 起点累计 9.2 秒；上面的截止都是协作式检查点，不改变官方外部运行时限。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "重建与验证",
+      "items": [
+        "布局阶段最多产生若干 layout seeds；priority 同时尝试当前 best 的布局和新布局。",
+        "mode 3 为完整 DAG 节点赋可复现随机键，由 ready 队列按键择优重建，mode 5 对 microbatch 使用单调非均匀 offsets；之后尝试相位与 gap 微调。",
+        "共同 validator 检查完整 DAG、引擎不重叠及官方闭区间内存峰值。working trial 可变差，best 只接受严格更短且可行的结果。"
+      ]
+    }
+  ]
+}

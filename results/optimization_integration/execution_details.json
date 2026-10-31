@@ -1,0 +1,295 @@
+{
+  "executions": 50,
+  "all_executed_real_solver": true,
+  "mean_solver_wall_seconds": 9.197918466280026,
+  "max_solver_wall_seconds": 9.22571975000028,
+  "note": "Measured around subprocess.run by capture adapter; differs from official wall which also includes the adapter. Not replay times.",
+  "new_stage_case_count": 19,
+  "stage_observations": [
+    {
+      "case": "r16_p4_trap",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 17319480,
+        "time": 16369010,
+        "drop": 950470,
+        "elapsed": 0.394112
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 16369010,
+        "time": 16223650,
+        "drop": 145360,
+        "elapsed": 1.60084
+      }
+    },
+    {
+      "case": "r20_p2_flat",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 27409390,
+        "time": 27409390,
+        "drop": 0,
+        "elapsed": 0.579965
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 27409390,
+        "time": 27409390,
+        "drop": 0,
+        "elapsed": 1.60084
+      }
+    },
+    {
+      "case": "r24_p3_flat",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 23385728,
+        "time": 22824076,
+        "drop": 561652,
+        "elapsed": 1.27668
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 22824076,
+        "time": 22739056,
+        "drop": 85020,
+        "elapsed": 1.60011
+      }
+    },
+    {
+      "case": "r32_p8_ramp",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 14159172,
+        "time": 14104672,
+        "drop": 54500,
+        "elapsed": 1.04918
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 14104672,
+        "time": 13904846,
+        "drop": 199826,
+        "elapsed": 1.60059
+      }
+    },
+    {
+      "case": "x01_lr_block_p2",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 2425200,
+        "time": 2385200,
+        "drop": 40000,
+        "elapsed": 0.0977778
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 2385200,
+        "time": 2300480,
+        "drop": 84720,
+        "elapsed": 0.991871
+      }
+    },
+    {
+      "case": "x02_lr_ramp_c16",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 17303114,
+        "time": 17080048,
+        "drop": 223066,
+        "elapsed": 0.301395
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 17080048,
+        "time": 17080048,
+        "drop": 0,
+        "elapsed": 1.60058
+      }
+    },
+    {
+      "case": "x03_lr_trap_p3",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 10365732,
+        "time": 10308408,
+        "drop": 57324,
+        "elapsed": 0.64316
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 10308408,
+        "time": 10136012,
+        "drop": 172396,
+        "elapsed": 1.60022
+      }
+    },
+    {
+      "case": "x04_lr_inter_p5",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 25614240,
+        "time": 24713760,
+        "drop": 900480,
+        "elapsed": 0.470211
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 24713760,
+        "time": 24713760,
+        "drop": 0,
+        "elapsed": 1.60021
+      }
+    },
+    {
+      "case": "x05_lr_tight_p6",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 15209696,
+        "time": 14034456,
+        "drop": 1175240,
+        "elapsed": 0.544011
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 14034456,
+        "time": 13725400,
+        "drop": 309056,
+        "elapsed": 1.60033
+      }
+    },
+    {
+      "case": "x06_lr_trap_p7",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 9426216,
+        "time": 9099336,
+        "drop": 326880,
+        "elapsed": 0.698446
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 9099336,
+        "time": 9099336,
+        "drop": 0,
+        "elapsed": 1.60024
+      }
+    },
+    {
+      "case": "x07_lr_flat_p10",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 16534470,
+        "time": 16114700,
+        "drop": 419770,
+        "elapsed": 0.815343
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 16114700,
+        "time": 15888900,
+        "drop": 225800,
+        "elapsed": 1.60063
+      }
+    },
+    {
+      "case": "x08_lr_lowb_p4",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 6781856,
+        "time": 6781856,
+        "drop": 0,
+        "elapsed": 0.650648
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 6781856,
+        "time": 6781856,
+        "drop": 0,
+        "elapsed": 1.60028
+      }
+    },
+    {
+      "case": "x09_lr_skew_p6",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 17247456,
+        "time": 17247456,
+        "drop": 0,
+        "elapsed": 1.30926
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 17247456,
+        "time": 17247456,
+        "drop": 0,
+        "elapsed": 1.60061
+      }
+    },
+    {
+      "case": "x10_lr_tight_p8",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 19158270,
+        "time": 18604346,
+        "drop": 553924,
+        "elapsed": 0.716372
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 18604346,
+        "time": 18214726,
+        "drop": 389620,
+        "elapsed": 1.6008
+      }
+    },
+    {
+      "case": "x11_lr_deep_p3",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 13772128,
+        "time": 13765076,
+        "drop": 7052,
+        "elapsed": 1.56261
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 13765076,
+        "time": 13601976,
+        "drop": 163100,
+        "elapsed": 1.60033
+      }
+    },
+    {
+      "case": "x12_lr_close_p10",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 28510305,
+        "time": 27536025,
+        "drop": 974280,
+        "elapsed": 1.59485
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 27536025,
+        "time": 27380625,
+        "drop": 155400,
+        "elapsed": 1.60054
+      }
+    },
+    {
+      "case": "x13_lr_twochunk_p8",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 12592768,
+        "time": 11917232,
+        "drop": 675536,
+        "elapsed": 0.441408
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 11917232,
+        "time": 11850208,
+        "drop": 67024,
+        "elapsed": 1.60034
+      }
+    },
+    {
+      "case": "x14_lr_twochunk_p15",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 82246512,
+        "time": 82246512,
+        "drop": 0,
+        "elapsed": 0.550452
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 82246512,
+        "time": 82153146,
+        "drop": 93366,
+        "elapsed": 1.56787
+      }
+    },
+    {
+      "case": "x15_lr_twochunk_p10",
+      "LAYOUT_BOUND_STAGE": {
+        "anchor": 14296208,
+        "time": 14258785,
+        "drop": 37423,
+        "elapsed": 0.500509
+      },
+      "PRIORITY_STAGE": {
+        "anchor": 14258785,
+        "time": 14258785,
+        "drop": 0,
+        "elapsed": 1.6007
+      }
+    }
+  ]
+}

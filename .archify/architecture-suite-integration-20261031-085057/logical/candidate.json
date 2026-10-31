@@ -1,0 +1,331 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "调度对象、资源约束与共同可行性校验",
+    "locale": "zh-CN",
+    "quality_profile": "showcase",
+    "output": ".archify/architecture-suite-integration-20261031-085057/logical/logical.html",
+    "repository": {
+      "url": "git@github.com:RainyYC/moew.git",
+      "revision": "7ce6bc426515cf275adbf2ca9962e79939752196",
+      "link_mode": "local-only"
+    },
+    "legend": {
+      "entries": {
+        "backend": {
+          "label": "领域概念与约束"
+        },
+        "external": {
+          "label": "题目数据"
+        }
+      }
+    }
+  },
+  "components": [
+    {
+      "id": "problem",
+      "type": "external",
+      "label": "题目输入",
+      "sublabel": "InputData：容量与负载",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/model/problem.hpp",
+          "line": 8,
+          "end_line": 30
+        }
+      ]
+    },
+    {
+      "id": "candidate",
+      "type": "backend",
+      "label": "候选配置",
+      "sublabel": "P / V / cuts / MAP",
+      "pos": [
+        340,
+        40
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/model/problem.hpp",
+          "line": 8,
+          "end_line": 30
+        },
+        {
+          "path": "src/search/candidate_search.cpp",
+          "line": 8,
+          "end_line": 90
+        }
+      ]
+    },
+    {
+      "id": "duration",
+      "type": "backend",
+      "label": "操作时长",
+      "sublabel": "每层十项整数时长",
+      "pos": [
+        640,
+        40
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/placement/expert_mapping.cpp",
+          "line": 84,
+          "end_line": 110
+        }
+      ]
+    },
+    {
+      "id": "layout",
+      "type": "backend",
+      "label": "层到组映射",
+      "sublabel": "group 与每组层数",
+      "pos": [
+        340,
+        220
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/search/layout_bound_search.cpp",
+          "line": 546,
+          "end_line": 584
+        },
+        {
+          "path": "src/search/layout_bound_search.cpp",
+          "line": 634,
+          "end_line": 743
+        }
+      ]
+    },
+    {
+      "id": "dag",
+      "type": "backend",
+      "label": "依赖模型 DAG",
+      "sublabel": "层内与相邻层依赖",
+      "pos": [
+        640,
+        220
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/core/operation_graph.hpp",
+          "line": 29,
+          "end_line": 51
+        }
+      ]
+    },
+    {
+      "id": "resources",
+      "type": "backend",
+      "label": "资源与内存约束",
+      "sublabel": "计算 / 通信 / 激活",
+      "pos": [
+        340,
+        420
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/search/list_search.cpp",
+          "line": 63,
+          "end_line": 85
+        },
+        {
+          "path": "src/common.hpp",
+          "line": 27,
+          "end_line": 49
+        }
+      ]
+    },
+    {
+      "id": "schedule",
+      "type": "backend",
+      "label": "可行调度",
+      "sublabel": "start + mb + layer + op",
+      "pos": [
+        640,
+        420
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/scheduling/schedule_api.hpp",
+          "line": 1,
+          "end_line": 103
+        },
+        {
+          "path": "src/search/local_engine_polish.cpp",
+          "line": 233,
+          "end_line": 283
+        }
+      ]
+    },
+    {
+      "id": "objective",
+      "type": "backend",
+      "label": "目标与比较",
+      "sublabel": "最小化最大结束时间",
+      "pos": [
+        640,
+        620
+      ],
+      "size": [
+        194,
+        66
+      ],
+      "sources": [
+        {
+          "path": "src/search/local_engine_polish.cpp",
+          "line": 233,
+          "end_line": 283
+        },
+        {
+          "path": "src/search/initial_search.cpp",
+          "line": 9,
+          "end_line": 47
+        }
+      ]
+    },
+    {
+      "id": "validator",
+      "type": "backend",
+      "label": "共同可行性校验",
+      "sublabel": "DAG + 引擎互斥 + 闭区间内存",
+      "pos": [
+        940,
+        420
+      ],
+      "size": [
+        220,
+        72
+      ],
+      "sources": [
+        {
+          "path": "src/search/schedule_validation.cpp",
+          "line": 41,
+          "end_line": 217
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "problem-to-candidate",
+      "from": "problem",
+      "to": "candidate",
+      "label": "生成"
+    },
+    {
+      "id": "candidate-to-duration",
+      "from": "candidate",
+      "to": "duration",
+      "label": "定时长"
+    },
+    {
+      "id": "candidate-to-layout",
+      "from": "candidate",
+      "to": "layout",
+      "label": "展开"
+    },
+    {
+      "id": "duration-to-dag",
+      "from": "duration",
+      "to": "dag",
+      "label": "赋时长"
+    },
+    {
+      "id": "layout-to-resources",
+      "from": "layout",
+      "to": "resources",
+      "label": "定归属"
+    },
+    {
+      "id": "dag-to-schedule",
+      "from": "dag",
+      "to": "schedule",
+      "label": "约束"
+    },
+    {
+      "id": "resources-to-schedule",
+      "from": "resources",
+      "to": "schedule",
+      "label": "约束"
+    },
+    {
+      "from": "schedule",
+      "to": "validator",
+      "label": "候选时间表"
+    },
+    {
+      "from": "validator",
+      "to": "objective",
+      "label": "合法后比较 Time"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "调度问题如何组成",
+      "items": [
+        "ProblemView 借用 layer_group、durations 与 group_layers；配置对象提供窗口和优先级。",
+        "图中的 DAG 是调度逻辑依赖；资源链和内存条件共同决定一份答案是否可行。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "操作不是软件进程",
+      "items": [
+        "前向计算：s、gemm；前向通信：disp、comb。",
+        "反向计算：s_bwd、gemm_dx、gemm_dw、s_dw；反向通信：comb_bwd、disp_bwd。",
+        "这些是题目模型的 operation，调度器只计算它们的开始时间。"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "当前最优解保持完整",
+      "items": [
+        "ScheduleResult 同时持有 P、MAP、cuts、group、ops 和 Time。",
+        "一般搜索严格降低 Time 才替换；局部搜索还允许同 Time 且结束时间总和更小。"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "固定布局强化搜索",
+      "items": [
+        "额外布局阶段给出若干可行布局种子；优先级阶段在完整 DAG 上重新排程，不把近似边界当成可行性证明。",
+        "模式 3 使用全 DAG 随机键；模式 5 使用非均匀但单调的 microbatch offsets，所有候选仍回到同一校验器。",
+        "候选内存峰值分别计算通信缓冲与 activation 的闭区间重叠；任一资源或内存约束违反都不会进入 Time 比较。"
+      ]
+    }
+  ]
+}
