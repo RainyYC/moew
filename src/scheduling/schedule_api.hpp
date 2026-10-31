@@ -24,6 +24,15 @@ struct ScheduleOutput {
     std::vector<i128>* ends = nullptr;
 };
 
+enum class ListRankMode : int {
+    kLegacy = 0,
+    kWavefront = 1,
+    kDagPitch = 2,
+    kRandomKey = 3,
+    kNonuniformMicrobatchOffsets = 5,
+};
+inline constexpr int kMicrobatchOffsetScaleDenominator = 64;
+
 struct EventConfig {
     const std::vector<int>* activation_capacity = nullptr;
     const std::vector<int>* communication_buffers = nullptr;
@@ -57,6 +66,12 @@ struct ListConfig {
     int duration_head = 0;
     bool microbatch_descending = false;
     int weight_gradient_order = 0;
+    ListRankMode priority_mode = ListRankMode::kLegacy;
+    std::uint64_t random_seed = 0;
+    int random_jitter_span = 1;
+    int random_wave_stride = 1;
+    std::vector<i128> microbatch_offset_ticks;
+    int microbatch_offset_denominator = kMicrobatchOffsetScaleDenominator;
 };
 
 struct EventScheduleStrategy {

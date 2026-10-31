@@ -13,20 +13,24 @@ namespace solver {
 using namespace std;
 void run_scale_v8_search(const InputData& x, const vector<PartitionCandidate>& pcs,
                          const ScheduleResult& v7_incumbent, ScheduleResult& best, bool serial,
-                         bool do_wave, chrono::steady_clock::time_point main_start) {
+                         bool do_wave, chrono::steady_clock::time_point main_start,
+                         chrono::steady_clock::time_point deadline) {
+    const auto wave_deadline =
+        min(main_start + chrono::milliseconds(search_limits::kWaveDeadlineMs), deadline);
     vector<ScheduleResult> scale_alt_seeds;
     if (!serial && do_wave && x.mb <= search_limits::kExtraLayoutMicrobatchLimit &&
         (i128)x.mb * x.L * operation::kCount <= search_limits::kExtraLayoutNodeLimit &&
         x.L > best.G &&
         chrono::steady_clock::now() - main_start <
-            chrono::milliseconds(search_limits::kWaveWarmupMs)) {
+            chrono::milliseconds(search_limits::kWaveWarmupMs) &&
+        chrono::steady_clock::now() < wave_deadline) {
         const int incumbent_p = best.c.P;
         vector<int> order(pcs.size());
         iota(order.begin(), order.end(), 0);
         sort(order.begin(), order.end(),
              [&](int a, int b) { return pcs[a].probe_time < pcs[b].probe_time; });
         int used = 0;
-        auto alt_deadline = main_start + chrono::milliseconds(search_limits::kWaveDeadlineMs);
+        auto alt_deadline = wave_deadline;
         for (int pi : order) {
             const Candidate& c = pcs[pi].best_v.P ? pcs[pi].best_v : pcs[pi].max_v;
             if (!c.P || c.P == incumbent_p) {
@@ -77,8 +81,7 @@ void run_scale_v8_search(const InputData& x, const vector<PartitionCandidate>& p
             scale_seeds.push_back(alt);
         }
         for (ScheduleResult anchor : scale_seeds) {
-            if (chrono::steady_clock::now() - main_start >=
-                chrono::milliseconds(search_limits::kWaveDeadlineMs)) {
+            if (chrono::steady_clock::now() >= wave_deadline) {
                 break;
             }
             ScheduleResult saved_best = best;
@@ -156,8 +159,7 @@ void run_scale_v8_search(const InputData& x, const vector<PartitionCandidate>& p
             Trial winner{anchor.time, 0, 0, 0, 0, 0, 0, x.mb, 0, 0, 0};
             auto run_wave = [&](int mode, int A, int B, int phase, int pn, int pd, int head,
                                 bool desc, int dw, int W) {
-                if (chrono::steady_clock::now() - main_start >
-                    chrono::milliseconds(search_limits::kWaveDeadlineMs)) {
+                if (chrono::steady_clock::now() > wave_deadline) {
                     return;
                 }
                 vector<event_sched::Op> ops;

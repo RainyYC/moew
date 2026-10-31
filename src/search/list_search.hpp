@@ -5,5 +5,7 @@ ScheduleResult run_v7_list_search(const InputData& x, ScheduleResult best, bool 
                                   bool do_list, bool list_deep, bool list_deep_topos,
                                   bool diff_enabled,
                                   std::chrono::steady_clock::time_point main_start,
-                                  const std::string& borrow);
+                                  const std::string& borrow,
+                                  std::chrono::steady_clock::time_point deadline =
+                                      std::chrono::steady_clock::time_point::max());
 }

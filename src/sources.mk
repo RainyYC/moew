@@ -10,8 +10,11 @@ SOLVER_SOURCES := \
 	src/placement/grouped_placement.cpp \
 	src/scheduling/event_scheduler.cpp \
 	src/scheduling/list_scheduler.cpp \
+	src/search/schedule_validation.cpp \
 	src/search/candidate_search.cpp \
 	src/search/layout_search.cpp \
+	src/search/layout_bound_search.cpp \
+	src/search/priority_search.cpp \
 	src/search/window_search.cpp \
 	src/search/initial_search.cpp \
 	src/search/window_borrow.cpp \

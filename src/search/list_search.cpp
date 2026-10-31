@@ -13,12 +13,13 @@ using namespace std;
 ScheduleResult run_v7_list_search(const InputData& x, ScheduleResult best, bool serial,
                                   bool do_list, bool list_deep, bool list_deep_topos,
                                   bool diff_enabled, chrono::steady_clock::time_point main_start,
-                                  const string& borrow) {
+                                  const string& borrow, chrono::steady_clock::time_point deadline) {
     if (!serial && do_list) {
         bool list_cutoff = false;
-        const auto list_budget = list_deep
-                                     ? chrono::milliseconds(search_limits::kListDeepDeadlineMs)
-                                     : chrono::milliseconds(search_limits::kListNormalDeadlineMs);
+        const auto default_deadline =
+            main_start + chrono::milliseconds(list_deep ? search_limits::kListDeepDeadlineMs
+                                                        : search_limits::kListNormalDeadlineMs);
+        const auto list_deadline = min(default_deadline, deadline);
         ScheduleResult anchor = best;
         auto dur = compute_durations(x, anchor.c);
         vector<int> ng(anchor.G);
@@ -106,7 +107,7 @@ ScheduleResult run_v7_list_search(const InputData& x, ScheduleResult best, bool 
         int plain_w = x.mb;
         bool gap_improved = false, skip_sweep = false;
         auto run = [&](int W, int vi, bool early, int gap, int fs, int fm, int ratio10, bool ramp) {
-            if (chrono::steady_clock::now() - main_start > list_budget) {
+            if (chrono::steady_clock::now() > list_deadline) {
                 list_cutoff = true;
                 return;
             }
@@ -160,8 +161,9 @@ ScheduleResult run_v7_list_search(const InputData& x, ScheduleResult best, bool 
         };
         i128 node_count = (i128)x.mb * x.L * operation::kCount;
         if (node_count >= 5000 && node_count <= 150000 &&
-            chrono::steady_clock::now() - main_start <
-                chrono::milliseconds(search_limits::kQuickGapFillLatestStartMs)) {
+            chrono::steady_clock::now() <
+                min(list_deadline,
+                    main_start + chrono::milliseconds(search_limits::kQuickGapFillLatestStartMs))) {
             vector<event_sched::Op> ops;
             i128 tm;
             scheduling::ProblemView problem{x.mb, x.L, anchor.G, anchor.group, dur, ng};
@@ -191,7 +193,9 @@ ScheduleResult run_v7_list_search(const InputData& x, ScheduleResult best, bool 
         if (diff_enabled && borrow == "ac") {
             bool release_cutoff = false;
             ScheduleResult released = scan_release1(
-                x, best, main_start + chrono::milliseconds(search_limits::kListReleaseDeadlineMs),
+                x, best,
+                min(list_deadline,
+                    main_start + chrono::milliseconds(search_limits::kListReleaseDeadlineMs)),
                 release_cutoff);
             if (released.time < best.time) {
                 best = move(released);

@@ -19,6 +19,15 @@ inline constexpr int kPrefixMaxRounds = 4;
 inline constexpr int kPrefixRoundReserveMs = 100;
 inline constexpr int kQuickGapFillLatestStartMs = 4000;
 inline constexpr int kListReleaseDeadlineMs = 8000;
+struct SearchBudget {
+    int list_deadline_ms;
+    int wave_deadline_ms;
+    int layout_budget_ms;
+    int layout_deadline_cap_ms;
+    int priority_budget_ms;
+    int priority_deadline_cap_ms;
+};
+inline constexpr SearchBudget kSmallFullSearchBudget{3400, 4200, 2000, 6100, 1600, 7800};
 inline constexpr int kExtensionDeadlineReserveMs = 30;
 inline constexpr int kExtensionIterationBudget = 700;
 inline constexpr int kPlacementSearchBudget = 250000;

@@ -6,6 +6,21 @@
 
 // ===== list_scheduler =====
 namespace list_sched {
+namespace {
+constexpr int kRankModeWave = static_cast<int>(scheduling::ListRankMode::kWavefront);
+constexpr int kRankModeDagPitch = static_cast<int>(scheduling::ListRankMode::kDagPitch);
+constexpr int kRankModeRandomKey = static_cast<int>(scheduling::ListRankMode::kRandomKey);
+constexpr int kRankModeNonuniformOffsets =
+    static_cast<int>(scheduling::ListRankMode::kNonuniformMicrobatchOffsets);
+
+std::uint64_t splitmix64(std::uint64_t value) {
+    value += 0x9e3779b97f4a7c15ULL;
+    value = (value ^ (value >> 30)) * 0xbf58476d1ce4e5b9ULL;
+    value = (value ^ (value >> 27)) * 0x94d049bb133111ebULL;
+    return value ^ (value >> 31);
+}
+}  // namespace
+
 struct Variant {
     bool fwd_first;
     bool mb_desc;
@@ -41,7 +56,10 @@ bool schedule(int mb, int L, int G, const std::vector<int>& grp, const Dur& d,
               i128 busy, int ratio10, bool ramp, std::vector<Op>& out, i128& tm,
               std::vector<i128>* starts, std::vector<i128>* ends, bool wave_rank, bool fill_gaps,
               int rank_mode, int A, int B, int phase, int pitch_num, int pitch_den,
-              int duration_head, bool mb_desc, int dw_order) {
+              int duration_head, bool mb_desc, int dw_order, std::uint64_t random_seed,
+              int random_jitter_span, int random_wave_stride,
+              const std::vector<i128>* microbatch_offset_ticks,
+              int microbatch_offset_denominator) {
     (void)mb_desc;  // Kept in the stable scheduler call signature; currently not used.
     if (mb < 1 || L < 1 || G < 1 || vi < 0 || vi >= limits::kVariantCount) {
         return false;
@@ -90,7 +108,7 @@ bool schedule(int mb, int L, int G, const std::vector<int>& grp, const Dur& d,
     }
     std::vector<i128> h, h_finish, layer_prefix;
     i128 max_work = 0;
-    if (rank_mode == 2) {
+    if (rank_mode == kRankModeDagPitch || rank_mode == kRankModeNonuniformOffsets) {
         h.resize(N);
         h_finish.resize(N);
         layer_prefix.resize(L + 1);
@@ -124,6 +142,24 @@ bool schedule(int mb, int L, int G, const std::vector<int>& grp, const Dur& d,
             layer_prefix[l + 1] = layer_prefix[l] + (total + 9) / 10;
         }
     }
+    if (rank_mode == kRankModeNonuniformOffsets &&
+        (!microbatch_offset_ticks ||
+         static_cast<int>(microbatch_offset_ticks->size()) != mb ||
+         microbatch_offset_denominator <= 0)) {
+        return false;
+    }
+    if (rank_mode == kRankModeNonuniformOffsets) {
+        for (int m = 0; m < mb; ++m) {
+            if ((*microbatch_offset_ticks)[m] < 0 ||
+                (m > 0 && (*microbatch_offset_ticks)[m] < (*microbatch_offset_ticks)[m - 1])) {
+                return false;
+            }
+        }
+    }
+    if (rank_mode == kRankModeRandomKey &&
+        (random_jitter_span <= 0 || random_wave_stride < 0)) {
+        return false;
+    }
     auto rank = [&](int x) {
         int m = x / stride, z = x % stride, l = z / operation::kCount, o = z % operation::kCount;
         i128 dw = 0;
@@ -135,7 +171,7 @@ bool schedule(int mb, int L, int G, const std::vector<int>& grp, const Dur& d,
                    dw_order == 2) {
             dw = -d[l][o];
         }
-        if (rank_mode == 1) {
+        if (rank_mode == kRankModeWave) {
             i128 forward = (i128)A * m +
                            (i128)B * (o < operation::kSharedBackward ? l : 2 * L - l) +
                            (o >= operation::kSharedBackward ? (i128)phase * L / 2 : 0);
@@ -145,7 +181,7 @@ bool schedule(int mb, int L, int G, const std::vector<int>& grp, const Dur& d,
                     : 0,
                 forward, dw, o};
         }
-        if (rank_mode == 2) {
+        if (rank_mode == kRankModeDagPitch) {
             i128 topology =
                 duration_head == 1
                     ? h[x]
@@ -155,6 +191,41 @@ bool schedule(int mb, int L, int G, const std::vector<int>& grp, const Dur& d,
                     ? 1
                     : 0,
                 (i128)m * max_work * pitch_num + topology * pitch_den, dw, o};
+        }
+        if (rank_mode == kRankModeRandomKey) {
+            const std::uint64_t key = splitmix64(
+                random_seed ^ (static_cast<std::uint64_t>(x) * 0x9e3779b97f4a7c15ULL));
+            const i128 jitter = static_cast<i128>(key %
+                static_cast<std::uint64_t>(random_jitter_span));
+            const i128 layer_wave =
+                o < operation::kSharedBackward ? l : (2 * L - l);
+            const i128 topo = static_cast<i128>(m) * (2 * L) + layer_wave;
+            const bool is_weight_gradient =
+                o == operation::kExpertWeightGradient ||
+                o == operation::kSharedWeightGradient;
+            const i128 gradient_class =
+                (dw_order == 2) == is_weight_gradient ? 1 : 0;
+            return std::array<i128, 4>{
+                gradient_class,
+                topo * random_wave_stride + jitter,
+                static_cast<i128>(key), o};
+        }
+        if (rank_mode == kRankModeNonuniformOffsets) {
+            const i128 topology = duration_head == 1
+                                      ? h[x]
+                                      : (duration_head == 2
+                                             ? h_finish[x]
+                                             : layer_prefix[l] + (d[l][o] + 9) / 10);
+            const i128 offset = (*microbatch_offset_ticks)[m] * max_work * pitch_num /
+                                microbatch_offset_denominator;
+            const i128 backward_phase =
+                o >= operation::kSharedBackward ? (i128)phase * max_work * pitch_num : 0;
+            return std::array<i128, 4>{
+                (o == operation::kExpertWeightGradient ||
+                 o == operation::kSharedWeightGradient)
+                    ? 1
+                    : 0,
+                offset + topology * pitch_den + backward_phase, dw, o};
         }
         if (wave_rank) {
             return std::array<i128, 4>{
@@ -324,8 +395,15 @@ bool ListScheduleStrategy::schedule(const ProblemView& problem, const ListConfig
         problem.group_layers, config.window, config.variant, config.early, config.gap,
         config.fill_groups, config.fill_microbatches, config.busy, config.ratio_tenths, config.ramp,
         output.operations, output.makespan, output.starts, output.ends, config.wave_rank,
-        config.fill_gaps, config.rank_mode, config.rank_a, config.rank_b, config.phase,
+        config.fill_gaps,
+        config.priority_mode == ListRankMode::kLegacy
+            ? config.rank_mode
+            : static_cast<int>(config.priority_mode),
+        config.rank_a, config.rank_b, config.phase,
         config.pitch_numerator, config.pitch_denominator, config.duration_head,
-        config.microbatch_descending, config.weight_gradient_order);
+        config.microbatch_descending, config.weight_gradient_order, config.random_seed,
+        config.random_jitter_span, config.random_wave_stride,
+        config.microbatch_offset_ticks.empty() ? nullptr : &config.microbatch_offset_ticks,
+        config.microbatch_offset_denominator);
 }
 }  // namespace scheduling
